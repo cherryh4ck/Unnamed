@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://dyoo8hg8g28vh"]
 
-[ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://click para mover.gd" id="1_wj017"]
+[ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://scripts/player/click para mover.gd" id="1_wj017"]
 [ext_resource type="PackedScene" uid="uid://dw4q75ewli3ip" path="res://modelos/player pj/player 1.glb" id="2_mu3a7"]
-[ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://player_1.gd" id="3_mu3a7"]
-[ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://camera_rig.gd" id="4_fdmbg"]
+[ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://scripts/player/player_1.gd" id="3_mu3a7"]
+[ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://scripts/camera/camera_rig.gd" id="4_fdmbg"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
