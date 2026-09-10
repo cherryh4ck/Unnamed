@@ -2,7 +2,7 @@ extends CharacterBody3D
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
-var speed: float = 300.0
+var speed: float = 700.0
 
 
 func _ready() -> void:
@@ -10,7 +10,7 @@ func _ready() -> void:
 	pass
 
 
-func _process(_delta: float) -> void:
+func _physics_process(_delta: float) -> void:
 	print("finished? ", nav_agent.is_navigation_finished())
 	if nav_agent.is_navigation_finished():
 		return
@@ -50,3 +50,4 @@ func _input(event: InputEvent) -> void:
 
 		nav_agent.target_position = result.position
 		print("target seteado: ", nav_agent.target_position)
+	

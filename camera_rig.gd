@@ -2,7 +2,7 @@ extends Node3D
 
 @export var player: NodePath
 @export var distancia: float = 1300.0
-@export var angulo_grados: float = 35.0
+@export var angulo_grados: float = 45.0
 @export var velocity: float = 5.0
 
 var player_node: Node3D

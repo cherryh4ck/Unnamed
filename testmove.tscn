@@ -57,8 +57,8 @@ transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 0, 236.3157, 0)
 shape = SubResource("CapsuleShape3D_g4v7s")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="CharacterBody3D" unique_id=1106145502]
-path_desired_distance = 5.0
-target_desired_distance = 10.0
+path_desired_distance = 20.0
+target_desired_distance = 20.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=371007284]
 environment = SubResource("Environment_g4v7s")
