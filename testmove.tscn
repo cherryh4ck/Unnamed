@@ -28,6 +28,11 @@ sky_material = SubResource("ProceduralSkyMaterial_57qmd")
 background_mode = 2
 sky = SubResource("Sky_yf5fn")
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b615x"]
+albedo_color = Color(0.6541547, 0.9851536, 0.4236848, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_g4v7s"]
+
 [node name="Node3D" type="Node3D" unique_id=1195584055]
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1842858098]
@@ -47,6 +52,7 @@ shape = SubResource("BoxShape3D_g4v7s")
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=707424062]
 script = ExtResource("1_wj017")
+ClickReference = NodePath("../ClickReference")
 
 [node name="player 1" parent="CharacterBody3D" unique_id=616383495 instance=ExtResource("2_mu3a7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 249.29492, 0)
@@ -69,3 +75,10 @@ player = NodePath("../CharacterBody3D/player 1")
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=954720534]
 transform = Transform3D(1, 0, 0, 0, 0.75808793, 0.65215236, 0, -0.65215236, 0.75808793, 0, 1000.5205, 1676.1542)
+
+[node name="ClickReference" type="Node3D" parent="." unique_id=1553621570]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ClickReference" unique_id=1383924947]
+transform = Transform3D(100, 0, 0, 0, 10, 0, 0, 0, 100, 0, 107.07736, 0)
+material_override = SubResource("StandardMaterial3D_b615x")
+mesh = SubResource("CylinderMesh_g4v7s")

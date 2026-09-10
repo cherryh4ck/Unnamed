@@ -1,9 +1,10 @@
 extends CharacterBody3D
 
+@export var ClickReference: NodePath
+@onready var click_reference: Node3D = get_node(ClickReference)
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
 var speed: float = 700.0
-
 
 func _ready() -> void:
 	print("jugador listo")
@@ -48,6 +49,7 @@ func _input(event: InputEvent) -> void:
 			print("el rayo no pego en nada")
 			return
 
+		click_reference.global_position = result.position
 		nav_agent.target_position = result.position
 		print("target seteado: ", nav_agent.target_position)
 	
