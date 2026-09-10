@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://bxiycj2lwsump"
+path="res://.godot/imported/6B.WEP_posed.obj-b0c158d09c9ffe76fcfffd916640f73d.mesh"
+
+[deps]
+
+files=["res://.godot/imported/6B.WEP_posed.obj-b0c158d09c9ffe76fcfffd916640f73d.mesh"]
+
+source_file="res://modelos/armas/escudo mid/6B.WEP_posed.obj"
+dest_files=["res://.godot/imported/6B.WEP_posed.obj-b0c158d09c9ffe76fcfffd916640f73d.mesh", "res://.godot/imported/6B.WEP_posed.obj-b0c158d09c9ffe76fcfffd916640f73d.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

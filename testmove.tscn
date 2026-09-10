@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://click para mover.gd" id="1_wj017"]
 [ext_resource type="PackedScene" uid="uid://dw4q75ewli3ip" path="res://modelos/player pj/player 1.glb" id="2_mu3a7"]
 [ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://player_1.gd" id="3_mu3a7"]
+[ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://camera_rig.gd" id="4_fdmbg"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -59,8 +60,12 @@ shape = SubResource("CapsuleShape3D_g4v7s")
 path_desired_distance = 5.0
 target_desired_distance = 10.0
 
-[node name="Camera3D" type="Camera3D" parent="." unique_id=954720534]
-transform = Transform3D(1, 0, 0, 0, 0.75808793, 0.65215236, 0, -0.65215236, 0.75808793, 0, 1000.5205, 1676.1542)
-
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=371007284]
 environment = SubResource("Environment_g4v7s")
+
+[node name="CameraRig" type="Node3D" parent="." unique_id=1372666457]
+script = ExtResource("4_fdmbg")
+player = NodePath("../CharacterBody3D/player 1")
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=954720534]
+transform = Transform3D(1, 0, 0, 0, 0.75808793, 0.65215236, 0, -0.65215236, 0.75808793, 0, 1000.5205, 1676.1542)
