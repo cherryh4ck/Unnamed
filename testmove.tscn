@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://dyoo8hg8g28vh"]
 
-[ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://scripts/player/click para mover.gd" id="1_wj017"]
+[ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://scripts/player/Movement.gd" id="1_wj017"]
 [ext_resource type="PackedScene" uid="uid://dw4q75ewli3ip" path="res://modelos/player pj/player 1.glb" id="2_mu3a7"]
 [ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://scripts/player/Animations.gd" id="3_b615x"]
 [ext_resource type="Script" uid="uid://77pliolk7nmf" path="res://scripts/player/Stats.gd" id="3_fdmbg"]
