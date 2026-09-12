@@ -63,6 +63,26 @@ script = ExtResource("3_b615x")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -249.29492, 0)
 script = ExtResource("3_fdmbg")
 
+[node name="Control" type="Control" parent="CharacterBody3D/Player/Stats" unique_id=24359242]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 747.0
+offset_bottom = 295.0
+
+[node name="Vida" type="Label" parent="CharacterBody3D/Player/Stats/Control" unique_id=205446770]
+layout_mode = 0
+offset_right = 210.0
+offset_bottom = 23.0
+text = "Vida:"
+
+[node name="Nivel" type="Label" parent="CharacterBody3D/Player/Stats/Control" unique_id=1418792345]
+layout_mode = 0
+offset_left = -1.0
+offset_top = 22.0
+offset_right = 39.0
+offset_bottom = 45.0
+text = "Nivel:"
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=10504279]
 transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 0, 236.3157, 0)
 shape = SubResource("CapsuleShape3D_g4v7s")
