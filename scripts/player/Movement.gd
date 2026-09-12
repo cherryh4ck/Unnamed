@@ -42,6 +42,7 @@ func _input(event: InputEvent) -> void:
 		var ray_query = PhysicsRayQueryParameters3D.new()
 		ray_query.from = from
 		ray_query.to = to
+		ray_query.exclude = [self.get_rid()]
 		var result = space.intersect_ray(ray_query)
 		print("resultado raycast: ", result)
 
