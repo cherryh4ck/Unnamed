@@ -2,7 +2,8 @@
 
 [ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://scripts/player/click para mover.gd" id="1_wj017"]
 [ext_resource type="PackedScene" uid="uid://dw4q75ewli3ip" path="res://modelos/player pj/player 1.glb" id="2_mu3a7"]
-[ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://scripts/player/player_1.gd" id="3_mu3a7"]
+[ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://scripts/player/Animations.gd" id="3_b615x"]
+[ext_resource type="Script" uid="uid://77pliolk7nmf" path="res://scripts/player/Stats.gd" id="3_fdmbg"]
 [ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://scripts/camera/camera_rig.gd" id="4_fdmbg"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
@@ -54,9 +55,13 @@ shape = SubResource("BoxShape3D_g4v7s")
 script = ExtResource("1_wj017")
 ClickReference = NodePath("../ClickReference")
 
-[node name="player 1" parent="CharacterBody3D" unique_id=616383495 instance=ExtResource("2_mu3a7")]
+[node name="Player" parent="CharacterBody3D" unique_id=616383495 instance=ExtResource("2_mu3a7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 249.29492, 0)
-script = ExtResource("3_mu3a7")
+script = ExtResource("3_b615x")
+
+[node name="Stats" type="Node3D" parent="CharacterBody3D/Player" unique_id=1620145396]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -249.29492, 0)
+script = ExtResource("3_fdmbg")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=10504279]
 transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 0, 236.3157, 0)
@@ -71,7 +76,7 @@ environment = SubResource("Environment_g4v7s")
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=1372666457]
 script = ExtResource("4_fdmbg")
-player = NodePath("../CharacterBody3D/player 1")
+player = NodePath("../CharacterBody3D/Player")
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig" unique_id=954720534]
 transform = Transform3D(1, 0, 0, 0, 0.75808793, 0.65215236, 0, -0.65215236, 0.75808793, 0, 1000.5205, 1676.1542)
