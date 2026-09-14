@@ -1,10 +1,11 @@
 [gd_scene format=3 uid="uid://dyoo8hg8g28vh"]
 
-[ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://scripts/player/Movement.gd" id="1_wj017"]
+[ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://click para mover.gd" id="1_wj017"]
 [ext_resource type="PackedScene" uid="uid://dw4q75ewli3ip" path="res://modelos/player pj/player 1.glb" id="2_mu3a7"]
-[ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://scripts/player/Animations.gd" id="3_b615x"]
+[ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://player_1.gd" id="3_b615x"]
 [ext_resource type="Script" uid="uid://77pliolk7nmf" path="res://scripts/player/Stats.gd" id="3_fdmbg"]
 [ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://scripts/camera/camera_rig.gd" id="4_fdmbg"]
+[ext_resource type="PackedScene" uid="uid://2nhmkm3uda36" path="res://inventory/inventory.tscn" id="6_u08vo"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -53,7 +54,6 @@ shape = SubResource("BoxShape3D_g4v7s")
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=707424062]
 script = ExtResource("1_wj017")
-ClickReference = NodePath("../ClickReference")
 
 [node name="Player" parent="CharacterBody3D" unique_id=616383495 instance=ExtResource("2_mu3a7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 249.29492, 0)
@@ -107,3 +107,20 @@ transform = Transform3D(1, 0, 0, 0, 0.75808793, 0.65215236, 0, -0.65215236, 0.75
 transform = Transform3D(100, 0, 0, 0, 10, 0, 0, 0, 100, 0, 107.07736, 0)
 material_override = SubResource("StandardMaterial3D_b615x")
 mesh = SubResource("CylinderMesh_g4v7s")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=671917861]
+
+[node name="inventoryInterface" type="Control" parent="UI" unique_id=2114922420]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="inventory" parent="UI/inventoryInterface" unique_id=892027053 instance=ExtResource("6_u08vo")]
+layout_mode = 0
+offset_left = 177.0
+offset_top = 595.0
+offset_right = 217.0
+offset_bottom = 635.0

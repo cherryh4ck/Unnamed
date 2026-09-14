@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://jarehqn0m723"]
+
+[node name="slot" type="PanelContainer" unique_id=143749014]
+custom_minimum_size = Vector2(64, 64)
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=355854237]
+layout_mode = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="TextureRect" type="TextureRect" parent="MarginContainer" unique_id=1109707910]
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="qualitylabel" type="Label" parent="." unique_id=767437764]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+text = "x99"
