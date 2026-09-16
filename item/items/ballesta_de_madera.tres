@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3 uid="uid://bma77ale6uuuf"]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="2_povii"]
+[ext_resource type="PackedScene" uid="uid://bd7a6bar8ubbj" path="res://modelos/armas/ballesta/57.WEP.gltf" id="3_mod"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jn2gs"]
+atlas = ExtResource("2_povii")
+region = Rect2(128, 192, 32, 32)
+
+[resource]
+script = ExtResource("1_w2qoy")
+name = "ballesta de madera"
+description = "Una ballesta ligera de madera. Dispara un solo virote y requiere recarga manual.
+[nota: sin disparo asignado todavia, solo prueba el equipamiento]"
+item_type = 2
+texture = SubResource("AtlasTexture_jn2gs")
+model_3d = ExtResource("3_mod")
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

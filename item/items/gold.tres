@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3 uid="uid://b42p2o4r36ab0"]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="2_0366c"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0366c"]
+atlas = ExtResource("2_0366c")
+region = Rect2(320, 384, 32, 32)
+
+[resource]
+script = ExtResource("1_w2qoy")
+name = "monedas de oro"
+description = "Dinero para comprar cosas en el futuro."
+stackable = true
+texture = SubResource("AtlasTexture_0366c")
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

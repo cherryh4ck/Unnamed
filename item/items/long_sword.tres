@@ -2,8 +2,9 @@
 
 [ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
 [ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="2_d8la8"]
+[ext_resource type="PackedScene" uid="uid://bhqguv10x2hmk" path="res://modelos/armas/espada larga/1A.WEP.gltf" id="3_mod"]
 
-[sub_resource type="AtlasTexture" id="AtlasTexture_pmv53"]
+[sub_resource type="AtlasTexture" id="AtlasTexture_d8la8"]
 atlas = ExtResource("2_d8la8")
 region = Rect2(64, 160, 32, 32)
 
@@ -11,6 +12,8 @@ region = Rect2(64, 160, 32, 32)
 script = ExtResource("1_w2qoy")
 name = "espada larga"
 description = "espada pesada, golpes lentos pero con gran daño
-[nota: la espada no tiene stats, ni esta el modelo]"
-texture = SubResource("AtlasTexture_pmv53")
+[nota: la espada no tiene stats asignadas todavia]"
+item_type = 1
+texture = SubResource("AtlasTexture_d8la8")
+model_3d = ExtResource("3_mod")
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

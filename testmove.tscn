@@ -6,6 +6,19 @@
 [ext_resource type="Script" uid="uid://77pliolk7nmf" path="res://scripts/player/Stats.gd" id="3_fdmbg"]
 [ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://scripts/camera/camera_rig.gd" id="4_fdmbg"]
 [ext_resource type="PackedScene" uid="uid://2nhmkm3uda36" path="res://inventory/inventory.tscn" id="6_u08vo"]
+[ext_resource type="PackedScene" uid="uid://cty450xe3poj8" path="res://item/pickup.tscn" id="7_pick"]
+[ext_resource type="Resource" uid="uid://bvmvr4rpclim7" path="res://item/items/long_sword.tres" id="8_sword"]
+[ext_resource type="Resource" uid="uid://blk64uvgsle8p" path="res://item/items/potion_of_health.tres" id="9_pot"]
+[ext_resource type="Resource" uid="uid://b42p2o4r36ab0" path="res://item/items/gold.tres" id="10_gold"]
+[ext_resource type="Resource" uid="uid://bma77ale6uuuf" path="res://item/items/ballesta_de_madera.tres" id="11_cross"]
+[ext_resource type="Script" uid="uid://b10dwyj44opve" path="res://scripts/player/weapon_hand.gd" id="12_wpnh"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61a2" path="res://item/items/ballesta_pesada.tres" id="13_cbpes"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61b3" path="res://item/items/espada_ligera.tres" id="14_eslig"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61c4" path="res://item/items/hacha_grande.tres" id="15_hagr"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61d5" path="res://item/items/martillo_grande.tres" id="16_magr"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61e6" path="res://item/items/escudo_ligero.tres" id="17_eslig"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61f7" path="res://item/items/escudo_mid.tres" id="18_esmid"]
+[ext_resource type="Resource" uid="uid://bvckphn5p61g8" path="res://item/items/escudo_pesado.tres" id="19_esp"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -83,6 +96,9 @@ offset_right = 39.0
 offset_bottom = 45.0
 text = "Nivel:"
 
+[node name="WeaponHand" type="Node3D" parent="CharacterBody3D/Player" unique_id=2073905166]
+script = ExtResource("12_wpnh")
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="CharacterBody3D" unique_id=10504279]
 transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 0, 236.3157, 0)
 shape = SubResource("CapsuleShape3D_g4v7s")
@@ -119,8 +135,72 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="inventory" parent="UI/inventoryInterface" unique_id=892027053 instance=ExtResource("6_u08vo")]
-layout_mode = 0
-offset_left = 177.0
-offset_top = 595.0
-offset_right = 217.0
-offset_bottom = 635.0
+layout_mode = 1
+
+[node name="PickupSword" parent="." unique_id=1234567890 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 110.42383, 5, 644.3662)
+item_data = ExtResource("8_sword")
+
+[node name="PickupPotion1" parent="." unique_id=1234567891 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 260, 5, 120)
+item_data = ExtResource("9_pot")
+
+[node name="PickupPotion2" parent="." unique_id=1234567892 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 320, 5, 40)
+item_data = ExtResource("9_pot")
+
+[node name="PickupPotion3" parent="." unique_id=1234567893 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 280, 5, -100)
+item_data = ExtResource("9_pot")
+
+[node name="PickupGold1" parent="." unique_id=1234567894 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 5, 80)
+item_data = ExtResource("10_gold")
+
+[node name="PickupGold2" parent="." unique_id=1234567895 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -340, 5, 10)
+item_data = ExtResource("10_gold")
+
+[node name="PickupGold3" parent="." unique_id=1234567896 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -320, 5, -60)
+item_data = ExtResource("10_gold")
+
+[node name="PickupGold4" parent="." unique_id=1234567897 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -360, 5, -120)
+item_data = ExtResource("10_gold")
+
+[node name="PickupGold5" parent="." unique_id=1234567898 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 5, -180)
+item_data = ExtResource("10_gold")
+
+[node name="PickupBallesta" parent="." unique_id=1234567899 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 639.60046, 5, 635.83936)
+item_data = ExtResource("11_cross")
+
+[node name="PickupBallestaPesada" parent="." unique_id=1234600001 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1096.56, 5, 613.5116)
+item_data = ExtResource("13_cbpes")
+
+[node name="PickupEspadaLigera" parent="." unique_id=1234600002 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -304.50244, 5, 672.0178)
+item_data = ExtResource("14_eslig")
+
+[node name="PickupHachaGrande" parent="." unique_id=1234600003 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -584.803, 5, 802.1553)
+item_data = ExtResource("15_hagr")
+
+[node name="PickupMartilloGrande" parent="." unique_id=1234600004 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -105.876465, 5, 625.093)
+item_data = ExtResource("16_magr")
+
+[node name="PickupEscudoLigero" parent="." unique_id=1234600005 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -805.72943, 5, 600.0868)
+item_data = ExtResource("17_eslig")
+
+[node name="PickupEscudoMid" parent="." unique_id=1234600006 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 344.26233, 5, 639.3748)
+item_data = ExtResource("18_esmid")
+
+[node name="PickupEscudoPesado" parent="." unique_id=1234600007 instance=ExtResource("7_pick")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -449.52832, 5, 520.4164)
+item_data = ExtResource("19_esp")

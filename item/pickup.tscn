@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cty450xe3poj8"]
+
+[ext_resource type="Script" uid="uid://doukb8mg66oo8" path="res://item/pickup.gd" id="1_pick"]
+[ext_resource type="AudioStream" uid="uid://ckh1g1l423yc1" path="res://sounds/interact/magic_find.wav" id="2_snd"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 120.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+transparency = 1
+albedo_color = Color(0.95, 0.8, 0.25, 1)
+emission_enabled = true
+
+[sub_resource type="SphereMesh" id="SphereMesh_1"]
+radius = 60.0
+height = 120.0
+
+[node name="pickup" type="Area3D" unique_id=1892877983]
+script = ExtResource("1_pick")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=684433337]
+shape = SubResource("SphereShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1448976072]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
+material_override = SubResource("StandardMaterial3D_1")
+mesh = SubResource("SphereMesh_1")
+
+[node name="ModelHolder" type="Node3D" parent="." unique_id=1492333544]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
+visible = false
+
+[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=826228100]
+stream = ExtResource("2_snd")

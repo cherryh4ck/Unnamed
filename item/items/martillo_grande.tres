@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3 uid="uid://bvckphn5p61d5"]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="3_j3ayo"]
+[ext_resource type="PackedScene" uid="uid://03rw40yqj1rv" path="res://modelos/armas/martillo grande/41.WEP.gltf" id="3_mod"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ijx45"]
+atlas = ExtResource("3_j3ayo")
+region = Rect2(128, 320, 32, 32)
+
+[resource]
+script = ExtResource("1_w2qoy")
+name = "martillo grande"
+item_type = 2
+texture = SubResource("AtlasTexture_ijx45")
+model_3d = ExtResource("3_mod")
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

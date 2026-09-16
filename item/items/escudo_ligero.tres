@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3 uid="uid://bvckphn5p61e6"]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
+[ext_resource type="PackedScene" uid="uid://bnf56764vhntl" path="res://modelos/armas/escudo ligero/60.WEP.gltf" id="3_mod"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="3_wmx0y"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dtglc"]
+atlas = ExtResource("3_wmx0y")
+region = Rect2(0, 192, 32, 32)
+
+[resource]
+script = ExtResource("1_w2qoy")
+name = "escudo ligero"
+item_type = 2
+texture = SubResource("AtlasTexture_dtglc")
+model_3d = ExtResource("3_mod")
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

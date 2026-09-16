@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3 uid="uid://bvckphn5p61c4"]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="3_eiu5c"]
+[ext_resource type="PackedScene" uid="uid://cgjkh40qw4st1" path="res://modelos/armas/hacha grande/36.WEP.gltf" id="3_mod"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4kxr6"]
+atlas = ExtResource("3_eiu5c")
+region = Rect2(352, 160, 32, 32)
+
+[resource]
+script = ExtResource("1_w2qoy")
+name = "hacha grande"
+item_type = 1
+texture = SubResource("AtlasTexture_4kxr6")
+model_3d = ExtResource("3_mod")
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

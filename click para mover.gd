@@ -1,22 +1,28 @@
 extends CharacterBody3D
 
-@export var ClickReference: NodePath = NodePath("../ClickReference")
-@onready var click_reference: Node3D = get_node_or_null(ClickReference)
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
-var speed: float = 700.0
+var speed: float = 600.0
+var heavy_speed: float = 300.0
+
 
 func _ready() -> void:
 	print("jugador listo")
 	pass
 
 
-func _physics_process(_delta: float) -> void:
+func _process(_delta: float) -> void:
 	print("finished? ", nav_agent.is_navigation_finished())
 	if nav_agent.is_navigation_finished():
 		return
 
-	move_to_point(speed)
+	move_to_point(_current_speed())
+
+
+func _current_speed() -> float:
+	if inventory_data.is_heavy_load():
+		return heavy_speed
+	return speed
 
 
 func move_to_point(move_speed: float) -> void:
@@ -42,7 +48,6 @@ func _input(event: InputEvent) -> void:
 		var ray_query = PhysicsRayQueryParameters3D.new()
 		ray_query.from = from
 		ray_query.to = to
-		ray_query.exclude = [self.get_rid()]
 		var result = space.intersect_ray(ray_query)
 		print("resultado raycast: ", result)
 
@@ -50,8 +55,5 @@ func _input(event: InputEvent) -> void:
 			print("el rayo no pego en nada")
 			return
 
-		if click_reference:
-			click_reference.global_position = result.position
 		nav_agent.target_position = result.position
 		print("target seteado: ", nav_agent.target_position)
-	

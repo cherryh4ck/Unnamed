@@ -2,18 +2,84 @@
 
 [ext_resource type="Script" uid="uid://bpn3r626d28v" path="res://inventory/inventory.gd" id="1_62wf1"]
 
-[node name="inventory" type="PanelContainer" unique_id=892027053]
-offset_right = 40.0
-offset_bottom = 40.0
+[node name="inventory" type="PanelContainer"]
+visible = false
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -260.0
+offset_right = 320.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_62wf1")
 
-[node name="MarginContainer" type="MarginContainer" parent="." unique_id=418651747]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
 
-[node name="itemGrid" type="GridContainer" parent="MarginContainer" unique_id=1850681833]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
 layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.87, 0.6, 1)
+text = "INVENTARIO"
+
+[node name="HeaderSpacer" type="Control" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Hint" type="Label" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+text = "clic: ordenar | clic der: soltar | arma: equipar | I: abrir/cerrar"
+
+[node name="EquipmentBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="EquipmentLabel" type="Label" parent="MarginContainer/VBoxContainer/EquipmentBar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "EQUIPOS:"
+
+[node name="ItemGrid" type="GridContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
 columns = 6
+alignment = 1
+
+[node name="Footer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ErrorMessage" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 14
+text = "muy pesado para equipar"
+visible = false
+
+[node name="ItemName" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.9, 0.6, 1)
+text = ""
+
+[node name="ItemDescription" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+text = ""
+autowrap_mode = 2

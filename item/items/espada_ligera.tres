@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3 uid="uid://bvckphn5p61b3"]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="3_3ee1x"]
+[ext_resource type="PackedScene" uid="uid://dbxwcc11arnq" path="res://modelos/armas/espada ligera/15.WEP.gltf" id="3_mod"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_q8i4l"]
+atlas = ExtResource("3_3ee1x")
+region = Rect2(160, 160, 32, 32)
+
+[resource]
+script = ExtResource("1_w2qoy")
+name = "espada ligera"
+item_type = 1
+texture = SubResource("AtlasTexture_q8i4l")
+model_3d = ExtResource("3_mod")
+metadata/_custom_type_script = "uid://buopyt3nqybl3"
