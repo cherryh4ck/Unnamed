@@ -7,12 +7,14 @@ extends CharacterBody3D
 var speed: float = 700.0
 
 func _ready() -> void:
+	click_reference.hide()
 	print("Jugador listo")
 	pass
 
 
 func _physics_process(_delta: float) -> void:
 	if nav_agent.is_navigation_finished():
+		click_reference.hide()
 		return
 
 	move_to_point(speed)
@@ -46,5 +48,6 @@ func _input(event: InputEvent) -> void:
 
 		if click_reference:
 			click_reference.global_position = result.position
+			click_reference.show()
 		nav_agent.target_position = result.position
 	
