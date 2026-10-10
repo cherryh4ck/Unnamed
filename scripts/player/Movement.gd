@@ -21,7 +21,6 @@ func _physics_process(_delta: float) -> void:
 func move_to_point(move_speed: float) -> void:
 	var target_pos = nav_agent.get_next_path_position()
 	var direction = global_position.direction_to(target_pos)
-	print("moviendo hacia: ", target_pos, " direccion: ", direction)
 
 	velocity = direction * move_speed
 	move_and_slide()
