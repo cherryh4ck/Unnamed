@@ -1,6 +1,6 @@
 extends CharacterBody3D
 
-@export var ClickReference: NodePath = NodePath("../../../ClickReference")
+@export var ClickReference: NodePath = NodePath("../ClickReference")
 @onready var click_reference: Node3D = get_node_or_null(ClickReference)
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 
