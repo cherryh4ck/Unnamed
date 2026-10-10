@@ -6,18 +6,53 @@ extends CharacterBody3D
 
 var speed: float = 700.0
 
+var sonidos_pasos: Array[AudioStream] = []
+var reproductor_pasos: AudioStreamPlayer3D
+var intervalo_pasos: float = 0.4
+var tiempo_paso: float = 0.4
+var ultimo_paso: int = -1
+
 func _ready() -> void:
 	click_reference.hide()
+
+	for i in range(1, 8):
+		var ruta = "res://sounds/ambient/footsteps/footstep%d.wav" % i
+		if ResourceLoader.exists(ruta):
+			sonidos_pasos.append(load(ruta))
+
+	reproductor_pasos = AudioStreamPlayer3D.new()
+	reproductor_pasos.volume_db = 12.0
+	add_child(reproductor_pasos)
+
 	print("Jugador listo")
 	pass
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if nav_agent.is_navigation_finished():
 		click_reference.hide()
+		tiempo_paso = intervalo_pasos
 		return
 
 	move_to_point(speed)
+
+	tiempo_paso += delta
+	if tiempo_paso >= intervalo_pasos:
+		tiempo_paso = 0.0
+		reproducir_paso()
+
+
+func reproducir_paso() -> void:
+	if sonidos_pasos.is_empty():
+		return
+
+	var indice = randi() % sonidos_pasos.size()
+	if sonidos_pasos.size() > 1 and indice == ultimo_paso:
+		indice = (indice + 1) % sonidos_pasos.size()
+	ultimo_paso = indice
+
+	reproductor_pasos.stream = sonidos_pasos[indice]
+	reproductor_pasos.play()
 
 
 func move_to_point(move_speed: float) -> void:
@@ -50,4 +85,3 @@ func _input(event: InputEvent) -> void:
 			click_reference.global_position = result.position
 			click_reference.show()
 		nav_agent.target_position = result.position
-	
