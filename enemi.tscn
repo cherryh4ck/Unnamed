@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://bdla86fjtym0a"]
+
+[ext_resource type="Script" uid="uid://duuwlunetjdfg" path="res://enemi.gd" id="1_ajwtk"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ajwtk"]
+albedo_color = Color(1, 0, 0, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_o85qs"]
+material = SubResource("StandardMaterial3D_ajwtk")
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_byyiu"]
+
+[node name="Enemi" type="CharacterBody3D" unique_id=498597718]
+script = ExtResource("1_ajwtk")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1131776206]
+transform = Transform3D(40, 0, 0, 0, 40, 0, 0, 0, 40, 0, 0.9077282, 0)
+mesh = SubResource("CapsuleMesh_o85qs")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=757494447]
+transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 1, 0)
+shape = SubResource("CapsuleShape3D_byyiu")

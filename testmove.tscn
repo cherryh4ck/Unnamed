@@ -19,6 +19,8 @@
 [ext_resource type="Resource" uid="uid://bvckphn5p61e6" path="res://item/items/escudo_ligero.tres" id="17_eslig"]
 [ext_resource type="Resource" uid="uid://bvckphn5p61f7" path="res://item/items/escudo_mid.tres" id="18_esmid"]
 [ext_resource type="Resource" uid="uid://bvckphn5p61g8" path="res://item/items/escudo_pesado.tres" id="19_esp"]
+[ext_resource type="PackedScene" uid="uid://bdla86fjtym0a" path="res://enemi.tscn" id="20_fcaxp"]
+[ext_resource type="PackedScene" uid="uid://c7yh7m2fqvdpw" path="res://zona_spawn.tscn" id="20_ooo04"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -48,6 +50,9 @@ albedo_color = Color(0.6541547, 0.9851536, 0.4236848, 1)
 
 [sub_resource type="CylinderMesh" id="CylinderMesh_g4v7s"]
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_fcaxp"]
+size = Vector3(300, 1, 300)
+
 [node name="Node3D" type="Node3D" unique_id=1195584055]
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="." unique_id=1842858098]
@@ -65,7 +70,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.31765863)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.31485733)
 shape = SubResource("BoxShape3D_g4v7s")
 
-[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=707424062]
+[node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=707424062 groups=["player"]]
 script = ExtResource("1_3b3oy")
 
 [node name="Player" parent="CharacterBody3D" unique_id=616383495 instance=ExtResource("2_mu3a7")]
@@ -204,3 +209,12 @@ item_data = ExtResource("18_esmid")
 [node name="PickupEscudoPesado" parent="." unique_id=1234600007 instance=ExtResource("7_pick")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -449.52832, 5, 520.4164)
 item_data = ExtResource("19_esp")
+
+[node name="ZonaSpawn" parent="." unique_id=2059898822 instance=ExtResource("20_ooo04")]
+transform = Transform3D(0.9980462, 0, 0.06248017, 0, 1, 0, -0.06248017, 0, 0.9980462, -1.124, 1, 1628.2366)
+enemy_scene = ExtResource("20_fcaxp")
+
+[node name="CollisionShape3D" parent="ZonaSpawn/Area3D" parent_id_path=PackedInt32Array(2059898822, 52537327) index="0" unique_id=141420700]
+shape = SubResource("BoxShape3D_fcaxp")
+
+[editable path="ZonaSpawn"]

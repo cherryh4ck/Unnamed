@@ -1,0 +1,16 @@
+[gd_scene format=3 uid="uid://c7yh7m2fqvdpw"]
+
+[ext_resource type="Script" uid="uid://d1ax00m2w0ooy" path="res://zona_spawn.gd" id="1_r4eg1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_o85qs"]
+
+[node name="ZonaSpawn" type="Node3D" unique_id=2059898822]
+transform = Transform3D(0.9980462, 0, 0.06248017, 0, 1, 0, -0.06248017, 0, 0.9980462, 0, 0, 0)
+script = ExtResource("1_r4eg1")
+
+[node name="Area3D" type="Area3D" parent="." unique_id=52537327]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D" unique_id=141420700]
+shape = SubResource("BoxShape3D_o85qs")
+
+[node name="Timer" type="Timer" parent="." unique_id=940886028]
