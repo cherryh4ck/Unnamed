@@ -17,6 +17,8 @@ const BASE_ITEMS := [
 	"res://item/items/escudo_ligero.tres",
 	"res://item/items/escudo_mid.tres",
 	"res://item/items/escudo_pesado.tres",
+	"res://item/items/ballesta_de_madera.tres",
+	"res://item/items/ballesta_pesada.tres",
 ]
 
 ## Peso de cada rareza (normal, magico, raro, unico).

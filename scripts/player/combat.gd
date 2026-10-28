@@ -7,6 +7,7 @@ signal attack_started(interval: float)
 signal skill_animation(anim_name: String, speed: float)
 
 const FIREBALL := preload("res://scripts/skills/fireball.gd")
+const BOLT := preload("res://scripts/skills/bolt.gd")
 ## Tras usar una habilidad, el ataque basico espera al menos este tiempo.
 const SKILL_LOCKOUT: float = 0.5
 
@@ -128,8 +129,22 @@ func _deliver_hit(target: Node3D, delay: float) -> void:
 		return
 	var to_target: Vector3 = target.global_position - character.global_position
 	to_target.y = 0.0
+	var hit: Dictionary = player_stats.roll_damage()
+	if player_stats.is_ranged():
+		_shoot_bolt(to_target.normalized(), hit)
+		return
 	if to_target.length() > character.attack_range * REACH_TOLERANCE:
 		return
-	var hit: Dictionary = player_stats.roll_damage()
 	target.take_damage(hit.amount, hit.crit)
 	sfx.play_at("hit", target.global_position)
+
+
+func _shoot_bolt(direction: Vector3, hit: Dictionary) -> void:
+	var bolt: Node3D = BOLT.new()
+	bolt.direction = direction
+	bolt.damage = hit.amount
+	bolt.crit = hit.crit
+	bolt.max_range = character.ranged_attack_range + 400.0
+	character.get_parent().add_child(bolt)
+	bolt.global_position = character.global_position + Vector3.UP * 230.0 + direction * 60.0
+	sfx.play_at("bow_shoot", character.global_position)

@@ -11,8 +11,7 @@ region = Rect2(128, 192, 32, 32)
 [resource]
 script = ExtResource("1_w2qoy")
 name = "ballesta de madera"
-description = "Una ballesta ligera de madera. Dispara un solo virote y requiere recarga manual.
-[nota: sin disparo asignado todavia, solo prueba el equipamiento]"
+description = "Una ballesta ligera de madera. Equipada, tus ataques básicos disparan virotes a distancia."
 item_type = 2
 texture = SubResource("AtlasTexture_jn2gs")
 model_3d = ExtResource("3_mod")

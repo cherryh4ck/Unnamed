@@ -11,6 +11,7 @@ region = Rect2(96, 96, 32, 32)
 [resource]
 script = ExtResource("1_w2qoy")
 name = "ballesta pesada"
+description = "Lenta pero potente. Equipada, tus ataques básicos disparan virotes a distancia."
 item_type = 2
 texture = SubResource("AtlasTexture_y41ac")
 model_3d = ExtResource("3_mod")

@@ -94,6 +94,10 @@ func _refresh() -> void:
 
 
 func _equipped_weapon() -> Itemdata:
+	# Una ballesta equipada se muestra en la mano (es con lo que se ataca).
+	var special: Slotdata = inventory_data.equipment[inventory_data.SPECIAL_EQUIP]
+	if special and special.item_data and special.item_data.is_ranged() and special.item_data.model_3d:
+		return special.item_data
 	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
 		var slot: Slotdata = inventory_data.equipment[equip_index]
 		if slot and slot.item_data and slot.item_data.model_3d:

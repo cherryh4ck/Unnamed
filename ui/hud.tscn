@@ -142,6 +142,7 @@ render_target_update_mode = 4
 
 [node name="PortraitCamera" type="Camera3D" parent="Root/BottomBar/HBox/PortraitFrame/Portrait/SubViewport"]
 unique_name_in_owner = true
+cull_mask = 1048573
 environment = SubResource("Environment_portrait")
 fov = 32.0
 near = 10.0

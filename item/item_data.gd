@@ -115,6 +115,11 @@ func has_damage() -> bool:
 	return max_damage > 0
 
 
+## Las armas del slot especial que hacen daño (ballestas) atacan a distancia.
+func is_ranged() -> bool:
+	return item_type == ItemType.SPECIAL and has_damage()
+
+
 ## Lineas de stats para mostrar en el inventario / tooltip.
 func get_stats_lines() -> PackedStringArray:
 	var lines := PackedStringArray()

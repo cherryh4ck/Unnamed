@@ -194,9 +194,19 @@ func get_health_regen() -> float:
 	return get_attribute("vitalidad") * REGEN_PER_VITALITY + get_equipment_bonus("regeneracion")
 
 
+## Arma con la que se ataca: si hay una ballesta equipada tiene prioridad
+## (ataque a distancia); si no, el arma cuerpo a cuerpo.
 func get_weapon() -> Itemdata:
+	var special: Itemdata = inventory_data.get_equipped(inventory_data.SPECIAL_EQUIP)
+	if special and special.is_ranged():
+		return special
 	var weapon: Itemdata = inventory_data.get_equipped(inventory_data.MELEE_EQUIP)
 	return weapon if weapon and weapon.has_damage() else null
+
+
+func is_ranged() -> bool:
+	var weapon: Itemdata = get_weapon()
+	return weapon != null and weapon.is_ranged()
 
 
 func get_damage_multiplier() -> float:

@@ -10,6 +10,8 @@ signal hovered_enemy_changed(enemy: Node3D)
 var speed: float = 700.0
 ## Distancia (centro a centro, en el plano) desde la que el jugador le pega a un enemigo.
 @export var attack_range: float = 260.0
+## Distancia de ataque con una ballesta equipada.
+@export var ranged_attack_range: float = 1300.0
 ## Segundos hasta reaparecer despues de morir.
 @export var respawn_delay: float = 4.0
 
@@ -136,7 +138,9 @@ func _update_attack_target(delta: float) -> bool:
 
 	var to_target: Vector3 = target_enemy.global_position - global_position
 	to_target.y = 0.0
-	if to_target.length() <= attack_range:
+	# El Golpe Brutal siempre necesita estar cuerpo a cuerpo.
+	var reach: float = attack_range if pending_skill >= 0 else get_attack_range()
+	if to_target.length() <= reach:
 		stop_moving()
 		_face(to_target, delta)
 		if pending_skill >= 0:
@@ -164,6 +168,10 @@ func _update_target_pickup() -> void:
 		target_pickup.get_item()
 		target_pickup = null
 		stop_moving()
+
+
+func get_attack_range() -> float:
+	return ranged_attack_range if player_stats.is_ranged() else attack_range
 
 
 func _face(direction: Vector3, delta: float) -> void:
