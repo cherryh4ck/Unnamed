@@ -179,11 +179,13 @@ func get_attribute(key: String) -> int:
 
 func get_equipment_bonus(key: String) -> float:
 	var total: float = 0.0
+	var equipped: Array = []
 	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
 		var item: Itemdata = inventory_data.get_equipped(equip_index)
 		if item:
 			total += item.get_bonus(key)
-	return total
+			equipped.append(item)
+	return total + ItemSets.active_bonus(key, equipped)
 
 
 func get_max_health() -> float:

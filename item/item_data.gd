@@ -6,15 +6,16 @@ class_name Itemdata
 # (Godot guarda el enum como numero).
 enum ItemType { GENERIC, MELEE_WEAPON, SPECIAL, POTION, GOLD }
 enum WeightClass { LIGHT, MEDIUM, HEAVY }
-enum Rarity { NORMAL, MAGIC, RARE, UNIQUE }
+enum Rarity { NORMAL, MAGIC, RARE, UNIQUE, SET }
 
 const WEIGHT_NAMES := ["ligero", "medio", "pesado"]
-const RARITY_NAMES := ["Normal", "Mágico", "Raro", "Único"]
+const RARITY_NAMES := ["Normal", "Mágico", "Raro", "Único", "De set"]
 const RARITY_COLORS := [
 	Color(0.9, 0.88, 0.82),
 	Color(0.45, 0.62, 1.0),
 	Color(1.0, 0.85, 0.3),
 	Color(0.95, 0.55, 0.15),
+	Color(0.35, 0.9, 0.35),
 ]
 ## Bonificaciones posibles: clave -> texto con %s para el valor.
 const BONUS_TEXT := {
@@ -56,6 +57,10 @@ const BONUS_TEXT := {
 @export var unique_name: String = ""
 ## clave de BONUS_TEXT -> valor.
 @export var bonuses: Dictionary = {}
+## Id del set al que pertenece (ver scripts/items/item_sets.gd). Vacio = ninguno.
+@export var set_id: String = ""
+## Ruta del .tres base de un item generado (para guardar la partida).
+@export var base_path: String = ""
 
 @export_group("Comercio")
 ## Precio base en oro (para el comerciante, mas adelante).
@@ -91,8 +96,8 @@ func get_bonus_lines() -> PackedStringArray:
 
 ## Ej: "Arma mágica", "Escudo raro" (para el tooltip).
 func get_type_line() -> String:
-	const FEMININE := ["", "mágica", "rara", "única"]
-	const MASCULINE := ["", "mágico", "raro", "único"]
+	const FEMININE := ["", "mágica", "rara", "única", "de set"]
+	const MASCULINE := ["", "mágico", "raro", "único", "de set"]
 	match item_type:
 		ItemType.MELEE_WEAPON:
 			return ("Arma " + FEMININE[rarity]).strip_edges()

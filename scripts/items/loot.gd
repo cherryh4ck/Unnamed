@@ -21,8 +21,8 @@ const BASE_ITEMS := [
 	"res://item/items/ballesta_pesada.tres",
 ]
 
-## Peso de cada rareza (normal, magico, raro, unico).
-const RARITY_WEIGHTS := [60.0, 28.0, 10.0, 2.0]
+## Peso de cada rareza (normal, magico, raro, unico, set).
+const RARITY_WEIGHTS := [60.0, 28.0, 10.0, 2.0, 3.0]
 ## Cantidad de bonificaciones por rareza.
 const BONUS_COUNT := [Vector2i(0, 0), Vector2i(1, 2), Vector2i(3, 4), Vector2i(4, 4)]
 ## Mejora de daño/defensa base por rareza.
@@ -64,8 +64,12 @@ static func roll_enemy_drops(data: EnemyData, level: int) -> Array[Dictionary]:
 
 ## Crea un item aleatorio de nivel item_level a partir de un item base.
 static func generate_item(item_level: int, forced_rarity: int = -1) -> Itemdata:
-	var item: Itemdata = load(BASE_ITEMS.pick_random()).duplicate()
 	var rarity: int = forced_rarity if forced_rarity >= 0 else _roll_rarity()
+	if rarity == Itemdata.Rarity.SET:
+		return ItemSets.generate_piece(item_level)
+	var base_path: String = BASE_ITEMS.pick_random()
+	var item: Itemdata = load(base_path).duplicate()
+	item.base_path = base_path
 	item.rarity = rarity
 
 	var mult: float = BASE_STAT_MULT[rarity]

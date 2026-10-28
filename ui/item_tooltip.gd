@@ -8,6 +8,8 @@ const WIDTH: float = 240.0
 const STAT_COLOR := Color(0.92, 0.9, 0.85)
 const BONUS_COLOR := Color(0.5, 0.68, 1.0)
 const DIM_COLOR := Color(0.6, 0.56, 0.48)
+const SET_COLOR := Color(0.35, 0.9, 0.35)
+const SET_OFF_COLOR := Color(0.4, 0.45, 0.4)
 
 
 static func build(item: Itemdata, quantity: int = 1, hint: String = "") -> Control:
@@ -33,6 +35,9 @@ static func build(item: Itemdata, quantity: int = 1, hint: String = "") -> Contr
 		for line in bonuses:
 			_add(box, line, BONUS_COLOR, 15)
 
+	if not item.set_id.is_empty():
+		_add_set_info(box, item)
+
 	if not item.description.is_empty():
 		_add_separator(box)
 		var desc: Label = _add(box, item.description, DIM_COLOR, 13)
@@ -45,6 +50,28 @@ static func build(item: Itemdata, quantity: int = 1, hint: String = "") -> Contr
 	if not hint.is_empty():
 		_add(box, hint, DIM_COLOR, 12)
 	return box
+
+
+# Nombre del set, piezas (las equipadas en verde) y bonus del set completo.
+static func _add_set_info(box: VBoxContainer, item: Itemdata) -> void:
+	var set_info: Dictionary = ItemSets.get_set(item.set_id)
+	if set_info.is_empty():
+		return
+	var equipped_names: Array = []
+	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
+		var equipped: Itemdata = inventory_data.get_equipped(equip_index)
+		if equipped and equipped.set_id == item.set_id:
+			equipped_names.append(equipped.unique_name)
+	var complete: bool = equipped_names.size() >= set_info.pieces.size()
+
+	_add_separator(box)
+	_add(box, "%s (%d/%d)" % [set_info.name, equipped_names.size(), set_info.pieces.size()], SET_COLOR, 15)
+	for piece_name in set_info.pieces.values():
+		_add(box, "  " + piece_name, SET_COLOR if piece_name in equipped_names else SET_OFF_COLOR, 13)
+	_add(box, "Set completo:", SET_COLOR if complete else SET_OFF_COLOR, 13)
+	for key in set_info.set_bonus:
+		var line: String = Itemdata.BONUS_TEXT.get(key, key + " %s") % str(roundi(set_info.set_bonus[key]))
+		_add(box, "  " + line, SET_COLOR if complete else SET_OFF_COLOR, 14)
 
 
 static func _add(box: VBoxContainer, text: String, color: Color, font_size: int) -> Label:
