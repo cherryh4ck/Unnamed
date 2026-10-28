@@ -43,7 +43,8 @@ size_flags_horizontal = 3
 [node name="Hint" type="Label" parent="MarginContainer/VBoxContainer/Header"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-text = "clic: ordenar | clic der: soltar | arma: equipar | I: abrir/cerrar"
+theme_override_font_sizes/font_size = 13
+text = "clic: mover · doble clic: equipar · clic der: tirar · I: cerrar"
 
 [node name="EquipmentBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -72,14 +73,3 @@ theme_override_colors/font_color = Color(0.95, 0.2, 0.2, 1)
 theme_override_font_sizes/font_size = 14
 text = "muy pesado para equipar"
 visible = false
-
-[node name="ItemName" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.95, 0.9, 0.6, 1)
-text = ""
-
-[node name="ItemDescription" type="Label" parent="MarginContainer/VBoxContainer/Footer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
-text = ""
-autowrap_mode = 2

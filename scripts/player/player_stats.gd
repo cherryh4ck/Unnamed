@@ -128,12 +128,26 @@ func spend_point(attribute: String) -> bool:
 
 # --- Stats derivados -------------------------------------------------------
 
+## Atributo base + lo que suma el equipo.
+func get_attribute(key: String) -> int:
+	return attributes[key] + roundi(get_equipment_bonus(key))
+
+
+func get_equipment_bonus(key: String) -> float:
+	var total: float = 0.0
+	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
+		var item: Itemdata = inventory_data.get_equipped(equip_index)
+		if item:
+			total += item.get_bonus(key)
+	return total
+
+
 func get_max_health() -> float:
-	return BASE_HEALTH + attributes.vitalidad * HEALTH_PER_VITALITY + (level - 1) * HEALTH_PER_LEVEL
+	return BASE_HEALTH + get_attribute("vitalidad") * HEALTH_PER_VITALITY 			+ (level - 1) * HEALTH_PER_LEVEL + get_equipment_bonus("vida")
 
 
 func get_health_regen() -> float:
-	return attributes.vitalidad * REGEN_PER_VITALITY
+	return get_attribute("vitalidad") * REGEN_PER_VITALITY + get_equipment_bonus("regeneracion")
 
 
 func get_weapon() -> Itemdata:
@@ -142,7 +156,7 @@ func get_weapon() -> Itemdata:
 
 
 func get_damage_multiplier() -> float:
-	return (1.0 + attributes.fuerza * 0.02) * _buff_product("damage_mult")
+	return (1.0 + get_attribute("fuerza") * 0.02 + get_equipment_bonus("daño_pct") / 100.0) 			* _buff_product("damage_mult")
 
 
 func get_min_damage() -> int:
@@ -161,15 +175,15 @@ func get_max_damage() -> int:
 func get_attack_speed() -> float:
 	var weapon: Itemdata = get_weapon()
 	var base: float = weapon.attack_speed if weapon else UNARMED_ATTACK_SPEED
-	return base * (1.0 + attributes.destreza * 0.01) * _buff_product("attack_speed_mult")
+	return base * (1.0 + get_attribute("destreza") * 0.01 + get_equipment_bonus("velocidad_pct") / 100.0) 			* _buff_product("attack_speed_mult")
 
 
 func get_crit_chance() -> float:
-	return BASE_CRIT_CHANCE + attributes.destreza * 0.2
+	return BASE_CRIT_CHANCE + get_attribute("destreza") * 0.2 + get_equipment_bonus("critico")
 
 
 func get_defense() -> int:
-	var total: float = attributes.vitalidad * 0.5 + _buff_sum("defense")
+	var total: float = get_attribute("vitalidad") * 0.5 + _buff_sum("defense") + get_equipment_bonus("defensa")
 	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
 		var item: Itemdata = inventory_data.get_equipped(equip_index)
 		if item:
@@ -184,7 +198,7 @@ func get_block_chance() -> float:
 
 ## Multiplicador del tiempo de recarga de habilidades (menos es mejor).
 func get_cooldown_multiplier() -> float:
-	return 100.0 / (100.0 + attributes.concentracion * 3.0)
+	return 100.0 / (100.0 + get_attribute("concentracion") * 3.0)
 
 
 # --- Combate ---------------------------------------------------------------
@@ -231,4 +245,6 @@ func respawn() -> void:
 
 
 func _on_equipment_changed(_equip_index: int) -> void:
+	health = minf(health, get_max_health())
+	health_changed.emit(health, get_max_health())
 	stats_changed.emit()

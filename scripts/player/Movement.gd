@@ -20,11 +20,17 @@ const CHASE_REPATH_DISTANCE: float = 40.0
 ## Distancia en la que se busca un enemigo para el Golpe Brutal si no hay ninguno marcado.
 const SKILL_AUTO_TARGET_RANGE: float = 700.0
 const SKILL_COUNT: int = 5
+## Distancia a la que se junta un item clickeado.
+const PICKUP_REACH: float = 170.0
+## Capa de fisica de los items en el piso (ver item/pickup.gd).
+const PICKUP_MASK: int = 4
 
 var target_enemy: Node3D = null
 var hovered_enemy: Node3D = null
 ## Habilidad de golpe esperando a que el objetivo quede en rango (-1 = ninguna).
 var pending_skill: int = -1
+## Item del piso al que se esta caminando para juntarlo.
+var target_pickup: Node3D = null
 var spawn_position: Vector3
 
 var _moving: bool = false
@@ -54,6 +60,7 @@ func _ready() -> void:
 
 	player_stats.died.connect(_on_died)
 	player_stats.leveled_up.connect(_on_leveled_up)
+	inventory_data.item_dropped.connect(_on_item_dropped)
 
 
 func is_moving() -> bool:
@@ -71,6 +78,7 @@ func _physics_process(delta: float) -> void:
 
 	if _update_attack_target(delta):
 		return
+	_update_target_pickup()
 
 	if nav_agent.is_navigation_finished():
 		if click_reference:
@@ -141,6 +149,20 @@ func _update_attack_target(delta: float) -> bool:
 	return false
 
 
+func _update_target_pickup() -> void:
+	if target_pickup == null:
+		return
+	if not is_instance_valid(target_pickup):
+		target_pickup = null
+		return
+	var offset: Vector3 = target_pickup.global_position - global_position
+	offset.y = 0.0
+	if offset.length() <= PICKUP_REACH:
+		target_pickup.get_item()
+		target_pickup = null
+		stop_moving()
+
+
 func _face(direction: Vector3, delta: float) -> void:
 	if direction.length() < 0.01:
 		return
@@ -164,9 +186,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _handle_click() -> void:
+	var pickup_hit: Dictionary = _raycast_mouse(PICKUP_MASK, true)
+	if not pickup_hit.is_empty():
+		target_pickup = pickup_hit.collider
+		target_enemy = null
+		pending_skill = -1
+		_holding_move = false
+		_move_to(target_pickup.global_position)
+		return
+
 	var result: Dictionary = _raycast_mouse()
 	if result.is_empty():
 		return
+	target_pickup = null
 
 	var enemy: Node3D = _enemy_from_collider(result.collider)
 	pending_skill = -1
@@ -277,7 +309,7 @@ func _enemy_from_collider(collider: Object) -> Node3D:
 	return null
 
 
-func _raycast_mouse() -> Dictionary:
+func _raycast_mouse(mask: int = 0xFFFFFFFF, areas_only: bool = false) -> Dictionary:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	if camera == null:
 		return {}
@@ -285,8 +317,11 @@ func _raycast_mouse() -> Dictionary:
 	var ray_length: float = 5000.0
 	var from: Vector3 = camera.project_ray_origin(mouse_pos)
 	var to: Vector3 = from + camera.project_ray_normal(mouse_pos) * ray_length
-	var ray_query := PhysicsRayQueryParameters3D.create(from, to)
+	var ray_query := PhysicsRayQueryParameters3D.create(from, to, mask)
 	ray_query.exclude = [get_rid()]
+	if areas_only:
+		ray_query.collide_with_areas = true
+		ray_query.collide_with_bodies = false
 	return get_world_3d().direct_space_state.intersect_ray(ray_query)
 
 
@@ -299,6 +334,12 @@ func take_damage(amount: float) -> void:
 		return
 	floating_text.spawn(head, str(maxi(1, roundi(result.amount))), Color(1.0, 0.3, 0.25), 22)
 	sfx.play_at("hit", global_position, -4.0)
+
+
+func _on_item_dropped(item: Itemdata, quantity: int) -> void:
+	var pickup: Node3D = Loot.spawn_pickup(get_parent(), global_position, item, quantity)
+	pickup.suspend_auto_pickup()
+	sfx.play("drag_weapon" if item.is_equipment() else "drag_potion")
 
 
 func _on_leveled_up(_new_level: int) -> void:

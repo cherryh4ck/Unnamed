@@ -21,6 +21,7 @@ func update(_equip_index: int = -1) -> void:
 		return
 	var equip_slot: Slotdata = inventory_data.equipment[equip_index] \
 			if equip_index >= 0 and equip_index < inventory_data.equipment.size() else null
+	tooltip_text = " " if equip_slot and equip_slot.item_data else ""
 	if equip_slot and equip_slot.item_data:
 		texture_rect.texture = equip_slot.item_data.texture
 		texture_rect.visible = true
@@ -29,6 +30,13 @@ func update(_equip_index: int = -1) -> void:
 		texture_rect.texture = null
 		texture_rect.visible = false
 		type_label.visible = true
+
+
+func _make_custom_tooltip(_for_text: String) -> Object:
+	var item: Itemdata = inventory_data.get_equipped(equip_index)
+	if item == null:
+		return null
+	return ItemTooltip.build(item, 1, "Clic: desequipar")
 
 
 func _gui_input(event: InputEvent) -> void:

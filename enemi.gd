@@ -349,6 +349,11 @@ func _alert_pack() -> void:
 				other._enter_chase()
 
 
+func _drop_loot() -> void:
+	for drop in Loot.roll_enemy_drops(data, level):
+		Loot.spawn_pickup(get_parent(), global_position, drop.item, drop.quantity)
+
+
 func set_highlighted(on: bool) -> void:
 	_highlighted = on
 	_refresh_overlay()
@@ -386,6 +391,7 @@ func _die() -> void:
 	var xp: int = get_xp_reward()
 	player_stats.add_xp(xp)
 	floating_text.spawn(global_position + Vector3.UP * 300.0, "+%d exp" % xp, Color(0.75, 0.65, 1.0), 18)
+	_drop_loot.call_deferred()
 	if _anim_player and _anim_player.has_animation(data.death_animation):
 		if data.death_reversed:
 			_anim_player.play_backwards(data.death_animation, 0.1)

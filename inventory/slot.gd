@@ -21,6 +21,8 @@ func update(changed_slot: int = -1) -> void:
 		return
 
 	var slot_data: Slotdata = inventory.slots[slot_index] if slot_index < inventory.slots.size() else null
+	# Con texto no vacio Godot muestra el tooltip (lo arma _make_custom_tooltip).
+	tooltip_text = " " if slot_data and slot_data.item_data else ""
 	if slot_data and slot_data.item_data:
 		texture_rect.texture = slot_data.item_data.texture
 		texture_rect.visible = true
@@ -36,8 +38,19 @@ func update(changed_slot: int = -1) -> void:
 
 	if slot_index == inventory.selected_slot:
 		modulate = Color(1.35, 1.35, 0.85)
+	elif slot_data and slot_data.item_data and slot_data.item_data.rarity != Itemdata.Rarity.NORMAL:
+		# Tinte suave del color de la rareza en el fondo del slot.
+		modulate = Color.WHITE.lerp(slot_data.item_data.get_rarity_color(), 0.18)
 	else:
 		modulate = Color.WHITE
+
+
+func _make_custom_tooltip(_for_text: String) -> Object:
+	var slot_data: Slotdata = inventory.slots[slot_index]
+	if slot_data == null or slot_data.item_data == null:
+		return null
+	var hint: String = "Doble clic: equipar · Clic derecho: tirar" if slot_data.item_data.is_equipment() else "Clic derecho: tirar"
+	return ItemTooltip.build(slot_data.item_data, slot_data.quantity, hint)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -55,7 +68,7 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 		MOUSE_BUTTON_RIGHT:
 			if inventory.slots[slot_index]:
-				inventory.remove_slot(slot_index)
+				inventory.drop_slot(slot_index)
 				accept_event()
 
 

@@ -31,6 +31,7 @@ window/stretch/aspect="expand"
 [gui]
 
 theme/custom="res://ui/theme/game_theme.tres"
+timers/tooltip_delay_sec=0.15
 
 [input]
 

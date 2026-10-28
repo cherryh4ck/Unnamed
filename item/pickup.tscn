@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://cty450xe3poj8"]
 
 [ext_resource type="Script" uid="uid://doukb8mg66oo8" path="res://item/pickup.gd" id="1_pick"]
-[ext_resource type="AudioStream" uid="uid://ckh1g1l423yc1" path="res://sounds/interact/magic_find.wav" id="2_snd"]
 
 [sub_resource type="SphereShape3D" id="SphereShape3D_1"]
 radius = 120.0
@@ -16,6 +15,7 @@ radius = 60.0
 height = 120.0
 
 [node name="pickup" type="Area3D" unique_id=1892877983]
+collision_layer = 4
 script = ExtResource("1_pick")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=684433337]
@@ -30,5 +30,16 @@ mesh = SubResource("SphereMesh_1")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 100, 0)
 visible = false
 
-[node name="AudioStreamPlayer" type="AudioStreamPlayer" parent="." unique_id=826228100]
-stream = ExtResource("2_snd")
+[node name="NameLabel" type="Label3D" parent="." unique_id=1730254418]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 200, 0)
+pixel_size = 0.0016
+billboard = 1
+no_depth_test = true
+fixed_size = true
+render_priority = 10
+outline_render_priority = 9
+modulate = Color(0.9, 0.88, 0.82, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "item"
+font_size = 30
+outline_size = 10

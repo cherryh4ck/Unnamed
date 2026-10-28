@@ -5,8 +5,6 @@ const EquipmentSlot := preload("res://inventory/equipment_slot.tscn")
 
 @onready var equipment_bar: HBoxContainer = $MarginContainer/VBoxContainer/EquipmentBar
 @onready var item_grid: GridContainer = $MarginContainer/VBoxContainer/ItemGrid
-@onready var item_name_label: Label = $MarginContainer/VBoxContainer/Footer/ItemName
-@onready var item_desc_label: Label = $MarginContainer/VBoxContainer/Footer/ItemDescription
 @onready var error_message_label: Label = $MarginContainer/VBoxContainer/Footer/ErrorMessage
 
 var _message_timer: float = 0.0
@@ -27,7 +25,6 @@ func _ready() -> void:
 		equipment_bar.add_child(equip_slot)
 		equip_slot.setup(equip_index)
 
-	inventory_data.hovered_changed.connect(_on_hovered_changed)
 	inventory_data.equip_rejected.connect(_on_equip_rejected)
 
 
@@ -77,22 +74,3 @@ func close_inventory() -> void:
 func _update_pause() -> void:
 	get_tree().paused = get_tree().get_nodes_in_group("pause_panels").any(
 		func(panel: Control) -> bool: return panel.visible)
-
-
-func _on_hovered_changed(slot_index: int) -> void:
-	if slot_index < 0 or slot_index >= inventory_data.slots.size():
-		item_name_label.text = ""
-		item_desc_label.text = ""
-		return
-
-	var slot_data: Slotdata = inventory_data.slots[slot_index]
-	if slot_data and slot_data.item_data:
-		var item: Itemdata = slot_data.item_data
-		item_name_label.text = item.get_display_name()
-		var lines: PackedStringArray = item.get_stats_lines()
-		if not item.description.is_empty():
-			lines.append(item.description)
-		item_desc_label.text = "\n".join(lines)
-	else:
-		item_name_label.text = ""
-		item_desc_label.text = ""

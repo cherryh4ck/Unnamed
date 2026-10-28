@@ -5,6 +5,7 @@ signal hovered_changed(slot_index: int)
 signal picked_up(item: Itemdata, quantity: int)
 signal equipment_changed(equip_index: int)
 signal equip_rejected(message: String)
+signal item_dropped(item: Itemdata, quantity: int)
 
 const SLOT_COUNT: int = 24
 
@@ -200,6 +201,13 @@ func remove_slot(index: int) -> Slotdata:
 		selected_slot = -1
 	inventory_changed.emit(-1)
 	return slot
+
+
+## Saca el item del inventario y avisa para que aparezca en el piso.
+func drop_slot(index: int) -> void:
+	var slot: Slotdata = remove_slot(index)
+	if slot and slot.item_data:
+		item_dropped.emit(slot.item_data, slot.quantity)
 
 
 func on_slot_clicked(index: int) -> void:

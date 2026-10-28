@@ -114,7 +114,10 @@ func refresh() -> void:
 	var points: int = player_stats.unspent_points
 	points_label.text = "Puntos: %d" % points if points > 0 else ""
 	for key in ATTRIBUTES:
-		_value_labels[key].text = str(player_stats.attributes[key])
+		var bonus: int = roundi(player_stats.get_equipment_bonus(key))
+		_value_labels[key].text = str(player_stats.get_attribute(key))
+		_value_labels[key].modulate = Color(0.55, 0.75, 1.0) if bonus > 0 else Color.WHITE
+		_value_labels[key].tooltip_text = "Base %d + equipo %d" % [player_stats.attributes[key], bonus] if bonus > 0 else ""
 		_plus_buttons[key].visible = points > 0
 
 	_derived_labels["Vida"].text = "%d / %d" % [ceili(player_stats.health), roundi(player_stats.get_max_health())]
