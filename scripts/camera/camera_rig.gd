@@ -14,6 +14,7 @@ var distancia_objetivo: float = 1200.0
 
 func _ready():
 	player_node = get_node(player)
+	global_position = player_node.global_position
 	distancia_objetivo = zoom[modo_actual]
 	distancia = distancia_objetivo
 	$Camera3D.projection = Camera3D.PROJECTION_PERSPECTIVE

@@ -8,6 +8,7 @@ const EquipmentSlot := preload("res://inventory/equipment_slot.tscn")
 @onready var error_message_label: Label = $MarginContainer/VBoxContainer/Footer/ErrorMessage
 
 var _message_timer: float = 0.0
+var _gold_label: Label
 
 
 func _ready() -> void:
@@ -39,15 +40,19 @@ func _build_gold_row() -> void:
 	coin.custom_minimum_size = Vector2(24, 24)
 	coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var gold_label := Label.new()
-	gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
-	gold_label.add_theme_font_size_override("font_size", 18)
+	_gold_label = Label.new()
+	_gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	_gold_label.add_theme_font_size_override("font_size", 18)
 	row.add_child(coin)
-	row.add_child(gold_label)
+	row.add_child(_gold_label)
 	$MarginContainer/VBoxContainer/Footer.add_child(row)
-	var update := func(amount: int) -> void: gold_label.text = "%d de oro" % amount
-	update.call(player_stats.gold)
-	player_stats.gold_changed.connect(update)
+	_on_gold_changed(player_stats.gold)
+	# Metodo y no lambda: asi la conexion se corta sola si se rearma la escena (F9).
+	player_stats.gold_changed.connect(_on_gold_changed)
+
+
+func _on_gold_changed(amount: int) -> void:
+	_gold_label.text = "%d de oro" % amount
 
 
 func _process(delta: float) -> void:

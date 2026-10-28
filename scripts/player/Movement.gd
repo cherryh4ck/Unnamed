@@ -54,6 +54,10 @@ var ultimo_paso: int = -1
 
 func _ready() -> void:
 	spawn_position = global_position
+	# Con una partida cargada arranca donde estaba al guardar (al morir
+	# reaparece igual en el inicio del mapa).
+	if save_game.player_position != Vector3.INF:
+		global_position = save_game.player_position
 	if click_reference:
 		click_reference.hide()
 

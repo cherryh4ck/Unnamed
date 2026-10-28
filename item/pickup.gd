@@ -25,6 +25,10 @@ var _bob_time: float = 0.0
 
 
 func _ready() -> void:
+	# Los items del mapa que ya se juntaron no vuelven al cargar la partida.
+	if save_game.is_collected(self):
+		queue_free()
+		return
 	add_to_group("pickups")
 	collision_layer = PICKUP_LAYER
 	body_entered.connect(_on_body_entered)
@@ -148,6 +152,7 @@ func get_item() -> bool:
 
 	if item_data.item_type == Itemdata.ItemType.GOLD:
 		_picked = true
+		save_game.mark_collected(self)
 		player_stats.add_gold(quantity)
 		floating_text.spawn(head, "+%d oro" % quantity, Color(1.0, 0.85, 0.35), 18)
 		sfx.play("pickup_gold")
@@ -160,6 +165,7 @@ func get_item() -> bool:
 		return false
 
 	_picked = true
+	save_game.mark_collected(self)
 	floating_text.spawn(head, item_data.get_display_name(), item_data.get_rarity_color(), 18)
 	sfx.play(_pickup_sound())
 	queue_free()
