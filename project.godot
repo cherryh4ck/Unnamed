@@ -18,6 +18,9 @@ config/icon="res://icon.svg"
 [autoload]
 
 inventory_data="*res://inventory/inventory_data.gd"
+player_stats="*res://scripts/player/player_stats.gd"
+sfx="*res://scripts/audio/sfx.gd"
+floating_text="*res://scripts/ui/floating_text.gd"
 
 [display]
 

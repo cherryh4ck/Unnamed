@@ -2,13 +2,13 @@ extends CharacterBody3D
 
 signal died
 
-@export var speed := 100.0
-@export var detection_range := 500.0
-@export var attack_range := 8.0
-@export var damage := 10
-@export var attack_cooldown := 1.0
+@export var speed := 260.0
+@export var detection_range := 1200.0
+@export var attack_range := 230.0
+@export var damage := 8
+@export var attack_cooldown := 1.5
 @export var attack_hit_delay := 0.3
-@export var max_health := 50.0
+@export var max_health := 60.0
 
 var player: Node3D
 var can_attack := true
@@ -18,6 +18,7 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 
 func _ready() -> void:
+	add_to_group("enemies")
 	current_health = max_health
 	player = get_tree().get_first_node_in_group("player")
 
@@ -72,12 +73,21 @@ func _damage_player() -> void:
 		player.take_damage(damage)
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, crit: bool = false) -> void:
 	if dead:
 		return
+	var head := global_position + Vector3.UP * 400.0
+	if crit:
+		floating_text.spawn(head, "%d!" % roundi(amount), Color(1.0, 0.85, 0.2), 30, 1.6)
+	else:
+		floating_text.spawn(head, str(roundi(amount)), Color.WHITE, 22)
 	current_health = max(current_health - amount, 0.0)
 	if current_health <= 0.0:
 		_die()
+
+
+func set_highlighted(_on: bool) -> void:
+	pass
 
 
 func _die() -> void:

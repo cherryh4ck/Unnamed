@@ -1,10 +1,31 @@
 extends CharacterBody3D
 
+signal hovered_enemy_changed(enemy: Node3D)
+
 @export var ClickReference: NodePath = NodePath("../ClickReference")
 @onready var click_reference: Node3D = get_node_or_null(ClickReference)
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
+@onready var combat: Node = $Combat
 
 var speed: float = 700.0
+## Distancia (centro a centro, en el plano) desde la que el jugador le pega a un enemigo.
+@export var attack_range: float = 260.0
+## Segundos hasta reaparecer despues de morir.
+@export var respawn_delay: float = 4.0
+
+## Mientras se mantiene apretado el clic, cada cuanto se actualiza el destino.
+const HOLD_REPATH_INTERVAL: float = 0.1
+## Cuanto se tiene que mover el enemigo para recalcular el camino hacia el.
+const CHASE_REPATH_DISTANCE: float = 40.0
+
+var target_enemy: Node3D = null
+var hovered_enemy: Node3D = null
+var spawn_position: Vector3
+
+var _moving: bool = false
+var _holding_move: bool = false
+var _hold_timer: float = 0.0
+var _last_chase_target: Vector3 = Vector3.INF
 
 var sonidos_pasos: Array[AudioStream] = []
 var reproductor_pasos: AudioStreamPlayer3D
@@ -13,7 +34,9 @@ var tiempo_paso: float = 0.4
 var ultimo_paso: int = -1
 
 func _ready() -> void:
-	click_reference.hide()
+	spawn_position = global_position
+	if click_reference:
+		click_reference.hide()
 
 	for i in range(1, 8):
 		var ruta = "res://sounds/ambient/footsteps/footstep%d.wav" % i
@@ -24,17 +47,33 @@ func _ready() -> void:
 	reproductor_pasos.volume_db = 12.0
 	add_child(reproductor_pasos)
 
-	print("Jugador listo")
-	pass
+	player_stats.died.connect(_on_died)
+
+
+func is_moving() -> bool:
+	return _moving
 
 
 func _physics_process(delta: float) -> void:
+	_moving = false
+	if player_stats.dead:
+		velocity = Vector3.ZERO
+		return
+
+	_update_hover()
+	_update_hold(delta)
+
+	if _update_attack_target(delta):
+		return
+
 	if nav_agent.is_navigation_finished():
-		click_reference.hide()
+		if click_reference:
+			click_reference.hide()
 		tiempo_paso = intervalo_pasos
 		return
 
 	move_to_point(speed)
+	_moving = true
 
 	tiempo_paso += delta
 	if tiempo_paso >= intervalo_pasos:
@@ -63,25 +102,146 @@ func move_to_point(move_speed: float) -> void:
 	move_and_slide()
 
 
-func _input(event: InputEvent) -> void:
-	if Input.is_action_just_pressed("leftMouse"):
-		var camera = get_viewport().get_camera_3d()
+func stop_moving() -> void:
+	nav_agent.target_position = global_position
+	velocity = Vector3.ZERO
 
-		var mouse_pos = get_viewport().get_mouse_position()
-		var ray_length = 5000
-		var from = camera.project_ray_origin(mouse_pos)
-		var to = from + camera.project_ray_normal(mouse_pos) * ray_length
-		var space = get_world_3d().direct_space_state
-		var ray_query = PhysicsRayQueryParameters3D.new()
-		ray_query.from = from
-		ray_query.to = to
-		ray_query.exclude = [self.get_rid()]
-		var result = space.intersect_ray(ray_query)
 
-		if result.is_empty():
-			return
+# Si hay un enemigo marcado: lo persigue y, cuando esta en rango, le pega.
+# Devuelve true si este frame el jugador esta atacando (quieto).
+func _update_attack_target(delta: float) -> bool:
+	if target_enemy == null:
+		return false
+	if not is_instance_valid(target_enemy) or target_enemy.dead:
+		target_enemy = null
+		stop_moving()
+		return false
 
+	var to_target: Vector3 = target_enemy.global_position - global_position
+	to_target.y = 0.0
+	if to_target.length() <= attack_range:
+		stop_moving()
+		_face(to_target, delta)
+		combat.try_attack(target_enemy)
+		return true
+
+	if target_enemy.global_position.distance_to(_last_chase_target) > CHASE_REPATH_DISTANCE:
+		_last_chase_target = target_enemy.global_position
+		nav_agent.target_position = target_enemy.global_position
+	return false
+
+
+func _face(direction: Vector3, delta: float) -> void:
+	if direction.length() < 0.01:
+		return
+	var target_angle: float = atan2(direction.x, direction.z)
+	rotation.y = lerp_angle(rotation.y, target_angle, 12.0 * delta)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if player_stats.dead:
+		return
+	if event.is_action_pressed("leftMouse"):
+		_handle_click()
+	elif event.is_action_released("leftMouse"):
+		_holding_move = false
+
+
+func _handle_click() -> void:
+	var result: Dictionary = _raycast_mouse()
+	if result.is_empty():
+		return
+
+	var enemy: Node3D = _enemy_from_collider(result.collider)
+	if enemy:
+		target_enemy = enemy
+		_last_chase_target = Vector3.INF
+		_holding_move = false
 		if click_reference:
-			click_reference.global_position = result.position
-			click_reference.show()
-		nav_agent.target_position = result.position
+			click_reference.hide()
+		return
+
+	target_enemy = null
+	_holding_move = true
+	_hold_timer = 0.0
+	_move_to(result.position)
+
+
+# Mantener el clic apretado sigue moviendo al personaje hacia el mouse.
+func _update_hold(delta: float) -> void:
+	if not _holding_move:
+		return
+	if not Input.is_action_pressed("leftMouse"):
+		_holding_move = false
+		return
+	_hold_timer += delta
+	if _hold_timer < HOLD_REPATH_INTERVAL:
+		return
+	_hold_timer = 0.0
+	var result: Dictionary = _raycast_mouse()
+	if not result.is_empty() and _enemy_from_collider(result.collider) == null:
+		_move_to(result.position)
+
+
+func _move_to(point: Vector3) -> void:
+	if click_reference:
+		click_reference.global_position = point
+		click_reference.show()
+	nav_agent.target_position = point
+
+
+func _update_hover() -> void:
+	var enemy: Node3D = null
+	var result: Dictionary = _raycast_mouse()
+	if not result.is_empty():
+		enemy = _enemy_from_collider(result.collider)
+	if enemy == hovered_enemy:
+		return
+	if is_instance_valid(hovered_enemy) and hovered_enemy.has_method("set_highlighted"):
+		hovered_enemy.set_highlighted(false)
+	hovered_enemy = enemy
+	if hovered_enemy and hovered_enemy.has_method("set_highlighted"):
+		hovered_enemy.set_highlighted(true)
+	hovered_enemy_changed.emit(hovered_enemy)
+
+
+func _enemy_from_collider(collider: Object) -> Node3D:
+	if collider is Node3D and collider.is_in_group("enemies") and not collider.dead:
+		return collider
+	return null
+
+
+func _raycast_mouse() -> Dictionary:
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera == null:
+		return {}
+	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	var ray_length: float = 5000.0
+	var from: Vector3 = camera.project_ray_origin(mouse_pos)
+	var to: Vector3 = from + camera.project_ray_normal(mouse_pos) * ray_length
+	var ray_query := PhysicsRayQueryParameters3D.create(from, to)
+	ray_query.exclude = [get_rid()]
+	return get_world_3d().direct_space_state.intersect_ray(ray_query)
+
+
+## Lo llaman los enemigos al pegarle al jugador.
+func take_damage(amount: float) -> void:
+	var result: Dictionary = player_stats.take_damage(amount)
+	var head: Vector3 = global_position + Vector3.UP * 420.0
+	if result.blocked:
+		floating_text.spawn(head, "Bloqueo", Color(0.65, 0.8, 1.0), 20)
+		return
+	floating_text.spawn(head, str(maxi(1, roundi(result.amount))), Color(1.0, 0.3, 0.25), 22)
+	sfx.play_at("hit", global_position, -4.0)
+
+
+func _on_died() -> void:
+	target_enemy = null
+	_holding_move = false
+	stop_moving()
+	if click_reference:
+		click_reference.hide()
+	await get_tree().create_timer(respawn_delay, false).timeout
+	global_position = spawn_position
+	stop_moving()
+	player_stats.respawn()
