@@ -1,6 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://ui/minimap.gd" id="2_minimap"]
 
 [sub_resource type="Environment" id="Environment_portrait"]
 background_mode = 1
@@ -55,6 +56,19 @@ mouse_filter = 2
 theme_type_variation = &"EnemyBar"
 value = 100.0
 show_percentage = false
+
+[node name="Minimap" type="Control" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -196.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = 196.0
+grow_horizontal = 0
+mouse_filter = 2
+script = ExtResource("2_minimap")
 
 [node name="Message" type="Label" parent="Root"]
 unique_name_in_owner = true
