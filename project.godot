@@ -23,6 +23,7 @@ sfx="*res://scripts/audio/sfx.gd"
 floating_text="*res://scripts/ui/floating_text.gd"
 skill_book="*res://scripts/skills/skill_book.gd"
 world_time="*res://scripts/world/world_time.gd"
+difficulty="*res://scripts/system/difficulty.gd"
 save_game="*res://scripts/system/save_game.gd"
 
 [display]

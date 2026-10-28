@@ -4,7 +4,8 @@ extends Node
 ## Al abrir el juego se carga sola la ultima partida, antes de que se arme la
 ## escena: asi la UI y el jugador arrancan leyendo el estado ya cargado.
 ## F5 guarda y F9 vuelve a la ultima partida guardada. Ademas se guarda sola
-## cada AUTOSAVE_INTERVAL segundos y al cerrar la ventana.
+## cada AUTOSAVE_INTERVAL segundos y al cerrar la ventana. La partida nueva
+## (con su dificultad) se arma desde el menu del juego (ui/game_menu.gd).
 
 signal saved
 
@@ -42,8 +43,7 @@ func _notification(what: int) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("quick_save"):
-		if save():
-			_announce("Partida guardada")
+		quick_save()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("quick_load"):
 		reload_last_save()
@@ -54,12 +54,21 @@ func has_save() -> bool:
 	return FileAccess.file_exists(save_path)
 
 
+## F5: guarda y lo avisa en pantalla.
+func quick_save() -> void:
+	_announce("Partida guardada" if save() else "No se pudo guardar")
+
+
 ## Guarda la partida. Devuelve false si no se pudo escribir el archivo.
 func save() -> bool:
-	_autosave_timer = 0.0
 	var player: Node3D = get_tree().get_first_node_in_group("player")
 	if player:
 		player_position = player.global_position
+	return _write()
+
+
+func _write() -> bool:
+	_autosave_timer = 0.0
 	var player_data := {
 		"level": player_stats.level,
 		"xp": player_stats.xp,
@@ -72,6 +81,7 @@ func save() -> bool:
 		player_data["position"] = [player_position.x, player_position.y, player_position.z]
 	var data := {
 		"version": SAVE_VERSION,
+		"difficulty": difficulty.current,
 		"player": player_data,
 		"inventory": _slots_to_array(inventory_data.slots),
 		"equipment": _slots_to_array(inventory_data.equipment),
@@ -99,6 +109,7 @@ func load_saved() -> bool:
 		push_warning("La partida guardada no se pudo leer: %s" % save_path)
 		return false
 
+	difficulty.set_level(int(data.get("difficulty", 0)))
 	# Primero el equipo: cambia la vida maxima.
 	inventory_data.reset()
 	inventory_data.shop_mode = false
@@ -147,6 +158,26 @@ func reload_last_save() -> void:
 	get_tree().reload_current_scene()
 	await get_tree().create_timer(0.2).timeout
 	_announce("Partida cargada")
+
+
+## Partida nueva con la dificultad elegida: personaje de nivel 1, inventario
+## vacio y el mapa como al principio. Reemplaza la partida guardada.
+func new_game(difficulty_level: int) -> void:
+	difficulty.set_level(difficulty_level)
+	inventory_data.reset()
+	inventory_data.shop_mode = false
+	player_stats.reset()
+	skill_book.reset()
+	world_time.set_time(9.0, 1)
+	collected_pickups.clear()
+	player_position = Vector3.INF
+	# Se escribe antes de rearmar la escena (sin posicion: arranca en el
+	# inicio del mapa), asi el menu nuevo ya encuentra la partida.
+	_write()
+	get_tree().paused = false
+	get_tree().reload_current_scene()
+	await get_tree().create_timer(0.2).timeout
+	_announce("Partida nueva: %s" % difficulty.get_level_name())
 
 
 # --- Items puestos en el mapa ----------------------------------------------

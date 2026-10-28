@@ -40,6 +40,14 @@ func _ready() -> void:
 	player_stats.leveled_up.connect(_on_leveled_up)
 
 
+## Partida nueva: sin combo y con todo recargado.
+func reset() -> void:
+	combo = []
+	_combo_left = 0.0
+	for i in _cooldown_left.size():
+		_cooldown_left[i] = 0.0
+
+
 func _process(delta: float) -> void:
 	for i in _cooldown_left.size():
 		_cooldown_left[i] = maxf(_cooldown_left[i] - delta, 0.0)

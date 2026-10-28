@@ -47,24 +47,25 @@ const UNIQUE_WEAPON_NAMES := ["Colmillo del Crepúsculo", "Lamento de Hierro", "
 const UNIQUE_SHIELD_NAMES := ["Muralla de Ceniza", "Égida del Ocaso", "Bastión Silencioso"]
 
 
-## Lo que suelta un enemigo: lista de {item, quantity}.
-static func roll_enemy_drops(data: EnemyData, level: int) -> Array[Dictionary]:
+## Lo que suelta un enemigo: lista de {item, quantity}. gold_mult y
+## magic_find vienen de la dificultad.
+static func roll_enemy_drops(data: EnemyData, level: int, gold_mult: float = 1.0, magic_find: float = 0.0) -> Array[Dictionary]:
 	var drops: Array[Dictionary] = []
 	if randf() < 0.7:
-		var amount: int = roundi(randi_range(data.gold_min, data.gold_max) * (1.0 + 0.2 * (level - 1)))
+		var amount: int = roundi(randi_range(data.gold_min, data.gold_max) * (1.0 + 0.2 * (level - 1)) * gold_mult)
 		drops.append({"item": GOLD, "quantity": maxi(1, amount)})
 	if randf() < 0.15:
 		drops.append({"item": POTION, "quantity": 1})
 	# Los enemigos con mas experiencia (elites) sueltan equipo mas seguido.
-	var item_chance: float = clampf(0.12 + data.xp_reward / 200.0, 0.0, 0.6)
+	var item_chance: float = clampf((0.12 + data.xp_reward / 200.0) * (1.0 + magic_find), 0.0, 0.6)
 	if randf() < item_chance:
-		drops.append({"item": generate_item(level), "quantity": 1})
+		drops.append({"item": generate_item(level, -1, magic_find), "quantity": 1})
 	return drops
 
 
 ## Crea un item aleatorio de nivel item_level a partir de un item base.
-static func generate_item(item_level: int, forced_rarity: int = -1) -> Itemdata:
-	var rarity: int = forced_rarity if forced_rarity >= 0 else _roll_rarity()
+static func generate_item(item_level: int, forced_rarity: int = -1, magic_find: float = 0.0) -> Itemdata:
+	var rarity: int = forced_rarity if forced_rarity >= 0 else _roll_rarity(magic_find)
 	if rarity == Itemdata.Rarity.SET:
 		return ItemSets.generate_piece(item_level)
 	var base_path: String = BASE_ITEMS.pick_random()
@@ -99,13 +100,16 @@ static func generate_item(item_level: int, forced_rarity: int = -1) -> Itemdata:
 	return item
 
 
-static func _roll_rarity() -> int:
+## magic_find multiplica el peso de todas las rarezas mejores que normal.
+static func _roll_rarity(magic_find: float = 0.0) -> int:
+	var weights: Array[float] = []
 	var total: float = 0.0
-	for w in RARITY_WEIGHTS:
-		total += w
-	var roll: float = randf() * total
 	for i in RARITY_WEIGHTS.size():
-		roll -= RARITY_WEIGHTS[i]
+		weights.append(RARITY_WEIGHTS[i] * (1.0 if i == 0 else 1.0 + magic_find))
+		total += weights[i]
+	var roll: float = randf() * total
+	for i in weights.size():
+		roll -= weights[i]
 		if roll <= 0.0:
 			return i
 	return 0

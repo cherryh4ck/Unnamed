@@ -46,11 +46,26 @@ var dead: bool = false
 ## damage_mult, attack_speed_mult, defense}.
 var buffs: Dictionary = {}
 var _potion_timer: float = 0.0
+var _base_attributes: Dictionary
 
 
 func _ready() -> void:
+	_base_attributes = attributes.duplicate()
 	health = get_max_health()
 	inventory_data.equipment_changed.connect(_on_equipment_changed)
+
+
+## Vuelve al personaje recien creado (partida nueva).
+func reset() -> void:
+	level = 1
+	xp = 0
+	unspent_points = 0
+	gold = 0
+	attributes = _base_attributes.duplicate()
+	buffs.clear()
+	dead = false
+	_potion_timer = 0.0
+	health = get_max_health()
 
 
 func _process(delta: float) -> void:

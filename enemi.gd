@@ -54,7 +54,9 @@ func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	home_position = global_position
 
-	max_health = data.max_health * _level_scale(0.3)
+	# La dificultad suma niveles y multiplica la vida (ver scripts/system/difficulty.gd).
+	level += int(difficulty.get_value("enemy_levels"))
+	max_health = data.max_health * _level_scale(0.3) * difficulty.get_value("enemy_health")
 	current_health = max_health
 	_setup_collision()
 	_setup_model()
@@ -72,7 +74,7 @@ func get_display_name() -> String:
 
 
 func get_xp_reward() -> int:
-	return roundi(data.xp_reward * _level_scale(0.25))
+	return roundi(data.xp_reward * _level_scale(0.25) * difficulty.get_value("xp"))
 
 
 func _setup_collision() -> void:
@@ -283,7 +285,7 @@ func _attack() -> void:
 	var to_player: Vector3 = player.global_position - global_position
 	to_player.y = 0.0
 	if to_player.length() <= data.attack_range * 1.3 and player.has_method("take_damage"):
-		var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2)
+		var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2) * difficulty.get_value("enemy_damage")
 		player.take_damage(damage)
 
 
@@ -350,7 +352,7 @@ func _alert_pack() -> void:
 
 
 func _drop_loot() -> void:
-	for drop in Loot.roll_enemy_drops(data, level):
+	for drop in Loot.roll_enemy_drops(data, level, difficulty.get_value("gold"), difficulty.get_value("magic_find")):
 		Loot.spawn_pickup(get_parent(), global_position, drop.item, drop.quantity)
 
 
