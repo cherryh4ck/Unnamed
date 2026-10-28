@@ -58,6 +58,12 @@ func _build_main() -> VBoxContainer:
 	_add_button(box, "Salir del juego", func() -> void:
 		save_game.save()
 		get_tree().quit())
+
+	var keys := Label.new()
+	keys.text = "I inventario · C personaje · K combo · M montura · Q poción"
+	keys.theme_type_variation = &"DimLabel"
+	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(keys)
 	return box
 
 

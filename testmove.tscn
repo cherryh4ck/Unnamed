@@ -29,6 +29,7 @@
 [ext_resource type="PackedScene" path="res://npc/merchant.tscn" id="27_merchant"]
 [ext_resource type="Script" path="res://ui/shop_panel.gd" id="28_shop"]
 [ext_resource type="Script" path="res://ui/game_menu.gd" id="29_menu"]
+[ext_resource type="Script" path="res://scripts/player/mount.gd" id="30_mount"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -98,6 +99,9 @@ target_desired_distance = 20.0
 
 [node name="Combat" type="Node" parent="CharacterBody3D" unique_id=1733920451]
 script = ExtResource("21_combat")
+
+[node name="Mount" type="Node3D" parent="CharacterBody3D" unique_id=1590347286]
+script = ExtResource("30_mount")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=371007284]
 environment = SubResource("Environment_g4v7s")

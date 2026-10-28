@@ -92,7 +92,7 @@ func show_message(text: String, color: Color = Color(1.0, 0.86, 0.45), duration:
 func _update_portrait() -> void:
 	if player == null:
 		return
-	var head: Vector3 = player.global_position + Vector3.UP * PORTRAIT_HEAD_HEIGHT
+	var head: Vector3 = player.global_position + Vector3.UP * (PORTRAIT_HEAD_HEIGHT + player.mount.lift)
 	var forward: Vector3 = player.global_transform.basis.z
 	forward.y = 0.0
 	if forward.length() < 0.01:

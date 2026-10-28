@@ -6,6 +6,7 @@ signal hovered_enemy_changed(enemy: Node3D)
 @onready var click_reference: Node3D = get_node_or_null(ClickReference)
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var combat: Node = $Combat
+@onready var mount: Node3D = $Mount
 
 var speed: float = 700.0
 ## Distancia (centro a centro, en el plano) desde la que el jugador le pega a un enemigo.

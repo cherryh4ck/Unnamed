@@ -12,6 +12,7 @@ extends Node3D
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 @onready var character: CharacterBody3D = get_parent()
 @onready var combat: Node = character.get_node("Combat")
+@onready var mount: Node3D = character.get_node("Mount")
 
 var walk_step_index: int = 0
 var attack_index: int = 0
@@ -44,7 +45,7 @@ func _set_loop(anim_name: String, mode: Animation.LoopMode) -> void:
 func _process(delta: float) -> void:
 	if player_stats.dead:
 		return
-	var moving: bool = character.is_moving()
+	var moving: bool = _is_walking()
 
 	if moving and not was_moving:
 		# Recién arranca a caminar (si estaba atacando, se corta el ataque).
@@ -62,15 +63,20 @@ func _process(delta: float) -> void:
 func _on_animation_finished(anim_name: StringName) -> void:
 	if attacking and anim_name == action_animation:
 		attacking = false
-		if character.is_moving():
+		if _is_walking():
 			_play_current_step()
 		else:
 			anim_player.play(idle_animation)
 	# Si la que termino es un paso de caminar Y todavia me estoy moviendo,
 	# paso al siguiente pie.
-	elif anim_name in walk_animations and character.is_moving() and not attacking:
+	elif anim_name in walk_animations and _is_walking() and not attacking:
 		walk_step_index = (walk_step_index + 1) % walk_animations.size()
 		_play_current_step()
+
+
+# Montado se mueve el caballo: el jinete queda en la pose de parado.
+func _is_walking() -> bool:
+	return character.is_moving() and not mount.mounted
 
 
 func _play_current_step() -> void:
