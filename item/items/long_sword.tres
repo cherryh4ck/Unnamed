@@ -11,9 +11,13 @@ region = Rect2(64, 160, 32, 32)
 [resource]
 script = ExtResource("1_w2qoy")
 name = "espada larga"
-description = "espada pesada, golpes lentos pero con gran daño
-[nota: la espada no tiene stats asignadas todavia]"
+description = "Espada pesada: golpes lentos pero con gran daño."
 item_type = 1
 texture = SubResource("AtlasTexture_d8la8")
 model_3d = ExtResource("3_mod")
+weight_class = 2
+min_damage = 14
+max_damage = 22
+attack_speed = 0.8
+value = 90
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

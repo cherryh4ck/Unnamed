@@ -12,5 +12,6 @@ script = ExtResource("1_w2qoy")
 name = "monedas de oro"
 description = "Dinero para comprar cosas en el futuro."
 stackable = true
+item_type = 4
 texture = SubResource("AtlasTexture_0366c")
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

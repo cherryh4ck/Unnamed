@@ -14,4 +14,7 @@ name = "escudo mid"
 item_type = 2
 texture = SubResource("AtlasTexture_xjes8")
 model_3d = ExtResource("3_mod")
+defense = 15
+block_chance = 18
+value = 55
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

@@ -13,7 +13,12 @@ region = Rect2(128, 320, 32, 32)
 [resource]
 script = ExtResource("1_w2qoy")
 name = "martillo grande"
-item_type = 2
+item_type = 1
 texture = SubResource("AtlasTexture_ijx45")
 model_3d = SubResource("Resource_2uipj")
+weight_class = 2
+min_damage = 16
+max_damage = 24
+attack_speed = 0.7
+value = 95
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

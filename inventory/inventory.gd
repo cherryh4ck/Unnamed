@@ -78,8 +78,12 @@ func _on_hovered_changed(slot_index: int) -> void:
 
 	var slot_data: Slotdata = inventory_data.slots[slot_index]
 	if slot_data and slot_data.item_data:
-		item_name_label.text = slot_data.item_data.get_display_name()
-		item_desc_label.text = slot_data.item_data.description
+		var item: Itemdata = slot_data.item_data
+		item_name_label.text = item.get_display_name()
+		var lines: PackedStringArray = item.get_stats_lines()
+		if not item.description.is_empty():
+			lines.append(item.description)
+		item_desc_label.text = "\n".join(lines)
 	else:
 		item_name_label.text = ""
 		item_desc_label.text = ""

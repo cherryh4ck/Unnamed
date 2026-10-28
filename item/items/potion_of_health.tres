@@ -13,5 +13,7 @@ name = "pocion de vida"
 description = "Una pocion roja que restaura algo de vida.
 [nota: no tiene uso asignado, solo para probar el apilado]"
 stackable = true
+item_type = 3
 texture = SubResource("AtlasTexture_sne3o")
+value = 15
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

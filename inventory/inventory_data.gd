@@ -12,11 +12,6 @@ const MELEE_EQUIP: int = 0
 const SPECIAL_EQUIP: int = 1
 const EQUIP_COUNT: int = 2
 
-const HEAVY_MELEE: String = "espada larga"
-const LIGHT_MELEE: String = "espada ligera"
-const LIGHT_SPECIAL: String = "escudo ligero"
-const HEAVY_SPECIAL: String = "escudo pesado"
-
 var slots: Array[Slotdata] = []
 var equipment: Array[Slotdata] = []
 var selected_slot: int = -1
@@ -74,30 +69,29 @@ func equip_from_slot(slot_index: int) -> bool:
 
 func is_heavy_load() -> bool:
 	for equip_index in [MELEE_EQUIP, SPECIAL_EQUIP]:
-		var slot: Slotdata = equipment[equip_index]
-		if slot and slot.item_data:
-			if slot.item_data.name == HEAVY_MELEE or slot.item_data.name == HEAVY_SPECIAL:
-				return true
+		var item: Itemdata = get_equipped(equip_index)
+		if item and item.weight_class == Itemdata.WeightClass.HEAVY:
+			return true
 	return false
 
 
-# Combina el item nuevo con lo ya equipado en el otro slot y valida las reglas:
-# - espada larga (HEAVY_MELEE) solo se combina con escudo ligero (LIGHT_SPECIAL).
-# - escudo pesado (HEAVY_SPECIAL) solo se combina con espada ligera (LIGHT_MELEE).
+func get_equipped(equip_index: int) -> Itemdata:
+	var slot: Slotdata = equipment[equip_index]
+	return slot.item_data if slot else null
+
+
+# Combina el item nuevo con lo ya equipado en el otro slot y valida la regla
+# de peso: un item pesado solo se combina con uno ligero (ej: espada larga +
+# escudo ligero, o escudo pesado + espada ligera).
 func _combo_allowed(item: Itemdata, equip_index: int) -> bool:
 	var other_index: int = SPECIAL_EQUIP if equip_index == MELEE_EQUIP else MELEE_EQUIP
-	var other_slot: Slotdata = equipment[other_index]
-	var other_name: String = other_slot.item_data.name if other_slot and other_slot.item_data else ""
-
-	if item.name == HEAVY_MELEE:
-		return other_name == "" or other_name == LIGHT_SPECIAL
-	if item.name == HEAVY_SPECIAL:
-		return other_name == "" or other_name == LIGHT_MELEE
-	if other_slot and other_slot.item_data:
-		if other_slot.item_data.name == HEAVY_MELEE:
-			return item.name == LIGHT_SPECIAL
-		if other_slot.item_data.name == HEAVY_SPECIAL:
-			return item.name == LIGHT_MELEE
+	var other: Itemdata = get_equipped(other_index)
+	if other == null:
+		return true
+	if item.weight_class == Itemdata.WeightClass.HEAVY:
+		return other.weight_class == Itemdata.WeightClass.LIGHT
+	if other.weight_class == Itemdata.WeightClass.HEAVY:
+		return item.weight_class == Itemdata.WeightClass.LIGHT
 	return true
 
 
