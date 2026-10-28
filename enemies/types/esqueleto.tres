@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://cxkc0oft7cc56" path="res://modelos/enemigo/esqueleto.glb" id="2_model"]
+
+[resource]
+script = ExtResource("1_data")
+name = "Esqueleto"
+model = ExtResource("2_model")
+model_offset_y = 296.0
+idle_animation = "18_BT1_0"
+walk_animations = Array[String](["18_BT1_1", "18_BT1_2"])
+attack_animations = Array[String](["18_BT1_11", "18_BT1_12"])
+death_animation = "18_BT1_13"
+spawn_animation = "18_BT1_23"
+max_health = 55.0
+min_damage = 5
+max_damage = 9
+speed = 280.0
+attack_cooldown = 1.5
+xp_reward = 20
+gold_min = 2
+gold_max = 10

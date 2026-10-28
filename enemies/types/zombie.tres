@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://nf27rcpa0cqd" path="res://modelos/enemigo/zombie.glb" id="2_model"]
+
+[resource]
+script = ExtResource("1_data")
+name = "Zombi"
+model = ExtResource("2_model")
+model_offset_y = 287.0
+collision_radius = 70.0
+idle_animation = "4B_BT1_0"
+walk_animations = Array[String](["4B_BT1_1", "4B_BT1_3"])
+attack_animations = Array[String](["4B_BT1_13", "4B_BT1_14"])
+death_animation = "4B_BT1_23"
+death_reversed = true
+spawn_animation = "4B_BT1_23"
+spawn_animation_speed = 1.5
+max_health = 90.0
+min_damage = 9
+max_damage = 15
+defense = 10
+speed = 170.0
+attack_cooldown = 2.4
+detection_range = 1000.0
+xp_reward = 30
+gold_min = 4
+gold_max = 14

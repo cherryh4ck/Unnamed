@@ -6,7 +6,7 @@ extends Node3D
 
 @export var idle_animation: String = "85_BT2_0"
 @export var walk_animations: Array[String] = ["85_BT2_2", "85_BT2_1"]
-@export var attack_animations: Array[String] = ["85_BT2_15", "85_BT2_16"]
+@export var attack_animations: Array[String] = ["85_BT2_18", "85_BT2_19", "85_BT2_20"]
 @export var death_animation: String = "85_BT2_9"
 
 @onready var anim_player: AnimationPlayer = $AnimationPlayer

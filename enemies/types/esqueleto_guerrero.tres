@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+[ext_resource type="PackedScene" uid="uid://cxkc0oft7cc56" path="res://modelos/enemigo/esqueleto.glb" id="2_model"]
+
+[resource]
+script = ExtResource("1_data")
+name = "Guerrero esqueleto"
+model = ExtResource("2_model")
+model_scale = 1.2
+model_offset_y = 296.0
+tint = Color(1, 0.6, 0.5, 1)
+collision_radius = 72.0
+idle_animation = "18_BT1_0"
+walk_animations = Array[String](["18_BT1_1", "18_BT1_2"])
+attack_animations = Array[String](["18_BT1_11", "18_BT1_12"])
+death_animation = "18_BT1_13"
+spawn_animation = "18_BT1_23"
+max_health = 120.0
+min_damage = 10
+max_damage = 16
+defense = 15
+speed = 300.0
+attack_cooldown = 1.3
+attack_range = 250.0
+detection_range = 1400.0
+xp_reward = 60
+gold_min = 10
+gold_max = 30
