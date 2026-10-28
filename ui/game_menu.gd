@@ -64,6 +64,14 @@ func _build_main() -> VBoxContainer:
 	keys.theme_type_variation = &"DimLabel"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(keys)
+
+	# Atribucion que pide la licencia CC-BY de las texturas (ver CREDITS.md).
+	var credits := Label.new()
+	credits.text = "Interfaz: RPG GUI construction kit de Matjaž Lamut (CC-BY 3.0)"
+	credits.theme_type_variation = &"DimLabel"
+	credits.add_theme_font_size_override("font_size", 11)
+	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(credits)
 	return box
 
 
