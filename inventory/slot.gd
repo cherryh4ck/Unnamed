@@ -49,11 +49,14 @@ func _make_custom_tooltip(_for_text: String) -> Object:
 	var slot_data: Slotdata = inventory.slots[slot_index]
 	if slot_data == null or slot_data.item_data == null:
 		return null
-	var hint: String = "Clic derecho: tirar"
+	var right_click: String = "tirar"
+	if inventory.shop_mode:
+		right_click = "vender (%d oro)" % (maxi(1, slot_data.item_data.value / 4) * slot_data.quantity)
+	var hint: String = "Clic derecho: " + right_click
 	if slot_data.item_data.is_equipment():
-		hint = "Doble clic: equipar · Clic derecho: tirar"
+		hint = "Doble clic: equipar · Clic derecho: " + right_click
 	elif slot_data.item_data.item_type == Itemdata.ItemType.POTION:
-		hint = "Doble clic o Q: beber · Clic derecho: tirar"
+		hint = "Doble clic o Q: beber · Clic derecho: " + right_click
 	return ItemTooltip.build(slot_data.item_data, slot_data.quantity, hint)
 
 
@@ -81,7 +84,10 @@ func _gui_input(event: InputEvent) -> void:
 			accept_event()
 		MOUSE_BUTTON_RIGHT:
 			if inventory.slots[slot_index]:
-				inventory.drop_slot(slot_index)
+				if inventory.shop_mode:
+					inventory.sell_requested.emit(slot_index)
+				else:
+					inventory.drop_slot(slot_index)
 				accept_event()
 
 

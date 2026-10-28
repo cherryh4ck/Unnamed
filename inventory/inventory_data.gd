@@ -6,6 +6,7 @@ signal picked_up(item: Itemdata, quantity: int)
 signal equipment_changed(equip_index: int)
 signal equip_rejected(message: String)
 signal item_dropped(item: Itemdata, quantity: int)
+signal sell_requested(slot_index: int)
 
 const SLOT_COUNT: int = 24
 
@@ -17,6 +18,8 @@ var slots: Array[Slotdata] = []
 var equipment: Array[Slotdata] = []
 var selected_slot: int = -1
 var hovered_slot: int = -1
+## Con la tienda abierta, el clic derecho vende en vez de tirar.
+var shop_mode: bool = false
 
 
 func _init() -> void:

@@ -24,6 +24,8 @@ const SKILL_AUTO_TARGET_RANGE: float = 700.0
 const SKILL_COUNT: int = 5
 ## Distancia a la que se junta un item clickeado.
 const PICKUP_REACH: float = 170.0
+## Distancia a la que se habla con un NPC.
+const NPC_REACH: float = 300.0
 ## Capa de fisica de los items en el piso (ver item/pickup.gd).
 const PICKUP_MASK: int = 4
 
@@ -35,6 +37,8 @@ var pending_skill: int = -1
 var pending_combo: bool = false
 ## Item del piso al que se esta caminando para juntarlo.
 var target_pickup: Node3D = null
+## NPC al que se esta caminando para hablarle.
+var target_npc: Node3D = null
 var spawn_position: Vector3
 
 var _moving: bool = false
@@ -86,6 +90,7 @@ func _physics_process(delta: float) -> void:
 	if _update_attack_target(delta):
 		return
 	_update_target_pickup()
+	_update_target_npc()
 
 	if nav_agent.is_navigation_finished():
 		if click_reference:
@@ -179,6 +184,21 @@ func get_attack_range() -> float:
 	return ranged_attack_range if player_stats.is_ranged() else attack_range
 
 
+func _update_target_npc() -> void:
+	if target_npc == null:
+		return
+	if not is_instance_valid(target_npc):
+		target_npc = null
+		return
+	var offset: Vector3 = target_npc.global_position - global_position
+	offset.y = 0.0
+	if offset.length() <= NPC_REACH:
+		var npc: Node3D = target_npc
+		target_npc = null
+		stop_moving()
+		npc.interact()
+
+
 func _face(direction: Vector3, delta: float) -> void:
 	if direction.length() < 0.01:
 		return
@@ -221,6 +241,16 @@ func _handle_click() -> void:
 	if result.is_empty():
 		return
 	target_pickup = null
+	target_npc = null
+
+	if result.collider is Node and result.collider.is_in_group("npcs"):
+		target_npc = result.collider
+		target_enemy = null
+		pending_skill = -1
+		pending_combo = false
+		_holding_move = false
+		_move_to(target_npc.global_position)
+		return
 
 	var enemy: Node3D = _enemy_from_collider(result.collider)
 	pending_skill = -1

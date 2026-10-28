@@ -14,6 +14,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
 	add_to_group("pause_panels")
+	add_to_group("inventory_panel")
 
 	for i in inventory_data.SLOT_COUNT:
 		var slot: Control = Slot.instantiate()
