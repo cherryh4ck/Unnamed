@@ -23,6 +23,7 @@ const LOW_HEALTH_RATIO: float = 0.25
 @onready var target_name: Label = %TargetName
 @onready var target_bar: ProgressBar = %TargetBar
 @onready var message_label: Label = %Message
+@onready var clock_label: Label = %Clock
 
 var player: CharacterBody3D
 var _message_time: float = 0.0
@@ -40,6 +41,10 @@ func _ready() -> void:
 	player_stats.leveled_up.connect(_on_leveled_up)
 	player_stats.died.connect(_on_died)
 	player_stats.respawned.connect(_on_respawned)
+	world_time.night_started.connect(func() -> void:
+		show_message("Cae la noche: los muertos se vuelven más fuertes", Color(0.6, 0.7, 1.0), 3.5))
+	world_time.day_started.connect(func() -> void:
+		show_message("Amanece", Color(1.0, 0.85, 0.5), 2.5))
 	_on_health_changed(player_stats.health, player_stats.get_max_health())
 	_on_xp_changed(player_stats.xp, player_stats.xp_for_next_level())
 	level_label.text = str(player_stats.level)
@@ -70,6 +75,7 @@ func _process(delta: float) -> void:
 	_update_message(delta)
 	_update_low_health(delta)
 	_update_buffs()
+	_update_clock()
 
 
 ## Muestra un texto grande en el centro durante unos segundos.
@@ -109,6 +115,12 @@ func _update_target() -> void:
 		target_name.text = enemy.get_display_name()
 		target_bar.max_value = enemy.max_health
 		target_bar.value = enemy.current_health
+
+
+func _update_clock() -> void:
+	var night: bool = world_time.is_night()
+	clock_label.text = "Día %d · %s%s" % [world_time.day, world_time.get_clock_text(), " · Noche" if night else ""]
+	clock_label.add_theme_color_override("font_color", Color(0.6, 0.72, 1.0) if night else Color(1.0, 0.88, 0.55))
 
 
 # --- Barras ----------------------------------------------------------------

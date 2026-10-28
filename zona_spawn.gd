@@ -28,7 +28,11 @@ func _ready():
 	timer.start()
 
 func _spawn_enemy():
-	if enemies_alive >= max_enemies:
+	# De noche aparecen mas enemigos, mas seguido y un nivel mas fuertes.
+	var night: bool = world_time.is_night()
+	timer.wait_time = spawn_interval * (0.6 if night else 1.0)
+	var limit: int = roundi(max_enemies * (1.5 if night else 1.0))
+	if enemies_alive >= limit:
 		return
 
 	var size: Vector3 = zone_shape.shape.size
@@ -40,7 +44,7 @@ func _spawn_enemy():
 
 	var enemy = enemy_scene.instantiate()
 	enemy.data = _pick_type()
-	enemy.level = level
+	enemy.level = level + (1 if night else 0)
 	# Convierte el punto local de la caja a posición global (respeta escala y rotación)
 	enemy.position = zone_shape.global_transform * local_point
 	get_parent().add_child(enemy)

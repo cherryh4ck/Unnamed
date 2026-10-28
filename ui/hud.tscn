@@ -70,6 +70,22 @@ grow_horizontal = 0
 mouse_filter = 2
 script = ExtResource("2_minimap")
 
+[node name="Clock" type="Label" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -216.0
+offset_top = 198.0
+offset_right = -12.0
+offset_bottom = 222.0
+grow_horizontal = 0
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 15
+text = "Día 1 · 09:00"
+horizontal_alignment = 1
+
 [node name="Message" type="Label" parent="Root"]
 unique_name_in_owner = true
 layout_mode = 1
