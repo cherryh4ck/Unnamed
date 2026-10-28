@@ -10,6 +10,8 @@ const FIREBALL := preload("res://scripts/skills/fireball.gd")
 const BOLT := preload("res://scripts/skills/bolt.gd")
 ## Tras usar una habilidad, el ataque basico espera al menos este tiempo.
 const SKILL_LOCKOUT: float = 0.5
+## Pausa entre las habilidades de un combo.
+const COMBO_STEP_DELAY: float = 0.55
 
 ## Momento del impacto dentro del intervalo de ataque (0 = inicio, 1 = fin).
 const HIT_MOMENT: float = 0.45
@@ -46,6 +48,35 @@ func use_skill(index: int, aim_point: Vector3, target: Node3D) -> bool:
 	if skill == null or not skill_book.is_ready(index) or player_stats.dead:
 		return false
 	skill_book.start_cooldown(index)
+	_perform(skill, aim_point, target)
+	return true
+
+
+## Ejecuta el combo armado: sus habilidades una detras de otra, con su propia
+## recarga (no gasta la recarga de cada habilidad por separado).
+func use_combo(aim_point: Vector3, target: Node3D) -> bool:
+	if not skill_book.is_combo_ready() or player_stats.dead:
+		return false
+	skill_book.start_combo_cooldown()
+	_run_combo(skill_book.combo.duplicate(), aim_point, target)
+	return true
+
+
+func _run_combo(indices: Array, aim_point: Vector3, target: Node3D) -> void:
+	for i in indices.size():
+		if player_stats.dead:
+			return
+		var skill: SkillData = skill_book.get_skill(indices[i])
+		# Si el objetivo murio a mitad del combo, los golpes se saltean.
+		var target_ok: bool = is_instance_valid(target) and not target.dead
+		if skill.kind != SkillData.Kind.STRIKE or target_ok:
+			var aim: Vector3 = target.global_position if target_ok else aim_point
+			_perform(skill, aim, target if target_ok else null)
+		if i < indices.size() - 1:
+			await get_tree().create_timer(COMBO_STEP_DELAY, false).timeout
+
+
+func _perform(skill: SkillData, aim_point: Vector3, target: Node3D) -> void:
 	_cooldown = maxf(_cooldown, SKILL_LOCKOUT)
 	skill_animation.emit(skill.animation, skill.animation_speed)
 	if not skill.sound.is_empty():
@@ -59,7 +90,6 @@ func use_skill(index: int, aim_point: Vector3, target: Node3D) -> bool:
 			_fireball(skill, aim_point)
 		SkillData.Kind.BUFF:
 			_buff(skill)
-	return true
 
 
 func _strike(skill: SkillData, target: Node3D) -> void:

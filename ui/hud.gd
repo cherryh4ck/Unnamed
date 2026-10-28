@@ -4,6 +4,7 @@ extends CanvasLayer
 ## enemigo apuntado arriba y mensajes grandes en el centro de la pantalla.
 
 const SkillSlot := preload("res://ui/skill_slot.gd")
+const ComboSlot := preload("res://ui/combo_slot.gd")
 const POTION := preload("res://item/items/potion_of_health.tres")
 
 ## Altura de la cabeza del personaje (para la camara del retrato).
@@ -51,6 +52,12 @@ func _ready() -> void:
 		slot.setup(i)
 		slot.pressed.connect(_on_skill_slot_pressed)
 	skill_book.skill_unlocked.connect(_on_skill_unlocked)
+	var combo_slot := ComboSlot.new()
+	skill_bar.add_child(combo_slot)
+	combo_slot.pressed.connect(func() -> void:
+		if player:
+			player.use_combo())
+	skill_book.combo_unlocked.connect(_on_combo_unlocked)
 	_build_potion_slot()
 	inventory_data.inventory_changed.connect(_update_potion_count.unbind(1))
 	_update_potion_count()
@@ -195,6 +202,12 @@ func _update_potion_count() -> void:
 	var count: int = player_stats.count_potions()
 	_potion_count.text = str(count)
 	_potion_icon.modulate = Color.WHITE if count > 0 else Color(0.3, 0.3, 0.3)
+
+
+func _on_combo_unlocked() -> void:
+	sfx.play("new_skill")
+	await get_tree().create_timer(4.0, false).timeout
+	show_message("¡Combos! Armalos con la tecla K", Color(0.6, 0.9, 1.0), 3.0)
 
 
 func _rebuild_buffs() -> void:

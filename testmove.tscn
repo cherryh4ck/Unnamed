@@ -24,6 +24,7 @@
 [ext_resource type="PackedScene" path="res://ui/character_screen.tscn" id="22_char"]
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="23_hud"]
 [ext_resource type="AudioStream" path="res://sounds/ambient/grillos.wav" id="24_amb"]
+[ext_resource type="Script" path="res://ui/combo_panel.gd" id="25_combo"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -135,6 +136,10 @@ layout_mode = 1
 
 [node name="CharacterScreen" parent="UI/inventoryInterface" unique_id=1588203147 instance=ExtResource("22_char")]
 layout_mode = 1
+
+[node name="ComboPanel" type="PanelContainer" parent="UI/inventoryInterface" unique_id=1302958476]
+layout_mode = 1
+script = ExtResource("25_combo")
 
 [node name="PickupSword" parent="." unique_id=1234567890 instance=ExtResource("7_pick")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 110.42383, 5, 644.3662)

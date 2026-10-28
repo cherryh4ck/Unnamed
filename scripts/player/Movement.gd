@@ -31,6 +31,8 @@ var target_enemy: Node3D = null
 var hovered_enemy: Node3D = null
 ## Habilidad de golpe esperando a que el objetivo quede en rango (-1 = ninguna).
 var pending_skill: int = -1
+## Combo con golpes esperando a que el objetivo quede en rango.
+var pending_combo: bool = false
 ## Item del piso al que se esta caminando para juntarlo.
 var target_pickup: Node3D = null
 var spawn_position: Vector3
@@ -139,13 +141,16 @@ func _update_attack_target(delta: float) -> bool:
 	var to_target: Vector3 = target_enemy.global_position - global_position
 	to_target.y = 0.0
 	# El Golpe Brutal siempre necesita estar cuerpo a cuerpo.
-	var reach: float = attack_range if pending_skill >= 0 else get_attack_range()
+	var reach: float = attack_range if pending_skill >= 0 or pending_combo else get_attack_range()
 	if to_target.length() <= reach:
 		stop_moving()
 		_face(to_target, delta)
 		if pending_skill >= 0:
 			combat.use_skill(pending_skill, target_enemy.global_position, target_enemy)
 			pending_skill = -1
+		elif pending_combo:
+			combat.use_combo(target_enemy.global_position, target_enemy)
+			pending_combo = false
 		else:
 			combat.try_attack(target_enemy)
 		return true
@@ -191,6 +196,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("use_potion"):
 		drink_potion()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("skill_combo"):
+		use_combo()
+		get_viewport().set_input_as_handled()
 	else:
 		for i in SKILL_COUNT:
 			if event.is_action_pressed("skill_%d" % (i + 1)):
@@ -216,6 +224,7 @@ func _handle_click() -> void:
 
 	var enemy: Node3D = _enemy_from_collider(result.collider)
 	pending_skill = -1
+	pending_combo = false
 	if enemy:
 		target_enemy = enemy
 		_last_chase_target = Vector3.INF
@@ -277,6 +286,39 @@ func use_skill(index: int) -> void:
 		if not result.is_empty():
 			aim = result.position
 	combat.use_skill(index, aim, hovered_enemy)
+
+
+## Usa el combo armado (tecla 6 o clic en la barra).
+func use_combo() -> void:
+	if player_stats.dead:
+		return
+	if not skill_book.is_combo_unlocked():
+		_reject("Los combos se aprenden en el nivel %d" % skill_book.COMBO_UNLOCK_LEVEL)
+		return
+	if skill_book.combo.is_empty():
+		_reject("Armá un combo con la tecla K")
+		return
+	if not skill_book.is_combo_ready():
+		_reject("Recargando...")
+		return
+	var enemy: Node3D = _skill_target()
+	if skill_book.combo_has_strike():
+		if enemy == null:
+			_reject("Sin objetivo")
+			return
+		# Camina hasta el enemigo; el combo arranca al quedar cuerpo a cuerpo.
+		target_enemy = enemy
+		_last_chase_target = Vector3.INF
+		pending_combo = true
+		return
+	var aim: Vector3 = global_position + global_transform.basis.z * 500.0
+	if enemy:
+		aim = enemy.global_position
+	else:
+		var result: Dictionary = _raycast_mouse()
+		if not result.is_empty():
+			aim = result.position
+	combat.use_combo(aim, enemy)
 
 
 func _skill_target() -> Node3D:
@@ -381,6 +423,7 @@ func _on_leveled_up(_new_level: int) -> void:
 func _on_died() -> void:
 	target_enemy = null
 	pending_skill = -1
+	pending_combo = false
 	_holding_move = false
 	stop_moving()
 	if click_reference:
