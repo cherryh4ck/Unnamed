@@ -146,15 +146,20 @@ func get_item() -> bool:
 		return false
 	var head: Vector3 = global_position + Vector3.UP * 250.0
 
+	if item_data.item_type == Itemdata.ItemType.GOLD:
+		_picked = true
+		player_stats.add_gold(quantity)
+		floating_text.spawn(head, "+%d oro" % quantity, Color(1.0, 0.85, 0.35), 18)
+		sfx.play("pickup_gold")
+		queue_free()
+		return true
+
 	if not inventory_data.add_item(item_data, quantity):
 		floating_text.spawn(head, "Inventario lleno", Color(1.0, 0.35, 0.3), 18)
 		return false
 
 	_picked = true
-	if item_data.item_type == Itemdata.ItemType.GOLD:
-		floating_text.spawn(head, "+%d oro" % quantity, Color(1.0, 0.85, 0.35), 18)
-	else:
-		floating_text.spawn(head, item_data.get_display_name(), item_data.get_rarity_color(), 18)
+	floating_text.spawn(head, item_data.get_display_name(), item_data.get_rarity_color(), 18)
 	sfx.play(_pickup_sound())
 	queue_free()
 	return true

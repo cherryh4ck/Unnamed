@@ -49,7 +49,11 @@ func _make_custom_tooltip(_for_text: String) -> Object:
 	var slot_data: Slotdata = inventory.slots[slot_index]
 	if slot_data == null or slot_data.item_data == null:
 		return null
-	var hint: String = "Doble clic: equipar · Clic derecho: tirar" if slot_data.item_data.is_equipment() else "Clic derecho: tirar"
+	var hint: String = "Clic derecho: tirar"
+	if slot_data.item_data.is_equipment():
+		hint = "Doble clic: equipar · Clic derecho: tirar"
+	elif slot_data.item_data.item_type == Itemdata.ItemType.POTION:
+		hint = "Doble clic o Q: beber · Clic derecho: tirar"
 	return ItemTooltip.build(slot_data.item_data, slot_data.quantity, hint)
 
 
@@ -62,7 +66,12 @@ func _gui_input(event: InputEvent) -> void:
 		MOUSE_BUTTON_LEFT:
 			var slot_data: Slotdata = inventory.slots[slot_index]
 			if mouse_event.double_click and slot_data and slot_data.item_data:
-				inventory.equip_from_slot(slot_index)
+				if slot_data.item_data.item_type == Itemdata.ItemType.POTION:
+					var player: Node = get_tree().get_first_node_in_group("player")
+					if player:
+						player.drink_potion()
+				else:
+					inventory.equip_from_slot(slot_index)
 			else:
 				inventory.on_slot_clicked(slot_index)
 			accept_event()

@@ -9,9 +9,8 @@ region = Rect2(128, 288, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "pocion de vida"
-description = "Una pocion roja que restaura algo de vida.
-[nota: no tiene uso asignado, solo para probar el apilado]"
+name = "poción de vida"
+description = "Restaura el 35% de la vida máxima."
 stackable = true
 item_type = 3
 texture = SubResource("AtlasTexture_sne3o")

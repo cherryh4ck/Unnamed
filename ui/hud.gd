@@ -4,6 +4,7 @@ extends CanvasLayer
 ## enemigo apuntado arriba y mensajes grandes en el centro de la pantalla.
 
 const SkillSlot := preload("res://ui/skill_slot.gd")
+const POTION := preload("res://item/items/potion_of_health.tres")
 
 ## Altura de la cabeza del personaje (para la camara del retrato).
 const PORTRAIT_HEAD_HEIGHT: float = 325.0
@@ -27,6 +28,8 @@ var _message_time: float = 0.0
 var _respawn_countdown: float = -1.0
 var _pulse: float = 0.0
 var _buff_labels: Dictionary = {}
+var _potion_count: Label
+var _potion_icon: TextureRect
 
 
 func _ready() -> void:
@@ -48,6 +51,9 @@ func _ready() -> void:
 		slot.setup(i)
 		slot.pressed.connect(_on_skill_slot_pressed)
 	skill_book.skill_unlocked.connect(_on_skill_unlocked)
+	_build_potion_slot()
+	inventory_data.inventory_changed.connect(_update_potion_count.unbind(1))
+	_update_potion_count()
 	player_stats.buffs_changed.connect(_rebuild_buffs)
 
 
@@ -136,6 +142,59 @@ func _on_skill_unlocked(index: int) -> void:
 	# Espera a que termine el mensaje de nivel para no taparlo.
 	await get_tree().create_timer(1.6, false).timeout
 	show_message("Nueva habilidad: %s (tecla %d)" % [skill.name, index + 1], Color(0.6, 0.9, 1.0), 3.0)
+
+
+# Casilla de pociones al final de la barra: icono, cantidad y tecla Q.
+func _build_potion_slot() -> void:
+	var separator := VSeparator.new()
+	skill_bar.add_child(separator)
+	var slot := PanelContainer.new()
+	slot.theme_type_variation = &"SlotPanel"
+	slot.custom_minimum_size = SkillSlot.SLOT_SIZE
+	slot.tooltip_text = "Poción de vida (Q)
+Restaura el %d%% de la vida máxima." % roundi(player_stats.POTION_HEAL_PERCENT * 100.0)
+	slot.gui_input.connect(func(event: InputEvent) -> void:
+		var mouse_event := event as InputEventMouseButton
+		if mouse_event and mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT and player:
+			player.drink_potion())
+	skill_bar.add_child(slot)
+
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot.add_child(holder)
+	_potion_icon = TextureRect.new()
+	_potion_icon.texture = POTION.texture
+	_potion_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_potion_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_potion_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_potion_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_potion_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.add_child(_potion_icon)
+
+	_potion_count = Label.new()
+	_potion_count.add_theme_font_size_override("font_size", 15)
+	_potion_count.add_theme_constant_override("outline_size", 5)
+	_potion_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_potion_count.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_potion_count.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_potion_count.offset_right = -2.0
+	_potion_count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(_potion_count)
+
+	var key := Label.new()
+	key.text = "Q"
+	key.position = Vector2(2, -2)
+	key.add_theme_font_size_override("font_size", 13)
+	key.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
+	key.add_theme_constant_override("outline_size", 5)
+	key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(key)
+
+
+func _update_potion_count() -> void:
+	var count: int = player_stats.count_potions()
+	_potion_count.text = str(count)
+	_potion_icon.modulate = Color.WHITE if count > 0 else Color(0.3, 0.3, 0.3)
 
 
 func _rebuild_buffs() -> void:

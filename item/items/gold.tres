@@ -10,7 +10,7 @@ region = Rect2(320, 384, 32, 32)
 [resource]
 script = ExtResource("1_w2qoy")
 name = "monedas de oro"
-description = "Dinero para comprar cosas en el futuro."
+description = "Va directo a tu bolsa."
 stackable = true
 item_type = 4
 texture = SubResource("AtlasTexture_0366c")

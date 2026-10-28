@@ -26,6 +26,27 @@ func _ready() -> void:
 		equip_slot.setup(equip_index)
 
 	inventory_data.equip_rejected.connect(_on_equip_rejected)
+	_build_gold_row()
+
+
+# Contador de oro en el pie del inventario (moneda + cantidad).
+func _build_gold_row() -> void:
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_END
+	var coin := TextureRect.new()
+	coin.texture = preload("res://item/items/gold.tres").texture
+	coin.custom_minimum_size = Vector2(24, 24)
+	coin.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var gold_label := Label.new()
+	gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.35))
+	gold_label.add_theme_font_size_override("font_size", 18)
+	row.add_child(coin)
+	row.add_child(gold_label)
+	$MarginContainer/VBoxContainer/Footer.add_child(row)
+	var update := func(amount: int) -> void: gold_label.text = "%d de oro" % amount
+	update.call(player_stats.gold)
+	player_stats.gold_changed.connect(update)
 
 
 func _process(delta: float) -> void:

@@ -61,6 +61,7 @@ func _ready() -> void:
 	player_stats.died.connect(_on_died)
 	player_stats.leveled_up.connect(_on_leveled_up)
 	inventory_data.item_dropped.connect(_on_item_dropped)
+	player_stats.potion_used.connect(_on_potion_used)
 
 
 func is_moving() -> bool:
@@ -177,6 +178,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		_handle_click()
 	elif event.is_action_released("leftMouse"):
 		_holding_move = false
+	elif event.is_action_pressed("use_potion"):
+		drink_potion()
+		get_viewport().set_input_as_handled()
 	else:
 		for i in SKILL_COUNT:
 			if event.is_action_pressed("skill_%d" % (i + 1)):
@@ -334,6 +338,18 @@ func take_damage(amount: float) -> void:
 		return
 	floating_text.spawn(head, str(maxi(1, roundi(result.amount))), Color(1.0, 0.3, 0.25), 22)
 	sfx.play_at("hit", global_position, -4.0)
+
+
+func drink_potion() -> void:
+	var reason: String = player_stats.use_potion()
+	if not reason.is_empty():
+		floating_text.spawn(global_position + Vector3.UP * 450.0, reason, Color(0.7, 0.7, 0.7), 16)
+
+
+func _on_potion_used(amount: float) -> void:
+	sfx.play("lifeleech")
+	floating_text.spawn(global_position + Vector3.UP * 420.0, "+%d" % roundi(amount), Color(0.4, 1.0, 0.45), 22)
+	Effects.aura(get_parent(), global_position, Color(0.4, 1.0, 0.45))
 
 
 func _on_item_dropped(item: Itemdata, quantity: int) -> void:

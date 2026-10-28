@@ -9,6 +9,8 @@ signal xp_changed(current: int, needed: int)
 signal leveled_up(new_level: int)
 signal stats_changed
 signal buffs_changed
+signal gold_changed(amount: int)
+signal potion_used(amount: float)
 signal died
 signal respawned
 
@@ -23,10 +25,15 @@ const UNARMED_ATTACK_SPEED: float = 1.2
 const BASE_CRIT_CHANCE: float = 5.0
 const CRIT_MULTIPLIER: float = 2.0
 const ATTRIBUTE_POINTS_PER_LEVEL: int = 5
+## Una pocion cura este porcentaje de la vida maxima mas una cantidad fija.
+const POTION_HEAL_PERCENT: float = 0.35
+const POTION_HEAL_FLAT: float = 20.0
+const POTION_COOLDOWN: float = 0.6
 
 var level: int = 1
 var xp: int = 0
 var unspent_points: int = 0
+var gold: int = 0
 var attributes: Dictionary = {
 	"fuerza": 10,        # +2% daño por punto
 	"destreza": 10,      # +1% velocidad de ataque y +0.2% critico por punto
@@ -38,6 +45,7 @@ var dead: bool = false
 ## Mejoras temporales activas: id -> {name, icon, duration, time_left,
 ## damage_mult, attack_speed_mult, defense}.
 var buffs: Dictionary = {}
+var _potion_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -47,9 +55,45 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_tick_buffs(delta)
+	_potion_timer = maxf(_potion_timer - delta, 0.0)
 	if dead or health >= get_max_health():
 		return
 	heal(get_health_regen() * delta)
+
+
+# --- Oro y pociones --------------------------------------------------------
+
+func add_gold(amount: int) -> void:
+	gold += amount
+	gold_changed.emit(gold)
+
+
+func count_potions() -> int:
+	var total: int = 0
+	for slot in inventory_data.slots:
+		if slot and slot.item_data and slot.item_data.item_type == Itemdata.ItemType.POTION:
+			total += slot.quantity
+	return total
+
+
+## Bebe una pocion del inventario. Devuelve un texto con el motivo si no pudo
+## (vacio si la bebio).
+func use_potion() -> String:
+	if dead:
+		return "Estás muerto"
+	if _potion_timer > 0.0:
+		return ""
+	if health >= get_max_health():
+		return "Vida al máximo"
+	for slot in inventory_data.slots:
+		if slot and slot.item_data and slot.item_data.item_type == Itemdata.ItemType.POTION:
+			inventory_data.remove_item(slot.item_data, 1)
+			var amount: float = minf(get_max_health() * POTION_HEAL_PERCENT + POTION_HEAL_FLAT, get_max_health() - health)
+			heal(amount)
+			_potion_timer = POTION_COOLDOWN
+			potion_used.emit(amount)
+			return ""
+	return "No tenés pociones"
 
 
 # --- Mejoras temporales ----------------------------------------------------
