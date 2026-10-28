@@ -39,7 +39,6 @@ func _process(delta: float) -> void:
 
 
 func _on_animation_finished(anim_name: StringName) -> void:
-	print("termino: ", anim_name)
 	# Si la que termino es un paso de caminar Y todavia me estoy moviendo,
 	# paso al siguiente pie.
 	if anim_name in walk_animations and not nav_agent.is_navigation_finished():
@@ -48,7 +47,6 @@ func _on_animation_finished(anim_name: StringName) -> void:
 
 
 func _play_current_step() -> void:
-	print("reproduciendo paso: ", walk_animations[walk_step_index])
 	anim_player.play(walk_animations[walk_step_index])
 
 

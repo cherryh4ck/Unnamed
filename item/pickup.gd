@@ -89,5 +89,6 @@ func get_item() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if body is CharacterBody3D:
+	# Solo el jugador junta items (los enemigos tambien son CharacterBody3D).
+	if body.is_in_group("player"):
 		await get_item()
