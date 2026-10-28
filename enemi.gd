@@ -365,7 +365,7 @@ func _refresh_overlay() -> void:
 	if _overlay == null:
 		return
 	if _flash_time > 0.0:
-		_overlay.albedo_color = Color(0.7, 0.08, 0.05)
+		_overlay.albedo_color = Color(0.45, 0.06, 0.03)
 	elif _highlighted:
 		_overlay.albedo_color = Color(0.14, 0.12, 0.1)
 	else:

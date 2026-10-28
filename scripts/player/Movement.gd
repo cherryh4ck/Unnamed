@@ -236,10 +236,9 @@ func take_damage(amount: float) -> void:
 	sfx.play_at("hit", global_position, -4.0)
 
 
-func _on_leveled_up(new_level: int) -> void:
+func _on_leveled_up(_new_level: int) -> void:
 	sfx.play("levelup")
 	Effects.level_up(get_parent(), global_position)
-	floating_text.spawn(global_position + Vector3.UP * 480.0, "¡Nivel %d!" % new_level, Color(1.0, 0.85, 0.35), 30, 1.5)
 
 
 func _on_died() -> void:
