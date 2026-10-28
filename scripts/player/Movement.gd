@@ -48,6 +48,7 @@ func _ready() -> void:
 	add_child(reproductor_pasos)
 
 	player_stats.died.connect(_on_died)
+	player_stats.leveled_up.connect(_on_leveled_up)
 
 
 func is_moving() -> bool:
@@ -233,6 +234,12 @@ func take_damage(amount: float) -> void:
 		return
 	floating_text.spawn(head, str(maxi(1, roundi(result.amount))), Color(1.0, 0.3, 0.25), 22)
 	sfx.play_at("hit", global_position, -4.0)
+
+
+func _on_leveled_up(new_level: int) -> void:
+	sfx.play("levelup")
+	Effects.level_up(get_parent(), global_position)
+	floating_text.spawn(global_position + Vector3.UP * 480.0, "¡Nivel %d!" % new_level, Color(1.0, 0.85, 0.35), 30, 1.5)
 
 
 func _on_died() -> void:

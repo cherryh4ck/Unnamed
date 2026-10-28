@@ -4,6 +4,7 @@
 
 [node name="equipment_slot" type="PanelContainer"]
 custom_minimum_size = Vector2(64, 64)
+theme_type_variation = &"SlotPanel"
 script = ExtResource("1_eq")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]

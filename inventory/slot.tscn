@@ -4,6 +4,7 @@
 
 [node name="slot" type="PanelContainer" unique_id=535336745]
 custom_minimum_size = Vector2(64, 64)
+theme_type_variation = &"SlotPanel"
 offset_right = 40.0
 offset_bottom = 40.0
 script = ExtResource("1_u4i3g")

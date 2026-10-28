@@ -15,6 +15,7 @@ var _message_timer: float = 0.0
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	add_to_group("pause_panels")
 
 	for i in inventory_data.SLOT_COUNT:
 		var slot: Control = Slot.instantiate()
@@ -61,13 +62,21 @@ func toggle() -> void:
 
 func open_inventory() -> void:
 	visible = true
-	get_tree().paused = true
+	sfx.play("page")
+	_update_pause()
 
 
 func close_inventory() -> void:
 	visible = false
 	inventory_data.selected_slot = -1
-	get_tree().paused = false
+	sfx.play("page")
+	_update_pause()
+
+
+# El juego queda en pausa mientras haya algun panel abierto (inventario o personaje).
+func _update_pause() -> void:
+	get_tree().paused = get_tree().get_nodes_in_group("pause_panels").any(
+		func(panel: Control) -> bool: return panel.visible)
 
 
 func _on_hovered_changed(slot_index: int) -> void:

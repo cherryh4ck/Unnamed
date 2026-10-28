@@ -20,7 +20,8 @@ var _items: Array[FloatingItem] = []
 
 
 func _ready() -> void:
-	layer = 5
+	# Debajo de la UI (capa 1): los paneles tapan los numeros de daño.
+	layer = 0
 
 
 func spawn(world_pos: Vector3, text: String, color: Color, font_size: int = 22, pop: float = 1.0) -> void:

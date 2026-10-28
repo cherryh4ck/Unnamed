@@ -5,6 +5,8 @@ extends Node
 ## igual que el inventario usa inventory_data.
 
 signal health_changed(current: float, maximum: float)
+signal xp_changed(current: int, needed: int)
+signal leveled_up(new_level: int)
 signal stats_changed
 signal died
 signal respawned
@@ -19,8 +21,11 @@ const UNARMED_MAX_DAMAGE: int = 4
 const UNARMED_ATTACK_SPEED: float = 1.2
 const BASE_CRIT_CHANCE: float = 5.0
 const CRIT_MULTIPLIER: float = 2.0
+const ATTRIBUTE_POINTS_PER_LEVEL: int = 5
 
 var level: int = 1
+var xp: int = 0
+var unspent_points: int = 0
 var attributes: Dictionary = {
 	"fuerza": 10,        # +2% daño por punto
 	"destreza": 10,      # +1% velocidad de ataque y +0.2% critico por punto
@@ -40,6 +45,41 @@ func _process(delta: float) -> void:
 	if dead or health >= get_max_health():
 		return
 	heal(get_health_regen() * delta)
+
+
+# --- Experiencia y atributos ----------------------------------------------
+
+func xp_for_next_level() -> int:
+	return roundi(80.0 * pow(level, 1.6))
+
+
+func add_xp(amount: int) -> void:
+	if dead or amount <= 0:
+		return
+	xp += amount
+	while xp >= xp_for_next_level():
+		xp -= xp_for_next_level()
+		level += 1
+		unspent_points += ATTRIBUTE_POINTS_PER_LEVEL
+		# Subir de nivel cura por completo.
+		health = get_max_health()
+		health_changed.emit(health, get_max_health())
+		leveled_up.emit(level)
+		stats_changed.emit()
+	xp_changed.emit(xp, xp_for_next_level())
+
+
+func spend_point(attribute: String) -> bool:
+	if unspent_points <= 0 or not attributes.has(attribute):
+		return false
+	var old_max: float = get_max_health()
+	attributes[attribute] += 1
+	unspent_points -= 1
+	# La vida que se gana al subir vitalidad se suma tambien a la actual.
+	health += get_max_health() - old_max
+	health_changed.emit(health, get_max_health())
+	stats_changed.emit()
+	return true
 
 
 # --- Stats derivados -------------------------------------------------------

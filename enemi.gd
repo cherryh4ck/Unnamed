@@ -383,6 +383,9 @@ func _die() -> void:
 	_flash_time = 0.0
 	_refresh_overlay()
 	_attacking = false
+	var xp: int = get_xp_reward()
+	player_stats.add_xp(xp)
+	floating_text.spawn(global_position + Vector3.UP * 300.0, "+%d exp" % xp, Color(0.75, 0.65, 1.0), 18)
 	if _anim_player and _anim_player.has_animation(data.death_animation):
 		if data.death_reversed:
 			_anim_player.play_backwards(data.death_animation, 0.1)
