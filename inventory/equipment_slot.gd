@@ -44,5 +44,8 @@ func _gui_input(event: InputEvent) -> void:
 	if mouse_event == null or not mouse_event.pressed:
 		return
 	if mouse_event.button_index == MOUSE_BUTTON_LEFT:
+		var item: Itemdata = inventory_data.get_equipped(equip_index)
 		inventory_data.on_equipment_clicked(equip_index)
+		if item and inventory_data.get_equipped(equip_index) == null:
+			sfx.play_item(item)
 		accept_event()

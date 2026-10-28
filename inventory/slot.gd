@@ -70,9 +70,13 @@ func _gui_input(event: InputEvent) -> void:
 					var player: Node = get_tree().get_first_node_in_group("player")
 					if player:
 						player.drink_potion()
-				else:
-					inventory.equip_from_slot(slot_index)
+				elif inventory.equip_from_slot(slot_index):
+					sfx.play_item(slot_data.item_data)
 			else:
+				# Suena el item que se agarra (o el que se suelta en este slot).
+				var moving: Slotdata = inventory.slots[inventory.selected_slot] if inventory.selected_slot >= 0 else slot_data
+				if moving and moving.item_data:
+					sfx.play_item(moving.item_data)
 				inventory.on_slot_clicked(slot_index)
 			accept_event()
 		MOUSE_BUTTON_RIGHT:

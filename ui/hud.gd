@@ -138,7 +138,7 @@ func _on_skill_slot_pressed(index: int) -> void:
 
 func _on_skill_unlocked(index: int) -> void:
 	var skill: SkillData = skill_book.get_skill(index)
-	sfx.play("new_skill")
+	sfx.play("new_spell" if skill.kind == SkillData.Kind.PROJECTILE else "new_skill")
 	# Espera a que termine el mensaje de nivel para no taparlo.
 	await get_tree().create_timer(1.6, false).timeout
 	show_message("Nueva habilidad: %s (tecla %d)" % [skill.name, index + 1], Color(0.6, 0.9, 1.0), 3.0)

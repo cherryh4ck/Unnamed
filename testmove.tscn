@@ -23,6 +23,7 @@
 [ext_resource type="Script" uid="uid://dv6xutip8g82t" path="res://scripts/player/combat.gd" id="21_combat"]
 [ext_resource type="PackedScene" path="res://ui/character_screen.tscn" id="22_char"]
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="23_hud"]
+[ext_resource type="AudioStream" path="res://sounds/ambient/grillos.wav" id="24_amb"]
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_g4v7s"]
 vertices = PackedVector3Array(-1898.1783, 9.500595, -2661.6653, -1898.1783, 9.500595, 2597.1545, 1858.1216, 9.500595, 2597.1545, 1858.1216, 9.500595, -2661.6653)
@@ -109,6 +110,11 @@ transform = Transform3D(1, 0, 0, 0, 0.75808793, 0.65215236, 0, -0.65215236, 0.75
 transform = Transform3D(100, 0, 0, 0, 10, 0, 0, 0, 100, 0, 107.07736, 0)
 material_override = SubResource("StandardMaterial3D_b615x")
 mesh = SubResource("CylinderMesh_g4v7s")
+
+[node name="Ambiente" type="AudioStreamPlayer" parent="." unique_id=1957301845]
+stream = ExtResource("24_amb")
+volume_db = -14.0
+autoplay = true
 
 [node name="HUD" parent="." unique_id=1270664312 instance=ExtResource("23_hud")]
 

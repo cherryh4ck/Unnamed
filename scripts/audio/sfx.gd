@@ -71,6 +71,18 @@ func play(sound_name: String, volume_db: float = 0.0, pitch_variation: float = 0
 	player.play()
 
 
+## Sonido de "agarrar" un item en el inventario segun su tipo.
+func play_item(item: Itemdata) -> void:
+	if item == null:
+		return
+	if item.is_equipment():
+		play("drag_weapon")
+	elif item.item_type == Itemdata.ItemType.POTION:
+		play("drag_potion")
+	else:
+		play("drag_ring")
+
+
 ## Sonido posicional en el mundo (golpes, hechizos).
 func play_at(sound_name: String, position: Vector3, volume_db: float = 0.0, pitch_variation: float = 0.08) -> void:
 	var stream: AudioStream = _pick(sound_name)

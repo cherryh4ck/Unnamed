@@ -57,6 +57,7 @@ func _process(delta: float) -> void:
 
 
 func _on_equip_rejected(message: String) -> void:
+	sfx.play("stuck")
 	error_message_label.text = message
 	error_message_label.visible = true
 	_message_timer = 2.5

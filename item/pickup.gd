@@ -156,6 +156,7 @@ func get_item() -> bool:
 
 	if not inventory_data.add_item(item_data, quantity):
 		floating_text.spawn(head, "Inventario lleno", Color(1.0, 0.35, 0.3), 18)
+		sfx.play("stuck")
 		return false
 
 	_picked = true

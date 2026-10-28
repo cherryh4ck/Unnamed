@@ -55,7 +55,9 @@ func _ready() -> void:
 			sonidos_pasos.append(load(ruta))
 
 	reproductor_pasos = AudioStreamPlayer3D.new()
-	reproductor_pasos.volume_db = 12.0
+	reproductor_pasos.unit_size = sfx.UNIT_SIZE_3D
+	reproductor_pasos.max_distance = sfx.MAX_DISTANCE_3D
+	reproductor_pasos.volume_db = -8.0
 	add_child(reproductor_pasos)
 
 	player_stats.died.connect(_on_died)
@@ -241,18 +243,17 @@ func use_skill(index: int) -> void:
 	var skill: SkillData = skill_book.get_skill(index)
 	if skill == null or player_stats.dead:
 		return
-	var head: Vector3 = global_position + Vector3.UP * 450.0
 	if not skill_book.is_unlocked(index):
-		floating_text.spawn(head, "Se aprende en el nivel %d" % skill.unlock_level, Color(0.7, 0.7, 0.7), 16)
+		_reject("Se aprende en el nivel %d" % skill.unlock_level)
 		return
 	if not skill_book.is_ready(index):
-		floating_text.spawn(head, "Recargando...", Color(0.7, 0.7, 0.7), 16)
+		_reject("Recargando...")
 		return
 
 	if skill.kind == SkillData.Kind.STRIKE:
 		var enemy: Node3D = _skill_target()
 		if enemy == null:
-			floating_text.spawn(head, "Sin objetivo", Color(0.7, 0.7, 0.7), 16)
+			_reject("Sin objetivo")
 			return
 		# Camina hasta el enemigo; el golpe sale al quedar en rango.
 		target_enemy = enemy
@@ -343,7 +344,13 @@ func take_damage(amount: float) -> void:
 func drink_potion() -> void:
 	var reason: String = player_stats.use_potion()
 	if not reason.is_empty():
-		floating_text.spawn(global_position + Vector3.UP * 450.0, reason, Color(0.7, 0.7, 0.7), 16)
+		_reject(reason)
+
+
+## Texto gris sobre el personaje + sonido de "no se puede".
+func _reject(reason: String) -> void:
+	floating_text.spawn(global_position + Vector3.UP * 450.0, reason, Color(0.7, 0.7, 0.7), 16)
+	sfx.play("stuck", -6.0)
 
 
 func _on_potion_used(amount: float) -> void:
@@ -374,3 +381,5 @@ func _on_died() -> void:
 	global_position = spawn_position
 	stop_moving()
 	player_stats.respawn()
+	sfx.play_at("portal", global_position)
+	Effects.aura(get_parent(), global_position, Color(0.55, 0.75, 1.0))
