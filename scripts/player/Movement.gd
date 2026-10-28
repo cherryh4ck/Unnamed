@@ -17,9 +17,14 @@ var speed: float = 700.0
 const HOLD_REPATH_INTERVAL: float = 0.1
 ## Cuanto se tiene que mover el enemigo para recalcular el camino hacia el.
 const CHASE_REPATH_DISTANCE: float = 40.0
+## Distancia en la que se busca un enemigo para el Golpe Brutal si no hay ninguno marcado.
+const SKILL_AUTO_TARGET_RANGE: float = 700.0
+const SKILL_COUNT: int = 5
 
 var target_enemy: Node3D = null
 var hovered_enemy: Node3D = null
+## Habilidad de golpe esperando a que el objetivo quede en rango (-1 = ninguna).
+var pending_skill: int = -1
 var spawn_position: Vector3
 
 var _moving: bool = false
@@ -123,7 +128,11 @@ func _update_attack_target(delta: float) -> bool:
 	if to_target.length() <= attack_range:
 		stop_moving()
 		_face(to_target, delta)
-		combat.try_attack(target_enemy)
+		if pending_skill >= 0:
+			combat.use_skill(pending_skill, target_enemy.global_position, target_enemy)
+			pending_skill = -1
+		else:
+			combat.try_attack(target_enemy)
 		return true
 
 	if target_enemy.global_position.distance_to(_last_chase_target) > CHASE_REPATH_DISTANCE:
@@ -146,6 +155,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_handle_click()
 	elif event.is_action_released("leftMouse"):
 		_holding_move = false
+	else:
+		for i in SKILL_COUNT:
+			if event.is_action_pressed("skill_%d" % (i + 1)):
+				use_skill(i)
+				get_viewport().set_input_as_handled()
+				return
 
 
 func _handle_click() -> void:
@@ -154,6 +169,7 @@ func _handle_click() -> void:
 		return
 
 	var enemy: Node3D = _enemy_from_collider(result.collider)
+	pending_skill = -1
 	if enemy:
 		target_enemy = enemy
 		_last_chase_target = Vector3.INF
@@ -182,6 +198,55 @@ func _update_hold(delta: float) -> void:
 	var result: Dictionary = _raycast_mouse()
 	if not result.is_empty() and _enemy_from_collider(result.collider) == null:
 		_move_to(result.position)
+
+
+## Intenta usar la habilidad del slot (teclas 1-5 o clic en la barra).
+func use_skill(index: int) -> void:
+	var skill: SkillData = skill_book.get_skill(index)
+	if skill == null or player_stats.dead:
+		return
+	var head: Vector3 = global_position + Vector3.UP * 450.0
+	if not skill_book.is_unlocked(index):
+		floating_text.spawn(head, "Se aprende en el nivel %d" % skill.unlock_level, Color(0.7, 0.7, 0.7), 16)
+		return
+	if not skill_book.is_ready(index):
+		floating_text.spawn(head, "Recargando...", Color(0.7, 0.7, 0.7), 16)
+		return
+
+	if skill.kind == SkillData.Kind.STRIKE:
+		var enemy: Node3D = _skill_target()
+		if enemy == null:
+			floating_text.spawn(head, "Sin objetivo", Color(0.7, 0.7, 0.7), 16)
+			return
+		# Camina hasta el enemigo; el golpe sale al quedar en rango.
+		target_enemy = enemy
+		_last_chase_target = Vector3.INF
+		pending_skill = index
+		return
+
+	var aim: Vector3 = global_position + global_transform.basis.z * 500.0
+	if is_instance_valid(hovered_enemy):
+		aim = hovered_enemy.global_position
+	else:
+		var result: Dictionary = _raycast_mouse()
+		if not result.is_empty():
+			aim = result.position
+	combat.use_skill(index, aim, hovered_enemy)
+
+
+func _skill_target() -> Node3D:
+	if is_instance_valid(hovered_enemy) and not hovered_enemy.dead:
+		return hovered_enemy
+	if is_instance_valid(target_enemy) and not target_enemy.dead:
+		return target_enemy
+	var best: Node3D = null
+	var best_dist: float = SKILL_AUTO_TARGET_RANGE
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		var dist: float = global_position.distance_to(enemy.global_position)
+		if dist < best_dist:
+			best = enemy
+			best_dist = dist
+	return best
 
 
 func _move_to(point: Vector3) -> void:
@@ -243,6 +308,7 @@ func _on_leveled_up(_new_level: int) -> void:
 
 func _on_died() -> void:
 	target_enemy = null
+	pending_skill = -1
 	_holding_move = false
 	stop_moving()
 	if click_reference:

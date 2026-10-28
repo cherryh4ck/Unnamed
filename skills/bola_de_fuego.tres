@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/bola_de_fuego.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Bola de Fuego"
+description = "Lanzás una bola de fuego hacia el cursor que explota al impactar: 200% de daño en área."
+kind = 2
+unlock_level = 3
+base_cooldown = 8.0
+damage_multiplier = 2.0
+radius = 300.0
+max_range = 1800.0
+sound = "fireball"
+animation = "85_BT2_18"
+animation_speed = 2.0
+effect_color = Color(1, 0.5, 0.12, 1)

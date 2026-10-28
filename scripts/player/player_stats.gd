@@ -8,6 +8,7 @@ signal health_changed(current: float, maximum: float)
 signal xp_changed(current: int, needed: int)
 signal leveled_up(new_level: int)
 signal stats_changed
+signal buffs_changed
 signal died
 signal respawned
 
@@ -34,6 +35,9 @@ var attributes: Dictionary = {
 }
 var health: float = 0.0
 var dead: bool = false
+## Mejoras temporales activas: id -> {name, icon, duration, time_left,
+## damage_mult, attack_speed_mult, defense}.
+var buffs: Dictionary = {}
 
 
 func _ready() -> void:
@@ -42,9 +46,49 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_tick_buffs(delta)
 	if dead or health >= get_max_health():
 		return
 	heal(get_health_regen() * delta)
+
+
+# --- Mejoras temporales ----------------------------------------------------
+
+func add_buff(id: String, buff: Dictionary) -> void:
+	buff["time_left"] = buff.get("duration", 5.0)
+	buffs[id] = buff
+	buffs_changed.emit()
+	stats_changed.emit()
+
+
+func _tick_buffs(delta: float) -> void:
+	if buffs.is_empty():
+		return
+	var expired: Array = []
+	for id in buffs:
+		buffs[id].time_left -= delta
+		if buffs[id].time_left <= 0.0:
+			expired.append(id)
+	if expired.is_empty():
+		return
+	for id in expired:
+		buffs.erase(id)
+	buffs_changed.emit()
+	stats_changed.emit()
+
+
+func _buff_product(key: String) -> float:
+	var result: float = 1.0
+	for buff in buffs.values():
+		result *= buff.get(key, 1.0)
+	return result
+
+
+func _buff_sum(key: String) -> float:
+	var result: float = 0.0
+	for buff in buffs.values():
+		result += buff.get(key, 0.0)
+	return result
 
 
 # --- Experiencia y atributos ----------------------------------------------
@@ -98,7 +142,7 @@ func get_weapon() -> Itemdata:
 
 
 func get_damage_multiplier() -> float:
-	return 1.0 + attributes.fuerza * 0.02
+	return (1.0 + attributes.fuerza * 0.02) * _buff_product("damage_mult")
 
 
 func get_min_damage() -> int:
@@ -117,7 +161,7 @@ func get_max_damage() -> int:
 func get_attack_speed() -> float:
 	var weapon: Itemdata = get_weapon()
 	var base: float = weapon.attack_speed if weapon else UNARMED_ATTACK_SPEED
-	return base * (1.0 + attributes.destreza * 0.01)
+	return base * (1.0 + attributes.destreza * 0.01) * _buff_product("attack_speed_mult")
 
 
 func get_crit_chance() -> float:
@@ -125,7 +169,7 @@ func get_crit_chance() -> float:
 
 
 func get_defense() -> int:
-	var total: float = attributes.vitalidad * 0.5
+	var total: float = attributes.vitalidad * 0.5 + _buff_sum("defense")
 	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
 		var item: Itemdata = inventory_data.get_equipped(equip_index)
 		if item:
@@ -166,6 +210,8 @@ func take_damage(amount: float) -> Dictionary:
 	health_changed.emit(health, get_max_health())
 	if health <= 0.0:
 		dead = true
+		buffs.clear()
+		buffs_changed.emit()
 		died.emit()
 	return {"blocked": false, "amount": final_amount}
 

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/piel_de_piedra.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Piel de Piedra"
+description = "Durante 12 segundos tu piel se endurece: +40 de defensa."
+kind = 3
+unlock_level = 7
+base_cooldown = 35.0
+buff_duration = 12.0
+buff_defense = 40
+sound = "resistance"
+animation = "85_BT2_15"
+animation_speed = 1.5
+effect_color = Color(0.7, 0.75, 0.85, 1)

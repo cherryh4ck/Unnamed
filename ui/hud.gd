@@ -3,6 +3,8 @@ extends CanvasLayer
 ## HUD: barra inferior (retrato, vida, experiencia, habilidades), marco del
 ## enemigo apuntado arriba y mensajes grandes en el centro de la pantalla.
 
+const SkillSlot := preload("res://ui/skill_slot.gd")
+
 ## Altura de la cabeza del personaje (para la camara del retrato).
 const PORTRAIT_HEAD_HEIGHT: float = 325.0
 const PORTRAIT_DISTANCE: float = 300.0
@@ -14,6 +16,7 @@ const LOW_HEALTH_RATIO: float = 0.25
 @onready var level_label: Label = %LevelBadge
 @onready var portrait_camera: Camera3D = %PortraitCamera
 @onready var skill_bar: HBoxContainer = %SkillBar
+@onready var buff_bar: HBoxContainer = %BuffBar
 @onready var target_frame: PanelContainer = %TargetFrame
 @onready var target_name: Label = %TargetName
 @onready var target_bar: ProgressBar = %TargetBar
@@ -23,6 +26,7 @@ var player: CharacterBody3D
 var _message_time: float = 0.0
 var _respawn_countdown: float = -1.0
 var _pulse: float = 0.0
+var _buff_labels: Dictionary = {}
 
 
 func _ready() -> void:
@@ -38,12 +42,21 @@ func _ready() -> void:
 	message_label.visible = false
 	target_frame.visible = false
 
+	for i in skill_book.skills.size():
+		var slot := SkillSlot.new()
+		skill_bar.add_child(slot)
+		slot.setup(i)
+		slot.pressed.connect(_on_skill_slot_pressed)
+	skill_book.skill_unlocked.connect(_on_skill_unlocked)
+	player_stats.buffs_changed.connect(_rebuild_buffs)
+
 
 func _process(delta: float) -> void:
 	_update_portrait()
 	_update_target()
 	_update_message(delta)
 	_update_low_health(delta)
+	_update_buffs()
 
 
 ## Muestra un texto grande en el centro durante unos segundos.
@@ -108,6 +121,55 @@ func _update_low_health(delta: float) -> void:
 	_pulse += delta * 6.0
 	var glow: float = 0.5 + 0.5 * sin(_pulse)
 	health_bar.modulate = Color(1.0 + glow * 0.6, 1.0 - glow * 0.3, 1.0 - glow * 0.3)
+
+
+# --- Habilidades y mejoras temporales ---------------------------------------
+
+func _on_skill_slot_pressed(index: int) -> void:
+	if player:
+		player.use_skill(index)
+
+
+func _on_skill_unlocked(index: int) -> void:
+	var skill: SkillData = skill_book.get_skill(index)
+	sfx.play("new_skill")
+	# Espera a que termine el mensaje de nivel para no taparlo.
+	await get_tree().create_timer(1.6, false).timeout
+	show_message("Nueva habilidad: %s (tecla %d)" % [skill.name, index + 1], Color(0.6, 0.9, 1.0), 3.0)
+
+
+func _rebuild_buffs() -> void:
+	for child in buff_bar.get_children():
+		child.queue_free()
+	_buff_labels.clear()
+	for id in player_stats.buffs:
+		var buff: Dictionary = player_stats.buffs[id]
+		var box := PanelContainer.new()
+		box.theme_type_variation = &"SlotPanel"
+		box.tooltip_text = buff.name
+		var icon := TextureRect.new()
+		icon.texture = buff.get("icon")
+		icon.custom_minimum_size = Vector2(36, 36)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(icon)
+		var time_label := Label.new()
+		time_label.add_theme_font_size_override("font_size", 13)
+		time_label.add_theme_constant_override("outline_size", 5)
+		time_label.size_flags_horizontal = Control.SIZE_SHRINK_END
+		time_label.size_flags_vertical = Control.SIZE_SHRINK_END
+		time_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		box.add_child(time_label)
+		buff_bar.add_child(box)
+		_buff_labels[id] = time_label
+	_update_buffs()
+
+
+func _update_buffs() -> void:
+	for id in _buff_labels:
+		if player_stats.buffs.has(id):
+			_buff_labels[id].text = str(ceili(player_stats.buffs[id].time_left))
 
 
 # --- Mensajes --------------------------------------------------------------

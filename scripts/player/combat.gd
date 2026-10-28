@@ -1,9 +1,14 @@
 extends Node
 
-## Ataque basico del jugador. Movement.gd lo llama cuando el objetivo
-## esta en rango; aca se controla el ritmo de golpes y se aplica el daño.
+## Ataque basico y habilidades del jugador. Movement.gd lo llama cuando el
+## objetivo esta en rango; aca se controla el ritmo de golpes y se aplica el daño.
 
 signal attack_started(interval: float)
+signal skill_animation(anim_name: String, speed: float)
+
+const FIREBALL := preload("res://scripts/skills/fireball.gd")
+## Tras usar una habilidad, el ataque basico espera al menos este tiempo.
+const SKILL_LOCKOUT: float = 0.5
 
 ## Momento del impacto dentro del intervalo de ataque (0 = inicio, 1 = fin).
 const HIT_MOMENT: float = 0.45
@@ -31,6 +36,89 @@ func try_attack(target: Node3D) -> bool:
 	attack_started.emit(interval)
 	_deliver_hit(target, interval * HIT_MOMENT)
 	return true
+
+
+## Usa la habilidad del slot indicado. aim_point es el punto del mouse en el
+## piso y target el enemigo marcado (puede ser null segun la habilidad).
+func use_skill(index: int, aim_point: Vector3, target: Node3D) -> bool:
+	var skill: SkillData = skill_book.get_skill(index)
+	if skill == null or not skill_book.is_ready(index) or player_stats.dead:
+		return false
+	skill_book.start_cooldown(index)
+	_cooldown = maxf(_cooldown, SKILL_LOCKOUT)
+	skill_animation.emit(skill.animation, skill.animation_speed)
+	if not skill.sound.is_empty():
+		sfx.play_at(skill.sound, character.global_position)
+	match skill.kind:
+		SkillData.Kind.STRIKE:
+			_strike(skill, target)
+		SkillData.Kind.WHIRLWIND:
+			_whirlwind(skill)
+		SkillData.Kind.PROJECTILE:
+			_fireball(skill, aim_point)
+		SkillData.Kind.BUFF:
+			_buff(skill)
+	return true
+
+
+func _strike(skill: SkillData, target: Node3D) -> void:
+	await get_tree().create_timer(0.25, false).timeout
+	if not is_instance_valid(target) or target.dead or player_stats.dead:
+		return
+	var hit: Dictionary = player_stats.roll_damage()
+	target.take_damage(hit.amount * skill.damage_multiplier, hit.crit)
+	sfx.play_at("hit", target.global_position, 3.0)
+	Effects.burst(character.get_parent(), target.global_position + Vector3.UP * 200.0, skill.effect_color, 45)
+
+
+func _whirlwind(skill: SkillData) -> void:
+	Effects.ring(character.get_parent(), character.global_position, skill.effect_color, skill.radius)
+	await get_tree().create_timer(0.2, false).timeout
+	if player_stats.dead:
+		return
+	var hit_any: bool = false
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		var offset: Vector3 = enemy.global_position - character.global_position
+		offset.y = 0.0
+		if offset.length() <= skill.radius + enemy.data.collision_radius:
+			var hit: Dictionary = player_stats.roll_damage()
+			enemy.take_damage(hit.amount * skill.damage_multiplier, hit.crit)
+			hit_any = true
+	if hit_any:
+		sfx.play_at("hit", character.global_position, 2.0)
+
+
+func _fireball(skill: SkillData, aim_point: Vector3) -> void:
+	var direction: Vector3 = aim_point - character.global_position
+	direction.y = 0.0
+	if direction.length() < 1.0:
+		direction = character.global_transform.basis.z
+	direction = direction.normalized()
+	character.rotation.y = atan2(direction.x, direction.z)
+	await get_tree().create_timer(0.2, false).timeout
+	if player_stats.dead:
+		return
+	var ball: Node3D = FIREBALL.new()
+	ball.direction = direction
+	ball.max_range = skill.max_range
+	ball.radius = skill.radius
+	ball.damage_multiplier = skill.damage_multiplier
+	ball.color = skill.effect_color
+	character.get_parent().add_child(ball)
+	ball.global_position = character.global_position + Vector3.UP * 220.0 + direction * 80.0
+
+
+func _buff(skill: SkillData) -> void:
+	player_stats.add_buff(skill.name, {
+		"name": skill.name,
+		"icon": skill.icon,
+		"duration": skill.buff_duration,
+		"damage_mult": skill.buff_damage_multiplier,
+		"attack_speed_mult": skill.buff_attack_speed_multiplier,
+		"defense": skill.buff_defense,
+	})
+	Effects.aura(character.get_parent(), character.global_position, skill.effect_color)
+	floating_text.spawn(character.global_position + Vector3.UP * 450.0, skill.name, skill.effect_color, 22)
 
 
 func _deliver_hit(target: Node3D, delay: float) -> void:

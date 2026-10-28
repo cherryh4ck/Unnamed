@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/torbellino.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Torbellino"
+description = "Girás con el arma y golpeás a todos los enemigos alrededor con 150% del daño."
+kind = 1
+unlock_level = 2
+base_cooldown = 9.0
+damage_multiplier = 1.5
+radius = 420.0
+sound = "throw"
+animation = "85_BT2_20"
+animation_speed = 2.0
+effect_color = Color(0.75, 0.95, 1, 1)

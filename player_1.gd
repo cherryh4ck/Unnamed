@@ -15,6 +15,8 @@ extends Node3D
 
 var walk_step_index: int = 0
 var attack_index: int = 0
+## Animacion de ataque o habilidad en curso (para saber cuando termina).
+var action_animation: String = ""
 var was_moving: bool = false
 var attacking: bool = false
 var rotation_speed: float = 8.0
@@ -27,6 +29,7 @@ func _ready() -> void:
 
 	anim_player.animation_finished.connect(_on_animation_finished)
 	combat.attack_started.connect(_on_attack_started)
+	combat.skill_animation.connect(_on_skill_animation)
 	player_stats.died.connect(_on_died)
 	player_stats.respawned.connect(_on_respawned)
 	anim_player.play(idle_animation)
@@ -57,7 +60,7 @@ func _process(delta: float) -> void:
 
 
 func _on_animation_finished(anim_name: StringName) -> void:
-	if anim_name in attack_animations:
+	if attacking and anim_name == action_animation:
 		attacking = false
 		if character.is_moving():
 			_play_current_step()
@@ -83,7 +86,19 @@ func _on_attack_started(interval: float) -> void:
 	var anim: Animation = anim_player.get_animation(anim_name)
 	if anim == null:
 		return
-	anim_player.play(anim_name, 0.05, anim.length / interval)
+	_play_action(anim_name, anim.length / interval)
+
+
+func _on_skill_animation(anim_name: String, speed: float) -> void:
+	if anim_player.has_animation(anim_name):
+		attacking = true
+		_play_action(anim_name, speed)
+
+
+func _play_action(anim_name: String, speed: float) -> void:
+	action_animation = anim_name
+	_set_loop(anim_name, Animation.LOOP_NONE)
+	anim_player.play(anim_name, 0.05, speed)
 	anim_player.seek(0.0, true)
 
 

@@ -6,7 +6,12 @@ class_name Effects
 
 ## Chispas doradas que suben alrededor del personaje al subir de nivel.
 static func level_up(parent: Node, position: Vector3) -> void:
-	var particles: CPUParticles3D = _burst(Color(1.0, 0.82, 0.3), 70, 1.6)
+	aura(parent, position, Color(1.0, 0.82, 0.3))
+
+
+## Chispas que suben en anillo alrededor de un personaje (mejoras, nivel).
+static func aura(parent: Node, position: Vector3, color: Color) -> void:
+	var particles: CPUParticles3D = _burst(color, 70, 1.6)
 	particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
 	particles.emission_ring_axis = Vector3.UP
 	particles.emission_ring_radius = 130.0
@@ -33,6 +38,28 @@ static func burst(parent: Node, position: Vector3, color: Color, amount: int = 4
 	_spawn(parent, particles, position)
 
 
+## Onda que se expande a ras del piso hasta el radio indicado (area de efecto).
+static func ring(parent: Node, position: Vector3, color: Color, radius: float) -> void:
+	var particles: CPUParticles3D = _burst(color, 90, 0.45)
+	particles.explosiveness = 1.0
+	particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+	particles.emission_ring_axis = Vector3.UP
+	particles.emission_ring_radius = 30.0
+	particles.emission_ring_inner_radius = 0.0
+	particles.emission_ring_height = 5.0
+	particles.direction = Vector3.RIGHT
+	particles.spread = 180.0
+	particles.flatness = 1.0
+	particles.initial_velocity_min = radius / 0.45
+	particles.initial_velocity_max = radius / 0.45
+	particles.damping_min = 0.0
+	particles.damping_max = 0.0
+	particles.gravity = Vector3.ZERO
+	particles.scale_amount_min = 1.5
+	particles.scale_amount_max = 2.5
+	_spawn(parent, particles, position + Vector3.UP * 40.0)
+
+
 static func _burst(color: Color, amount: int, lifetime: float) -> CPUParticles3D:
 	var particles := CPUParticles3D.new()
 	particles.one_shot = true
@@ -46,7 +73,7 @@ static func _burst(color: Color, amount: int, lifetime: float) -> CPUParticles3D
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material.vertex_color_use_as_albedo = true
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_texture = _soft_dot()
+	material.albedo_texture = soft_dot()
 	var quad := QuadMesh.new()
 	quad.size = Vector2(26, 26)
 	quad.material = material
@@ -62,7 +89,7 @@ static func _burst(color: Color, amount: int, lifetime: float) -> CPUParticles3D
 
 
 # Punto redondo con borde difuso (para que las particulas no sean cuadrados).
-static func _soft_dot() -> GradientTexture2D:
+static func soft_dot() -> GradientTexture2D:
 	var gradient := Gradient.new()
 	gradient.set_color(0, Color.WHITE)
 	gradient.set_color(1, Color(1, 1, 1, 0))
