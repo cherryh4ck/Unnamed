@@ -3,9 +3,10 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cit5aryea2s5m"
-path="res://.godot/imported/qt_tree_01_Leaves_NormalTree_C.png-14d37e68c18a7aaeb7aef7512a7b62fa.ctex"
+path.s3tc="res://.godot/imported/qt_tree_01_Leaves_NormalTree_C.png-14d37e68c18a7aaeb7aef7512a7b62fa.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "a74b2e0572071c6afd20631655200d7a"
@@ -14,11 +15,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/nature/qt_tree_01/qt_tree_01_Leaves_NormalTree_C.png"
-dest_files=["res://.godot/imported/qt_tree_01_Leaves_NormalTree_C.png-14d37e68c18a7aaeb7aef7512a7b62fa.ctex"]
+dest_files=["res://.godot/imported/qt_tree_01_Leaves_NormalTree_C.png-14d37e68c18a7aaeb7aef7512a7b62fa.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -40,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0
