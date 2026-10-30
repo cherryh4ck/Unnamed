@@ -98,11 +98,12 @@ func _strike(skill: SkillData, target: Node3D) -> void:
 		return
 	target.take_hit(_roll_skill_hit(skill))
 	sfx.play_at("hit", target.global_position, 3.0)
-	Effects.burst(character.get_parent(), target.global_position + Vector3.UP * 200.0, skill.effect_color, 45)
+	Effects.heavy_impact(character.get_parent(), target.global_position, skill.effect_color)
 
 
 func _whirlwind(skill: SkillData) -> void:
 	Effects.ring(character.get_parent(), character.global_position, skill.effect_color, skill.radius)
+	Effects.whirl(character, skill.effect_color, skill.radius * 0.8)
 	await get_tree().create_timer(0.2, false).timeout
 	if player_stats.dead:
 		return

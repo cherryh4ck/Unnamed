@@ -48,6 +48,7 @@ var _flash_time: float = 0.0
 ## Veneno y quemadura que tiene encima.
 var status := StatusEffects.new()
 var _burn_fx: CPUParticles3D
+var _poison_fx: CPUParticles3D
 var _status_pulse: float = 0.0
 ## Daño por tiempo acumulado que todavia no llego a 1 (para el numero flotante).
 var _dot_shown: Dictionary = {}
@@ -385,6 +386,10 @@ func _update_status(delta: float) -> void:
 		_burn_fx = Effects.burning(self, 160.0 * data.model_scale, data.collision_radius)
 	if _burn_fx:
 		_burn_fx.emitting = status.is_burning()
+	if status.is_poisoned() and _poison_fx == null:
+		_poison_fx = Effects.poisoned(self, 200.0 * data.model_scale, data.collision_radius)
+	if _poison_fx:
+		_poison_fx.emitting = status.is_poisoned()
 	if status.is_poisoned():
 		_status_pulse += delta * 5.0
 		_refresh_overlay()
@@ -448,6 +453,8 @@ func _die() -> void:
 	status.clear()
 	if _burn_fx:
 		_burn_fx.emitting = false
+	if _poison_fx:
+		_poison_fx.emitting = false
 	_refresh_overlay()
 	_attacking = false
 	var xp: int = get_xp_reward()

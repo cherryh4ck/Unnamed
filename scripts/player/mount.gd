@@ -116,7 +116,7 @@ func _enemy_nearby() -> bool:
 
 
 func _puff() -> void:
-	Effects.burst(character.get_parent(), character.global_position + Vector3.UP * 60.0, Color(0.6, 0.5, 0.36), 35, 140.0)
+	Effects.dust_puff(character.get_parent(), character.global_position + Vector3.UP * 20.0, 140.0)
 	sfx.play("portal", -12.0)
 
 
