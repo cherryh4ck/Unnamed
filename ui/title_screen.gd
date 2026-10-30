@@ -3,7 +3,7 @@ extends CanvasLayer
 
 ## Pantalla de titulo al abrir el juego. El mundo ya esta cargado atras (con
 ## la partida guardada) y una camara lo recorre despacio mientras el juego
-## esta en pausa. Menu con mouse o teclado: Continuar, Partida nueva (con la
+## esta en pausa. Menu con mouse o teclado: Continuar, Partida nueva (clase y
 ## dificultad), Opciones, Creditos y Salir. Al entrar, la camara baja hasta
 ## la del juego y aparece el HUD.
 
@@ -35,6 +35,8 @@ var _angle: float = 0.6
 var _leaving: bool = false
 var _title_font: FontVariation
 var _item_font: FontVariation
+var _chosen_class: String = PlayerClasses.DEFAULT
+var _class_label: Label
 
 
 func _ready() -> void:
@@ -144,6 +146,7 @@ func _build() -> void:
 	pages.custom_minimum_size = Vector2(520, 420)
 	column.add_child(pages)
 	_pages.main = _build_main()
+	_pages.classes = _build_classes()
 	_pages.new = _build_new_game()
 	_pages.options = _build_options()
 	_pages.credits = _build_credits()
@@ -168,7 +171,7 @@ func _build_main() -> VBoxContainer:
 	if save_game.has_save():
 		var item := _item(page, "Continuar", _enter_game)
 		var detail := Label.new()
-		detail.text = "Nivel %d · %s · Día %d" % [player_stats.level, difficulty.get_level_name(), world_time.day]
+		detail.text = "%s nivel %d · %s · Día %d" % [PlayerClasses.name_of(player_stats.class_id), player_stats.level, difficulty.get_level_name(), world_time.day]
 		detail.add_theme_font_size_override("font_size", 14)
 		detail.add_theme_color_override("font_color", difficulty.get_color().lerp(DIM, 0.35))
 		var detail_box := MarginContainer.new()
@@ -177,16 +180,47 @@ func _build_main() -> VBoxContainer:
 		detail_box.add_child(detail)
 		page.add_child(detail_box)
 		item.set_meta("first", true)
-	_item(page, "Partida nueva", _show_page.bind("new"))
+	_item(page, "Partida nueva", _show_page.bind("classes"))
 	_item(page, "Opciones", _show_page.bind("options"))
 	_item(page, "Créditos", _show_page.bind("credits"))
 	_item(page, "Salir", func() -> void: get_tree().quit())
 	return page
 
 
+func _build_classes() -> VBoxContainer:
+	var page := _page()
+	page.add_child(_header("Partida nueva"))
+	page.add_child(_text("Elegí la clase de tu personaje.", 15, DIM))
+	for i in PlayerClasses.ORDER.size():
+		var class_id: String = PlayerClasses.ORDER[i]
+		var info: Dictionary = PlayerClasses.get_info(class_id)
+		var item := _item(page, info.name, _pick_class.bind(class_id), info.color, 40.0)
+		if i == 0:
+			item.set_meta("first", true)
+		var description := _text(info.description, 13, DIM)
+		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var box := MarginContainer.new()
+		box.add_theme_constant_override("margin_left", 34)
+		box.add_theme_constant_override("margin_bottom", 4)
+		box.add_child(description)
+		page.add_child(box)
+	_item(page, "Volver", _show_page.bind("main"))
+	return page
+
+
+func _pick_class(class_id: String) -> void:
+	_chosen_class = class_id
+	var info: Dictionary = PlayerClasses.get_info(class_id)
+	_class_label.text = info.name
+	_class_label.add_theme_color_override("font_color", info.color)
+	_show_page("new")
+
+
 func _build_new_game() -> VBoxContainer:
 	var page := _page()
 	page.add_child(_header("Partida nueva"))
+	_class_label = _text("", 20, GOLD)
+	page.add_child(_class_label)
 	var info := _text("Elegí la dificultad. Queda fija para toda la partida.", 15, DIM)
 	page.add_child(info)
 	if save_game.has_save():
@@ -202,7 +236,7 @@ func _build_new_game() -> VBoxContainer:
 		box.add_theme_constant_override("margin_bottom", 4)
 		box.add_child(description)
 		page.add_child(box)
-	_item(page, "Volver", _show_page.bind("main"))
+	_item(page, "Volver", _show_page.bind("classes"))
 	return page
 
 
@@ -245,6 +279,9 @@ func _credits_text() -> String:
 	var lines := PackedStringArray([
 		"[color=#%s][b]Interfaz[/b][/color]" % gold,
 		"RPG GUI construction kit — Matjaž Lamut (CC-BY 3.0)",
+		"",
+		"[color=#%s][b]Personajes y armas[/b][/color]" % gold,
+		"0 A.D. — Wildfire Games, wildfiregames.com (CC BY-SA 3.0, creativecommons.org/licenses/by-sa/3.0)",
 		"",
 		"[color=#%s][b]Íconos[/b][/color]" % gold,
 		"game-icons.net — Lorc, Delapouite, Sbed y Carl Olsen (CC BY 3.0)",
@@ -455,7 +492,7 @@ func _finish() -> void:
 func _start_new_game(level: int) -> void:
 	get_tree().paused = false
 	# La escena se vuelve a armar con la partida nueva (sin titulo).
-	save_game.new_game(level)
+	save_game.new_game(level, _chosen_class)
 
 
 func _game_camera() -> Camera3D:

@@ -6,12 +6,14 @@ extends Node3D
 ## llamas que giran, una estela de fuego, humo y brasas, y una luz que titila.
 ## Al explotar la estela no desaparece de golpe: deja de emitir y se apaga.
 
-const SPEED: float = 1500.0
 const HIT_RADIUS: float = 60.0
 ## Tiempo que queda el nodo despues de explotar para que la estela se apague.
 const LINGER: float = 1.2
 
 var direction: Vector3 = Vector3.FORWARD
+var speed: float = 1500.0
+## Distancia que recorre antes de explotar (0 = la de la habilidad).
+var travel: float = 0.0
 ## Habilidad que la lanzo (alcance, radio, multiplicador y tipo de daño).
 var skill: SkillData
 var color: Color = Color(1, 0.5, 0.12)
@@ -118,17 +120,20 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if _exploded:
 		return
-	var step: float = SPEED * delta
+	var step: float = speed * delta
 	global_position += direction * step
 	_traveled += step
 
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		var offset: Vector3 = enemy.global_position - global_position
-		offset.y = 0.0
-		if offset.length() <= HIT_RADIUS + enemy.data.collision_radius:
-			_explode()
-			return
-	if _traveled >= skill.max_range:
+	# Con travel fijo (el meteoro que cae) no explota en el aire al pasar
+	# sobre un enemigo: llega al piso.
+	if travel <= 0.0:
+		for enemy in get_tree().get_nodes_in_group("enemies"):
+			var offset: Vector3 = enemy.global_position - global_position
+			offset.y = 0.0
+			if offset.length() <= HIT_RADIUS + enemy.data.collision_radius:
+				_explode()
+				return
+	if _traveled >= (travel if travel > 0.0 else skill.max_range):
 		_explode()
 
 
@@ -138,7 +143,7 @@ func _explode() -> void:
 		var offset: Vector3 = enemy.global_position - global_position
 		offset.y = 0.0
 		if offset.length() <= skill.radius:
-			enemy.take_hit(player_stats.roll_hit(skill.damage_multiplier, skill.damage_type, skill.damage_conversion))
+			enemy.take_hit(player_stats.roll_skill(skill))
 	sfx.play_at("hit", global_position, 2.0, 0.15)
 	Effects.fire_explosion(get_parent(), global_position, skill.radius)
 

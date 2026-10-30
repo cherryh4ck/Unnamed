@@ -15,6 +15,6 @@ buff_duration = 10.0
 buff_damage_multiplier = 1.5
 buff_attack_speed_multiplier = 1.2
 sound = "damage_boost"
-animation = "85_BT2_15"
+animation = "grito"
 animation_speed = 1.5
 effect_color = Color(1, 0.25, 0.15, 1)

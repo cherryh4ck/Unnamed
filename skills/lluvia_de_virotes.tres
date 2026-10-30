@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/lluvia_de_virotes.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Lluvia de Virotes"
+description = "Una lluvia de virotes cae sobre el cursor: 180% del daño del arma a todos los enemigos del área."
+kind = 5
+unlock_level = 7
+base_cooldown = 14.0
+damage_multiplier = 1.8
+radius = 380.0
+count = 14
+delay = 0.7
+sound = "throw"
+animation = "hechizo"
+animation_speed = 1.5
+effect_color = Color(0.95, 0.85, 0.6, 1)

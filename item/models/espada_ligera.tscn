@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/sword_celtic_long.glb" id="1_part"]
+
+[node name="EspadaLigera" type="Node3D"]
+
+[node name="sword_celtic_long" parent="." instance=ExtResource("1_part")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)

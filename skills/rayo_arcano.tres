@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/rayo_arcano.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Rayo Arcano"
+description = "Un rayo de energía arcana hacia el cursor: 160% de daño de hechizo, mágico."
+kind = 4
+unlock_level = 1
+base_cooldown = 2.5
+damage_multiplier = 1.6
+max_range = 1800.0
+damage_type = 1
+damage_conversion = 1.0
+spell = true
+count = 1
+sound = "unknown_spell"
+animation = "hechizo"
+animation_speed = 2.0
+effect_color = Color(0.55, 0.65, 1.0, 1)

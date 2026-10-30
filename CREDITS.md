@@ -1,6 +1,6 @@
 # Créditos
 
-Unnamed usa solamente arte con licencia libre (CC0, CC-BY y SIL OFL). Abajo
+Unnamed usa solamente arte con licencia libre (CC0, CC-BY, CC-BY-SA y SIL OFL). Abajo
 está cada autor, la licencia y de dónde sale cada cosa. Si agregás algo nuevo,
 verificá la licencia en la página de origen y sumalo acá.
 
@@ -42,12 +42,39 @@ En `assets/fonts/`, cada una con su `OFL.txt`:
 Cambios: se les sacó el fondo negro y el juego los tiñe de colores. Los íconos
 de habilidades (`ui/icons/skills/`) son esos dibujos recoloreados sobre un fondo
 propio: Golpe Brutal (Lorc, hammer-drop), Torbellino (Lorc, sword-spin), Bola de
-Fuego (Lorc, fireball), Furia (Delapouite, enrage) y Piel de Piedra
-(Delapouite, rock-golem). En el mapa grande, el yunque del herrero es "anvil"
+Fuego (Lorc, fireball), Furia (Delapouite, enrage), Piel de Piedra
+(Delapouite, rock-golem), Sacudida (Lorc, quake-stomp), Disparo Certero (Lorc,
+arrow-scope), Virote Venenoso (Lorc, poison-gas), Abanico de Virotes
+(Delapouite, split-arrows), Ojo de Halcón (Lorc, hawk-emblem), Lluvia de
+Virotes (Lorc, arrow-cluster), Rayo Arcano (Lorc, arcing-bolt), Anillo de
+Llamas (Lorc, fire-ring), Escudo Arcano (Lorc, magic-shield) y Meteoro (Lorc,
+meteor-impact). Las clases usan "broadsword" y "wizard-staff" de Lorc y
+"crossbow" de Carl Olsen. En el mapa grande, el yunque del herrero es "anvil"
 de Lorc y el baúl es "chest" de Delapouite.
 
 Las gemas (`item/gems/`) no usan arte de afuera: su talla y sus materiales los
 genera `item/gems/build_gems.gd`.
+
+## Personajes y armas (CC BY-SA 3.0)
+
+Los personajes (las tres clases del jugador, el comerciante, el herrero y los
+bandidos), sus animaciones y los modelos de las armas y escudos equipables son
+de **0 A.D.**, de **Wildfire Games** (https://www.wildfiregames.com/), con
+licencia [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
+Están en `assets/characters/oad/` junto con la licencia original
+(`LICENSE.txt`).
+
+- Original: arte de 0 A.D. (`binaries/data/mods/public/art/`), repositorio
+  https://gitea.wildfiregames.com/0ad/0ad (copia en
+  https://github.com/0ad/0ad, commit `61a3b95`).
+- Cambios: pasados de COLLADA a glTF, escala 0,42 y ejes Y arriba; cuerpos,
+  cabezas y accesorios armados en un solo personaje; colores de equipo y de
+  pelo fijados en las texturas; un clip corto de "golpe recibido" sacado del
+  de muerte. Las armas y escudos de `item/models/` usan esos accesorios
+  (espada celta, hacha, martillo, ballesta, escudo redondo y escudo oval).
+- **Comparte igual:** estos archivos y cualquier cambio que se les haga siguen
+  bajo CC BY-SA 3.0. El resto del juego (código y demás arte) no cambia de
+  licencia por incluirlos.
 
 ## Efectos
 

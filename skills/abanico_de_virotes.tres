@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/abanico_de_virotes.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Abanico de Virotes"
+description = "Disparás cinco virotes en abanico: 100% del daño del arma cada uno."
+kind = 4
+unlock_level = 3
+base_cooldown = 7.0
+damage_multiplier = 1.0
+max_range = 1600.0
+count = 5
+spread_deg = 50.0
+animation = "disparo"
+animation_speed = 1.8
+effect_color = Color(0.9, 0.8, 0.55, 1)

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_w2qoy"]
 [ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="3_eiu5c"]
-[ext_resource type="PackedScene" uid="uid://cgjkh40qw4st1" path="res://modelos/armas/hacha grande/36.WEP.gltf" id="3_mod"]
+[ext_resource type="PackedScene" path="res://item/models/hacha_grande.tscn" id="3_mod"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_4kxr6"]
 atlas = ExtResource("3_eiu5c")

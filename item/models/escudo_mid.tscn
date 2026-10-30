@@ -1,0 +1,13 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/shield_oval_celtic.glb" id="1_part"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/shield_oval_celtic_rim.glb" id="2_part"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/shield_oval_celtic_boss.glb" id="3_part"]
+
+[node name="EscudoMid" type="Node3D"]
+
+[node name="shield_oval_celtic" parent="." instance=ExtResource("1_part")]
+
+[node name="shield_oval_celtic_rim" parent="." instance=ExtResource("2_part")]
+
+[node name="shield_oval_celtic_boss" parent="." instance=ExtResource("3_part")]

@@ -1,9 +1,9 @@
 extends PanelContainer
 
 ## Menu del juego (Esc sin otro panel abierto): continuar, guardar, cargar,
-## partida nueva con eleccion de dificultad, opciones, volver a la pantalla de
-## titulo y salir. Sin pantalla de titulo y sin partida guardada arranca
-## directo en la eleccion de dificultad.
+## partida nueva con eleccion de clase y dificultad, opciones, volver a la
+## pantalla de titulo y salir. Sin pantalla de titulo y sin partida guardada
+## arranca directo en la partida nueva.
 
 const OptionsPanel := preload("res://ui/options_panel.gd")
 
@@ -14,6 +14,9 @@ var _difficulty_label: Label
 var _load_button: Button
 var _back_button: Button
 var _warning: Label
+var _class_buttons: Dictionary = {}
+var _class_description: Label
+var _chosen_class: String = PlayerClasses.DEFAULT
 ## Primera partida: hay que elegir dificultad (no se puede volver con Esc).
 var _choosing_first: bool = false
 
@@ -93,6 +96,33 @@ func _build_difficulty() -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
 	box.add_child(_header("PARTIDA NUEVA", ""))
+
+	var class_info := Label.new()
+	class_info.text = "Elegí la clase del personaje:"
+	class_info.theme_type_variation = &"DimLabel"
+	box.add_child(class_info)
+	var class_row := HBoxContainer.new()
+	class_row.add_theme_constant_override("separation", 8)
+	var group := ButtonGroup.new()
+	for class_id in PlayerClasses.ORDER:
+		var info_class: Dictionary = PlayerClasses.get_info(class_id)
+		var button := _add_button(class_row, info_class.name, _choose_class.bind(class_id))
+		button.toggle_mode = true
+		button.button_group = group
+		button.icon = load(info_class.icon)
+		button.expand_icon = false
+		button.add_theme_constant_override("icon_max_width", 22)
+		button.add_theme_color_override("icon_normal_color", info_class.color)
+		button.add_theme_color_override("icon_pressed_color", info_class.color.lightened(0.3))
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_class_buttons[class_id] = button
+	box.add_child(class_row)
+	_class_description = Label.new()
+	_class_description.theme_type_variation = &"DimLabel"
+	_class_description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_class_description.custom_minimum_size.x = 420
+	box.add_child(_class_description)
+	_choose_class(_chosen_class)
 
 	var info := Label.new()
 	info.text = "Elegí la dificultad. Queda fija para toda la partida."
@@ -220,10 +250,20 @@ func _recenter() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER, Control.PRESET_MODE_MINSIZE)
 
 
+func _choose_class(class_id: String) -> void:
+	_chosen_class = class_id
+	_class_buttons[class_id].button_pressed = true
+	# El tema dibuja igual el boton apretado: las otras clases se oscurecen.
+	for id in _class_buttons:
+		_class_buttons[id].modulate = Color.WHITE if id == class_id else Color(0.55, 0.55, 0.55)
+	_class_description.text = PlayerClasses.get_info(class_id).description
+	_recenter.call_deferred()
+
+
 func _on_difficulty_chosen(index: int) -> void:
 	_choosing_first = false
 	close()
-	save_game.new_game(index)
+	save_game.new_game(index, _chosen_class)
 
 
 func _any_panel_open() -> bool:

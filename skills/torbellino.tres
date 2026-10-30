@@ -14,6 +14,6 @@ base_cooldown = 9.0
 damage_multiplier = 1.5
 radius = 420.0
 sound = "throw"
-animation = "85_BT2_20"
+animation = "giro"
 animation_speed = 2.0
 effect_color = Color(0.75, 0.95, 1, 1)

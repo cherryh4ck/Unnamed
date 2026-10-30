@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/crossbow.glb" id="1_part"]
+
+[node name="BallestaPesada" type="Node3D"]
+
+[node name="crossbow" parent="." instance=ExtResource("1_part")]
+transform = Transform3D(1.25, 0, 0, 0, 1.25, 0, 0, 0, 1.25, 0, 0, 0)

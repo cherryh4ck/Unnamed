@@ -1,7 +1,7 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/npc/merchant.gd" id="1_merchant"]
-[ext_resource type="PackedScene" path="res://modelos/player pj/player 2.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/characters/merchant.glb" id="2_model"]
 [ext_resource type="Texture2D" path="res://assets/icons/game-icons/delapouite/two-coins.svg" id="3_coin"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_merchant"]
@@ -11,7 +11,7 @@ height = 360.0
 [node name="Merchant" type="StaticBody3D" groups=["npcs"]]
 script = ExtResource("1_merchant")
 display_name = "Comerciante"
-idle_animation = "82_BT3_0"
+idle_animation = "idle"
 map_icon = ExtResource("3_coin")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
@@ -19,7 +19,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 180, 0)
 shape = SubResource("CapsuleShape3D_merchant")
 
 [node name="Model" parent="." instance=ExtResource("2_model")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 255, 0)
+transform = Transform3D(225, 0, 0, 0, 225, 0, 0, 0, 225, 0, 0, 0)
 
 [node name="NameLabel" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 440, 0)

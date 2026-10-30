@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/disparo_certero.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Disparo Certero"
+description = "Un virote apuntado con cuidado hacia el cursor: 240% del daño del arma."
+kind = 4
+unlock_level = 1
+base_cooldown = 3.0
+damage_multiplier = 2.4
+max_range = 1900.0
+count = 1
+animation = "disparo"
+animation_speed = 1.8
+effect_color = Color(0.95, 0.85, 0.5, 1)

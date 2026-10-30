@@ -15,14 +15,6 @@ const COMBO_MAX_SKILLS: int = 3
 ## La recarga del combo es la suma de las recargas de sus habilidades por este factor.
 const COMBO_COOLDOWN_FACTOR: float = 0.75
 
-const SKILL_PATHS := [
-	"res://skills/golpe_brutal.tres",
-	"res://skills/torbellino.tres",
-	"res://skills/bola_de_fuego.tres",
-	"res://skills/furia.tres",
-	"res://skills/piel_de_piedra.tres",
-]
-
 var skills: Array[SkillData] = []
 var _cooldown_left: Array[float] = []
 var _cooldown_total: Array[float] = []
@@ -33,11 +25,19 @@ var _combo_total: float = 1.0
 
 
 func _ready() -> void:
-	for path in SKILL_PATHS:
+	set_class(player_stats.class_id)
+	player_stats.leveled_up.connect(_on_leveled_up)
+
+
+## Carga las habilidades de la clase (ver scripts/player/player_classes.gd).
+func set_class(class_id: String) -> void:
+	skills.clear()
+	_cooldown_left.clear()
+	_cooldown_total.clear()
+	for path in PlayerClasses.get_info(class_id).skills:
 		skills.append(load(path))
 		_cooldown_left.append(0.0)
 		_cooldown_total.append(1.0)
-	player_stats.leveled_up.connect(_on_leveled_up)
 
 
 ## Partida nueva: sin combo y con todo recargado.

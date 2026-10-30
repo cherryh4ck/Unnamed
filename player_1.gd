@@ -1,121 +1,151 @@
 extends Node3D
 
-## Animaciones del jugador: idle, pasos al caminar, ataque y muerte.
-## Los nombres son del AnimationPlayer del modelo; se pueden cambiar
-## desde el inspector si alguna no es la correcta.
+## Modelo y animaciones del jugador. El modelo es el de su clase (un
+## personaje de 0 A.D., ver scripts/player/player_classes.gd) y se arma al
+## cargar la escena; las armas y escudos equipados los pone weapon_hand.gd.
+## Animaciones: quieto, correr (sincronizado con la velocidad), ataque,
+## habilidades (SkillData.animation es una clave que cada clase traduce a un
+## clip), montado y muerte.
 
-@export var idle_animation: String = "85_BT2_0"
-@export var walk_animations: Array[String] = ["85_BT2_2", "85_BT2_1"]
-@export var attack_animations: Array[String] = ["85_BT2_18", "85_BT2_19", "85_BT2_20"]
-@export var death_animation: String = "85_BT2_9"
+const LIBRARY := preload("res://assets/characters/oad/oad_anim_library.glb")
+## Los personajes de 0 A.D. miden 1,8 m; a esta escala quedan del alto del mundo.
+const MODEL_SCALE: float = 225.0
+## Lo que traen en las manos se reemplaza por lo que tiene equipado.
+const HELD_PROPS := ["WeaponR", "WeaponL", "WeaponBow", "Shield", "ShieldRim", "ShieldBoss"]
+const BLEND: float = 0.15
 
-@onready var anim_player: AnimationPlayer = $AnimationPlayer
 @onready var character: CharacterBody3D = get_parent()
 @onready var combat: Node = character.get_node("Combat")
 @onready var mount: Node3D = character.get_node("Mount")
 
-var walk_step_index: int = 0
+var model: Node3D
+var anim_player: AnimationPlayer
+var skeleton: Skeleton3D
+var anims: Dictionary = {}
 var attack_index: int = 0
 ## Animacion de ataque o habilidad en curso (para saber cuando termina).
 var action_animation: String = ""
-var was_moving: bool = false
 var attacking: bool = false
 var rotation_speed: float = 8.0
 
 
 func _ready() -> void:
-	_set_loop(idle_animation, Animation.LOOP_LINEAR)
-	for anim_name in walk_animations + attack_animations + [death_animation]:
-		_set_loop(anim_name, Animation.LOOP_NONE)
-
+	_build_model()
 	anim_player.animation_finished.connect(_on_animation_finished)
 	combat.attack_started.connect(_on_attack_started)
 	combat.skill_animation.connect(_on_skill_animation)
 	player_stats.died.connect(_on_died)
 	player_stats.respawned.connect(_on_respawned)
-	anim_player.play(idle_animation)
+	_play_base()
+
+
+func _build_model() -> void:
+	var info: Dictionary = PlayerClasses.get_info(player_stats.class_id)
+	anims = info.anims
+	model = load(info.model).instantiate()
+	model.name = "Modelo"
+	model.scale = Vector3.ONE * MODEL_SCALE
+	add_child(model)
+	move_child(model, 0)
+	for prop_name in HELD_PROPS:
+		var prop: Node = model.find_child(prop_name, true, false)
+		if prop:
+			prop.queue_free()
+	anim_player = model.find_child("AnimationPlayer", true, false)
+	skeleton = model.find_child("Skeleton3D", true, false)
+	# Clips de los otros personajes (mismo esqueleto): "oad/<clip>".
+	var library_scene: Node = LIBRARY.instantiate()
+	var library_player: AnimationPlayer = library_scene.find_child("AnimationPlayer", true, false)
+	anim_player.add_animation_library("oad", library_player.get_animation_library(""))
+	library_scene.free()
+	for anim_name in [anims.idle, anims.run, anims.ride_idle, anims.ride_move]:
+		_set_loop(anim_name, Animation.LOOP_LINEAR)
+
+
+## Posicion global de un hueso del modelo. El retrato del HUD sigue la cabeza
+## ("head") y la vista del inventario la cadera ("hip"), asi encuadran bien
+## a pie, montado (el clip de montar baja al jinete) o en el suelo.
+func bone_position(bone: String) -> Vector3:
+	if skeleton == null:
+		return global_position
+	return skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone(bone)).origin
 
 
 func _set_loop(anim_name: String, mode: Animation.LoopMode) -> void:
-	var anim: Animation = anim_player.get_animation(anim_name)
-	if anim:
-		anim.loop_mode = mode
+	if anim_player.has_animation(anim_name):
+		anim_player.get_animation(anim_name).loop_mode = mode
 
 
 func _process(delta: float) -> void:
 	if player_stats.dead:
 		return
-	var moving: bool = _is_walking()
-
-	if moving and not was_moving:
-		# Recién arranca a caminar (si estaba atacando, se corta el ataque).
+	# Arrancar a caminar corta el ataque (salvo montado: se pelea a caballo).
+	if attacking and character.is_moving() and not mount.mounted:
 		attacking = false
-		walk_step_index = 0
-		_play_current_step()
-	elif not moving and was_moving and not attacking:
-		# Recién se detuvo.
-		anim_player.play(idle_animation)
-
+	if not attacking:
+		_play_base()
 	_face_movement_direction(delta)
-	was_moving = moving
+
+
+# Quieto, corriendo o montado, segun lo que este haciendo.
+func _play_base() -> void:
+	var moving: bool = character.is_moving()
+	var anim_name: String = anims.idle
+	var speed: float = 1.0
+	if mount.mounted:
+		anim_name = anims.ride_move if moving else anims.ride_idle
+	elif moving:
+		anim_name = anims.run
+		speed = character.speed / (anims.run_speed * MODEL_SCALE)
+	if anim_player.current_animation != anim_name:
+		anim_player.play(anim_name, BLEND)
+	anim_player.speed_scale = speed
 
 
 func _on_animation_finished(anim_name: StringName) -> void:
 	if attacking and anim_name == action_animation:
 		attacking = false
-		if _is_walking():
-			_play_current_step()
-		else:
-			anim_player.play(idle_animation)
-	# Si la que termino es un paso de caminar Y todavia me estoy moviendo,
-	# paso al siguiente pie.
-	elif anim_name in walk_animations and _is_walking() and not attacking:
-		walk_step_index = (walk_step_index + 1) % walk_animations.size()
-		_play_current_step()
-
-
-# Montado se mueve el caballo: el jinete queda en la pose de parado.
-func _is_walking() -> bool:
-	return character.is_moving() and not mount.mounted
-
-
-func _play_current_step() -> void:
-	anim_player.play(walk_animations[walk_step_index])
+		_play_base()
 
 
 # La animacion de ataque se estira para durar lo mismo que el intervalo
 # entre golpes (armas lentas = animacion mas lenta).
 func _on_attack_started(interval: float) -> void:
-	attacking = true
-	var anim_name: String = attack_animations[attack_index]
-	attack_index = (attack_index + 1) % attack_animations.size()
-	var anim: Animation = anim_player.get_animation(anim_name)
-	if anim == null:
+	var list: Array = anims.attacks
+	var anim_name: String = list[attack_index % list.size()]
+	attack_index += 1
+	_play_action(anim_name, anims.attack_from, interval)
+
+
+func _on_skill_animation(key: String, speed: float) -> void:
+	var entry: Array = anims.skills.get(key, [key, 0.0])
+	var anim: Animation = anim_player.get_animation(entry[0]) if anim_player.has_animation(entry[0]) else null
+	if anim:
+		_play_action(entry[0], entry[1], anim.length * (1.0 - entry[1]) / speed)
+
+
+# Reproduce el clip desde la fraccion from para que dure duration segundos.
+func _play_action(anim_name: String, from: float, duration: float) -> void:
+	if not anim_player.has_animation(anim_name):
 		return
-	_play_action(anim_name, anim.length / interval)
-
-
-func _on_skill_animation(anim_name: String, speed: float) -> void:
-	if anim_player.has_animation(anim_name):
-		attacking = true
-		_play_action(anim_name, speed)
-
-
-func _play_action(anim_name: String, speed: float) -> void:
+	var anim: Animation = anim_player.get_animation(anim_name)
+	attacking = true
 	action_animation = anim_name
-	_set_loop(anim_name, Animation.LOOP_NONE)
-	anim_player.play(anim_name, 0.05, speed)
-	anim_player.seek(0.0, true)
+	anim.loop_mode = Animation.LOOP_NONE
+	anim_player.play(anim_name, 0.05)
+	anim_player.speed_scale = maxf(anim.length * (1.0 - from) / maxf(duration, 0.05), 0.2)
+	anim_player.seek(anim.length * from, true)
 
 
 func _on_died() -> void:
 	attacking = false
-	anim_player.play(death_animation, 0.1)
+	anim_player.speed_scale = 1.0
+	anim_player.play(anims.death, 0.1)
 
 
 func _on_respawned() -> void:
-	was_moving = false
-	anim_player.play(idle_animation)
+	attacking = false
+	_play_base()
 
 
 func _face_movement_direction(delta: float) -> void:

@@ -10,6 +10,8 @@ enum Kind {
 	WHIRLWIND,   # daño a todos los enemigos alrededor
 	PROJECTILE,  # proyectil hacia el mouse que explota en area
 	BUFF,        # mejora temporal del personaje
+	VOLLEY,      # uno o varios virotes en abanico hacia el mouse
+	RAIN,        # lluvia sobre el punto del mouse: cae al rato y daña en area
 }
 
 @export var name: String = ""
@@ -28,6 +30,15 @@ enum Kind {
 ## Tipo de daño de la habilidad: esa parte del daño fisico del arma pasa a ese tipo.
 @export var damage_type: Damage.Type = Damage.Type.PHYSICAL
 @export_range(0.0, 1.0) var damage_conversion: float = 0.0
+## Hechizo: el daño base sale del nivel y la Concentracion, no del arma.
+@export var spell: bool = false
+## VOLLEY: cantidad de virotes y apertura del abanico (en grados).
+@export var count: int = 1
+@export var spread_deg: float = 0.0
+## RAIN: segundos desde que se marca el lugar hasta que cae.
+@export var delay: float = 0.6
+## WHIRLWIND: el personaje gira (el anillo de llamas sale sin girar).
+@export var spin: bool = true
 
 @export_group("Mejora temporal")
 @export var buff_duration: float = 0.0
@@ -52,6 +63,8 @@ func get_tooltip() -> String:
 	var lines := PackedStringArray([name, description])
 	if damage_conversion > 0.0 and damage_type != Damage.Type.PHYSICAL:
 		lines.append("Daño: %d%% %s" % [roundi(damage_conversion * 100.0), Damage.NAMES[damage_type].to_lower()])
+	if spell:
+		lines.append("Hechizo: crece con el nivel y la Concentración")
 	lines.append("Recarga: %.1f s" % get_cooldown())
 	if player_stats.level < unlock_level:
 		lines.append("Se aprende en el nivel %d" % unlock_level)

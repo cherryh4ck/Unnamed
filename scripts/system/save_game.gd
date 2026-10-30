@@ -5,7 +5,8 @@ extends Node
 ## escena: asi la UI y el jugador arrancan leyendo el estado ya cargado.
 ## F5 guarda y F9 vuelve a la ultima partida guardada. Ademas se guarda sola
 ## cada AUTOSAVE_INTERVAL segundos y al cerrar la ventana. La partida nueva
-## (con su dificultad) se arma desde el menu del juego (ui/game_menu.gd).
+## (con su clase y su dificultad) se arma desde la pantalla de titulo o el
+## menu del juego (ui/game_menu.gd).
 
 signal saved
 
@@ -70,6 +71,7 @@ func save() -> bool:
 func _write() -> bool:
 	_autosave_timer = 0.0
 	var player_data := {
+		"class": player_stats.class_id,
 		"level": player_stats.level,
 		"xp": player_stats.xp,
 		"unspent_points": player_stats.unspent_points,
@@ -123,6 +125,10 @@ func load_saved() -> bool:
 	_array_to_slots(data.get("equipment", []), inventory_data.equipment)
 
 	var player_data: Dictionary = data.get("player", {})
+	# Las partidas de antes de las clases eran de guerrero.
+	var class_id: String = str(player_data.get("class", PlayerClasses.DEFAULT))
+	player_stats.class_id = class_id if PlayerClasses.is_valid(class_id) else PlayerClasses.DEFAULT
+	skill_book.set_class(player_stats.class_id)
 	player_stats.level = int(player_data.get("level", 1))
 	player_stats.xp = int(player_data.get("xp", 0))
 	player_stats.unspent_points = int(player_data.get("unspent_points", 0))
@@ -169,14 +175,16 @@ func reload_last_save() -> void:
 	_announce("Partida cargada")
 
 
-## Partida nueva con la dificultad elegida: personaje de nivel 1, inventario
-## vacio y el mapa como al principio. Reemplaza la partida guardada.
-func new_game(difficulty_level: int) -> void:
+## Partida nueva con la clase y la dificultad elegidas: personaje de nivel 1
+## con el equipo de su clase, y el mapa como al principio. Reemplaza la
+## partida guardada.
+func new_game(difficulty_level: int, class_id: String = PlayerClasses.DEFAULT) -> void:
 	difficulty.set_level(difficulty_level)
 	inventory_data.reset()
-	inventory_data.shop_mode = false
-	player_stats.reset()
+	player_stats.reset(class_id)
+	skill_book.set_class(player_stats.class_id)
 	skill_book.reset()
+	_give_starting_gear()
 	world_time.set_time(9.0, 1)
 	weather.reset()
 	collected_pickups.clear()
@@ -189,7 +197,18 @@ func new_game(difficulty_level: int) -> void:
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 	await get_tree().create_timer(0.2).timeout
-	_announce("Partida nueva: %s" % difficulty.get_level_name())
+	_announce("%s · %s" % [PlayerClasses.name_of(player_stats.class_id), difficulty.get_level_name()])
+
+
+# Equipo inicial de la clase (equipado) y unas pociones.
+func _give_starting_gear() -> void:
+	for path in PlayerClasses.get_info(player_stats.class_id).items:
+		var item: Itemdata = load(path)
+		var slot := Slotdata.new()
+		slot.item_data = item
+		inventory_data.equipment[inventory_data.equip_index_for(item)] = slot
+	inventory_data.add_item(Loot.POTION, PlayerClasses.START_POTIONS)
+	player_stats.health = player_stats.get_max_health()
 
 
 # --- Items puestos en el mapa ----------------------------------------------

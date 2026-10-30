@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/escudo_arcano.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Escudo Arcano"
+description = "Durante 12 segundos: +25 de defensa y +30% de resistencia a magia, veneno y fuego."
+kind = 3
+unlock_level = 5
+base_cooldown = 30.0
+buff_duration = 12.0
+buff_defense = 25
+buff_resistance = 30.0
+sound = "resistance"
+animation = "grito"
+animation_speed = 1.5
+effect_color = Color(0.6, 0.5, 1.0, 1)

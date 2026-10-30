@@ -115,7 +115,7 @@ func _update_pause() -> void:
 func refresh() -> void:
 	if not is_node_ready():
 		return
-	level_label.text = "Nivel %d" % player_stats.level
+	level_label.text = "%s · Nivel %d" % [PlayerClasses.name_of(player_stats.class_id), player_stats.level]
 	var needed: int = player_stats.xp_for_next_level()
 	xp_bar.max_value = needed
 	xp_bar.value = player_stats.xp

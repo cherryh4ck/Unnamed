@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/shield_round_small.glb" id="1_part"]
+
+[node name="EscudoLigero" type="Node3D"]
+
+[node name="shield_round_small" parent="." instance=ExtResource("1_part")]

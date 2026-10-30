@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/axe.glb" id="1_part"]
+
+[node name="HachaGrande" type="Node3D"]
+
+[node name="axe" parent="." instance=ExtResource("1_part")]
+transform = Transform3D(1.35, 0, 0, 0, 1.35, 0, 0, 0, 1.35, 0, 0, 0)

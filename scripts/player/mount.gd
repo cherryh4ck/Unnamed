@@ -8,8 +8,9 @@ extends Node3D
 
 ## Velocidad de movimiento montado respecto de a pie.
 const SPEED_MULT: float = 1.7
-## Cuanto sube el jinete para quedar sentado sobre el lomo.
-const RIDER_LIFT: float = 165.0
+## Cuanto sube el jinete para quedar sentado sobre el lomo (el clip de montar
+## de 0 A.D. deja la cadera a la altura del piso).
+const RIDER_LIFT: float = 345.0
 ## Para montar no tiene que haber enemigos a esta distancia.
 const SAFE_DISTANCE: float = 700.0
 ## Pasos mas seguidos y graves: cascos.
@@ -22,7 +23,7 @@ const HORSE_SCALE: float = 108.0
 const COAT_TINT := Color(0.72, 0.6, 0.5)
 
 var mounted: bool = false
-## Cuanto esta elevado el jinete ahora (lo usa el retrato del HUD).
+## Cuanto esta elevado el jinete ahora.
 var lift: float = 0.0
 
 @onready var character: CharacterBody3D = get_parent()

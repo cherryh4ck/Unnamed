@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SkillData" format=3]
+
+[ext_resource type="Script" path="res://scripts/skills/skill_data.gd" id="1_skill"]
+[ext_resource type="Texture2D" path="res://ui/icons/skills/anillo_de_llamas.svg" id="2_icon"]
+
+[resource]
+script = ExtResource("1_skill")
+icon = ExtResource("2_icon")
+name = "Anillo de Llamas"
+description = "Un anillo de fuego estalla a tu alrededor: 150% de daño de hechizo como fuego a todos los cercanos, que quedan ardiendo."
+kind = 1
+unlock_level = 3
+base_cooldown = 9.0
+damage_multiplier = 1.5
+radius = 420.0
+damage_type = 3
+damage_conversion = 1.0
+spell = true
+spin = false
+sound = "fireball"
+animation = "hechizo"
+animation_speed = 1.5
+effect_color = Color(1.0, 0.45, 0.15, 1)

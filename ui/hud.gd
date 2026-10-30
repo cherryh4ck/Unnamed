@@ -7,8 +7,8 @@ const SkillSlot := preload("res://ui/skill_slot.gd")
 const ComboSlot := preload("res://ui/combo_slot.gd")
 const POTION := preload("res://item/items/potion_of_health.tres")
 
-## Altura de la cabeza del personaje (para la camara del retrato).
-const PORTRAIT_HEAD_HEIGHT: float = 325.0
+## La camara del retrato mira a este punto sobre el hueso de la cabeza.
+const PORTRAIT_HEAD_OFFSET: float = 8.0
 const PORTRAIT_DISTANCE: float = 300.0
 const LOW_HEALTH_RATIO: float = 0.25
 ## Relleno verde de la barra de vida mientras el personaje esta envenenado.
@@ -99,7 +99,7 @@ func show_message(text: String, color: Color = Color(1.0, 0.86, 0.45), duration:
 func _update_portrait() -> void:
 	if player == null:
 		return
-	var head: Vector3 = player.global_position + Vector3.UP * (PORTRAIT_HEAD_HEIGHT + player.mount.lift)
+	var head: Vector3 = player.get_node("Player").bone_position("head") + Vector3.UP * PORTRAIT_HEAD_OFFSET
 	var forward: Vector3 = player.global_transform.basis.z
 	forward.y = 0.0
 	if forward.length() < 0.01:

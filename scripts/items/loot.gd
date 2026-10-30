@@ -14,6 +14,7 @@ const BASE_ITEMS := [
 	"res://item/items/espada_ligera.tres",
 	"res://item/items/long_sword.tres",
 	"res://item/items/hacha_grande.tres",
+	"res://item/items/martillo_grande.tres",
 	"res://item/items/escudo_ligero.tres",
 	"res://item/items/escudo_mid.tres",
 	"res://item/items/escudo_pesado.tres",

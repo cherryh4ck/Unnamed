@@ -33,7 +33,15 @@ const POTION_HEAL_FLAT: float = 20.0
 const POTION_COOLDOWN: float = 0.6
 ## Cada punto de Concentracion sube el daño magico, de veneno y de fuego.
 const ELEMENTAL_PER_CONCENTRATION: float = 0.015
+## Daño base de los hechizos: minimo y maximo a nivel 1 y lo que suman por nivel.
+const SPELL_DAMAGE := Vector2(5.0, 9.0)
+const SPELL_DAMAGE_PER_LEVEL := Vector2(1.0, 1.5)
+## Ataque basico del mago sin arma: rayo arcano de este porcentaje del hechizo.
+const SPELL_ATTACK_MULTIPLIER: float = 0.6
+const SPELL_ATTACK_SPEED: float = 1.0
 
+## Clase del personaje (ver scripts/player/player_classes.gd).
+var class_id: String = PlayerClasses.DEFAULT
 var level: int = 1
 var xp: int = 0
 var unspent_points: int = 0
@@ -52,22 +60,23 @@ var buffs: Dictionary = {}
 ## Veneno y quemadura que tiene encima el personaje.
 var status := StatusEffects.new()
 var _potion_timer: float = 0.0
-var _base_attributes: Dictionary
 
 
 func _ready() -> void:
-	_base_attributes = attributes.duplicate()
+	# Sin partida guardada arranca como la clase por defecto.
+	attributes = PlayerClasses.get_info(class_id).attributes.duplicate()
 	health = get_max_health()
 	inventory_data.equipment_changed.connect(_on_equipment_changed)
 
 
-## Vuelve al personaje recien creado (partida nueva).
-func reset() -> void:
+## Vuelve al personaje recien creado (partida nueva) de la clase indicada.
+func reset(new_class: String = class_id) -> void:
+	class_id = new_class if PlayerClasses.is_valid(new_class) else PlayerClasses.DEFAULT
 	level = 1
 	xp = 0
 	unspent_points = 0
 	gold = 0
-	attributes = _base_attributes.duplicate()
+	attributes = PlayerClasses.get_info(class_id).attributes.duplicate()
 	buffs.clear()
 	status.clear()
 	dead = false
@@ -241,7 +250,12 @@ func get_weapon() -> Itemdata:
 
 func is_ranged() -> bool:
 	var weapon: Itemdata = get_weapon()
-	return weapon != null and weapon.is_ranged()
+	return (weapon != null and weapon.is_ranged()) or uses_spell_attack()
+
+
+## El mago sin arma ataca con rayos arcanos (a distancia, daño de hechizo).
+func uses_spell_attack() -> bool:
+	return class_id == "mago" and get_weapon() == null
 
 
 func get_damage_multiplier() -> float:
@@ -268,13 +282,22 @@ func get_resistance(type: int) -> float:
 	return minf(get_equipment_bonus(Damage.resist_key(type)) + _buff_sum("resist"), Damage.RESIST_CAP)
 
 
+## Daño base de los hechizos (sin la Concentracion ni la habilidad).
+func get_spell_damage_range() -> Vector2:
+	return SPELL_DAMAGE + SPELL_DAMAGE_PER_LEVEL * (level - 1)
+
+
 func get_min_damage() -> int:
+	if uses_spell_attack():
+		return maxi(1, roundi(get_spell_damage_range().x * SPELL_ATTACK_MULTIPLIER * get_elemental_multiplier()))
 	var weapon: Itemdata = get_weapon()
 	var base: int = weapon.min_damage if weapon else UNARMED_MIN_DAMAGE
 	return maxi(1, roundi(base * get_damage_multiplier()))
 
 
 func get_max_damage() -> int:
+	if uses_spell_attack():
+		return maxi(get_min_damage(), roundi(get_spell_damage_range().y * SPELL_ATTACK_MULTIPLIER * get_elemental_multiplier()))
 	var weapon: Itemdata = get_weapon()
 	var base: int = weapon.max_damage if weapon else UNARMED_MAX_DAMAGE
 	return maxi(get_min_damage(), roundi(base * get_damage_multiplier()))
@@ -283,7 +306,7 @@ func get_max_damage() -> int:
 ## Ataques por segundo.
 func get_attack_speed() -> float:
 	var weapon: Itemdata = get_weapon()
-	var base: float = weapon.attack_speed if weapon else UNARMED_ATTACK_SPEED
+	var base: float = weapon.attack_speed if weapon else (SPELL_ATTACK_SPEED if uses_spell_attack() else UNARMED_ATTACK_SPEED)
 	return base * (1.0 + get_attribute("destreza") * 0.01 + get_equipment_bonus("velocidad_pct") / 100.0) 			* _buff_product("attack_speed_mult")
 
 
@@ -325,6 +348,34 @@ func roll_hit(multiplier: float = 1.0, convert_to: int = Damage.Type.PHYSICAL, c
 		if extra > 0.0:
 			parts[type] = parts.get(type, 0.0) + extra * randf_range(0.8, 1.2) * scale
 	return {"parts": parts, "crit": crit}
+
+
+## Tirada de un hechizo: daño base del nivel por la Concentracion y la
+## habilidad, todo del tipo indicado, mas el elemental del equipo.
+func roll_spell(multiplier: float, type: int) -> Dictionary:
+	var crit: bool = randf() * 100.0 < get_crit_chance()
+	var scale: float = multiplier * (CRIT_MULTIPLIER if crit else 1.0)
+	var spell_range: Vector2 = get_spell_damage_range()
+	var parts: Dictionary = {type: randf_range(spell_range.x, spell_range.y) * get_elemental_multiplier() * scale}
+	for element in Damage.ELEMENTS:
+		var extra: float = get_elemental_damage(element)
+		if extra > 0.0:
+			parts[element] = parts.get(element, 0.0) + extra * randf_range(0.8, 1.2) * scale
+	return {"parts": parts, "crit": crit}
+
+
+## Tirada de una habilidad: hechizo o golpe con el arma, segun la habilidad.
+func roll_skill(skill: SkillData) -> Dictionary:
+	if skill.spell:
+		return roll_spell(skill.damage_multiplier, skill.damage_type)
+	return roll_hit(skill.damage_multiplier, skill.damage_type, skill.damage_conversion)
+
+
+## Golpe del ataque basico (el mago sin arma tira un rayo arcano).
+func roll_basic_attack() -> Dictionary:
+	if uses_spell_attack():
+		return roll_spell(SPELL_ATTACK_MULTIPLIER, Damage.Type.MAGIC)
+	return roll_hit()
 
 
 func get_resistances() -> Dictionary:

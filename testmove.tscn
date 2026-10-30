@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://dyoo8hg8g28vh"]
 
 [ext_resource type="Script" uid="uid://cwdnsx8mtgjhh" path="res://scripts/player/Movement.gd" id="1_3b3oy"]
-[ext_resource type="PackedScene" uid="uid://dw4q75ewli3ip" path="res://modelos/player pj/player 1.glb" id="2_mu3a7"]
 [ext_resource type="Script" uid="uid://dthg71d5khvip" path="res://player_1.gd" id="3_b615x"]
 [ext_resource type="Script" uid="uid://crj402hoalxqb" path="res://scripts/camera/camera_rig.gd" id="4_fdmbg"]
 [ext_resource type="PackedScene" uid="uid://2nhmkm3uda36" path="res://inventory/inventory.tscn" id="6_u08vo"]
@@ -63,8 +62,7 @@ script = ExtResource("33_fader")
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=707424062 groups=["player"]]
 script = ExtResource("1_3b3oy")
 
-[node name="Player" parent="CharacterBody3D" unique_id=616383495 instance=ExtResource("2_mu3a7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 249.29492, 0)
+[node name="Player" type="Node3D" parent="CharacterBody3D" unique_id=616383495]
 script = ExtResource("3_b615x")
 
 [node name="WeaponHand" type="Node3D" parent="CharacterBody3D/Player" unique_id=2073905166]

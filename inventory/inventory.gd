@@ -166,19 +166,19 @@ func _update_hero_camera() -> void:
 	var forward: Vector3 = player.global_transform.basis.z
 	forward.y = 0.0
 	forward = forward.normalized() if forward.length() > 0.01 else Vector3.BACK
-	var lift: float = player.mount.lift if "mount" in player and player.mount else 0.0
-	var center: Vector3 = player.global_position + Vector3.UP * (220.0 + lift)
+	var center: Vector3 = player.get_node("Player").bone_position("hip") + Vector3.UP * 20.0
 	_hero_camera.global_position = center + forward * 950.0 + Vector3.UP * 110.0
 	_hero_camera.look_at(center, Vector3.UP)
 
 
-# Suma la capa del inventario a todo lo que se dibuja del jugador (el arma
-# equipada se crea de nuevo al cambiar de equipo).
+# Suma la capa del inventario a todo lo que se dibuja del personaje (el arma
+# equipada se crea de nuevo al cambiar de equipo). El caballo no: montado, su
+# cabeza tapa al jinete.
 func _tag_hero() -> void:
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player == null:
 		return
-	for node in player.find_children("*", "VisualInstance3D", true, false):
+	for node in player.get_node("Player").find_children("*", "VisualInstance3D", true, false):
 		(node as VisualInstance3D).layers |= HERO_LAYER
 
 
