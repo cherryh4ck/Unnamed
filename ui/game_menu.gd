@@ -1,11 +1,15 @@
 extends PanelContainer
 
 ## Menu del juego (Esc sin otro panel abierto): continuar, guardar, cargar,
-## partida nueva con eleccion de dificultad y salir. Si se abre el juego sin
-## partida guardada arranca directo en la eleccion de dificultad.
+## partida nueva con eleccion de dificultad, opciones, volver a la pantalla de
+## titulo y salir. Sin pantalla de titulo y sin partida guardada arranca
+## directo en la eleccion de dificultad.
+
+const OptionsPanel := preload("res://ui/options_panel.gd")
 
 var _main_box: VBoxContainer
 var _difficulty_box: VBoxContainer
+var _options_box: VBoxContainer
 var _difficulty_label: Label
 var _load_button: Button
 var _back_button: Button
@@ -27,16 +31,20 @@ func _ready() -> void:
 	add_child(root)
 	_main_box = _build_main()
 	_difficulty_box = _build_difficulty()
+	_options_box = _build_options()
 	root.add_child(_main_box)
 	root.add_child(_difficulty_box)
+	root.add_child(_options_box)
 	# Los textos con autoajuste cambian de alto al acomodarse: se recentra.
 	minimum_size_changed.connect(_recenter)
 
 	if not save_game.has_save():
-		_choosing_first = true
 		# Unos frames sin pausa para que el HUD de atras termine de dibujarse.
 		await get_tree().create_timer(0.1).timeout
-		open_difficulty()
+		# Con la pantalla de titulo, la partida nueva se elige ahi.
+		if get_tree().get_first_node_in_group("title_screen") == null:
+			_choosing_first = true
+			open_difficulty()
 
 
 func _build_main() -> VBoxContainer:
@@ -55,19 +63,25 @@ func _build_main() -> VBoxContainer:
 		close()
 		save_game.reload_last_save())
 	_add_button(box, "Partida nueva", open_difficulty)
+	_add_button(box, "Opciones", _show_options)
+	_add_button(box, "Menú principal", func() -> void:
+		save_game.save()
+		TitleScreen.show_on_next_load = true
+		get_tree().paused = false
+		get_tree().reload_current_scene())
 	_add_button(box, "Salir del juego", func() -> void:
 		save_game.save()
 		get_tree().quit())
 
 	var keys := Label.new()
-	keys.text = "I inventario · C personaje · K combo · M montura · Q poción"
+	keys.text = "I inventario · C personaje · Tab mapa · K combo · M montura · Q poción"
 	keys.theme_type_variation = &"DimLabel"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(keys)
 
-	# Atribucion que pide la licencia CC-BY de las texturas (ver CREDITS.md).
+	# Atribucion que piden las licencias CC-BY (detalle en el menu principal y CREDITS.md).
 	var credits := Label.new()
-	credits.text = "Interfaz: RPG GUI construction kit de Matjaž Lamut (CC-BY 3.0)"
+	credits.text = "Interfaz: Matjaž Lamut (CC-BY 3.0) · Íconos: game-icons.net (CC BY 3.0)"
 	credits.theme_type_variation = &"DimLabel"
 	credits.add_theme_font_size_override("font_size", 11)
 	credits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -110,6 +124,22 @@ func _build_difficulty() -> VBoxContainer:
 	return box
 
 
+func _build_options() -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 12)
+	box.add_child(_header("OPCIONES", ""))
+	box.add_child(OptionsPanel.new())
+	_add_button(box, "Volver", _show_main)
+	return box
+
+
+func _show_options() -> void:
+	_main_box.visible = false
+	_difficulty_box.visible = false
+	_options_box.visible = true
+	_recenter.call_deferred()
+
+
 func _header(title_text: String, hint_text: String) -> HBoxContainer:
 	var header := HBoxContainer.new()
 	var title := Label.new()
@@ -139,7 +169,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if visible:
 		if not _choosing_first:
-			if _difficulty_box.visible:
+			if _difficulty_box.visible or _options_box.visible:
 				_show_main()
 			else:
 				close()
@@ -158,6 +188,7 @@ func open() -> void:
 
 func open_difficulty() -> void:
 	_main_box.visible = false
+	_options_box.visible = false
 	_difficulty_box.visible = true
 	_warning.visible = save_game.has_save()
 	_back_button.visible = not _choosing_first
@@ -176,6 +207,7 @@ func close() -> void:
 func _show_main() -> void:
 	_main_box.visible = true
 	_difficulty_box.visible = false
+	_options_box.visible = false
 	_difficulty_label.text = "Dificultad: %s" % difficulty.get_level_name()
 	_difficulty_label.add_theme_color_override("font_color", difficulty.get_color())
 	_load_button.disabled = not save_game.has_save()

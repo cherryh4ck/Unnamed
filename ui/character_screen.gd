@@ -63,12 +63,14 @@ func _ready() -> void:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var value_label := Label.new()
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		value_label.add_theme_font_size_override("font_size", 14)
 		if DERIVED_TYPES.has(stat_name):
 			value_label.add_theme_color_override("font_color", Damage.COLORS[DERIVED_TYPES[stat_name]])
 		derived_grid.add_child(name_label)
 		derived_grid.add_child(value_label)
 		_derived_labels[stat_name] = value_label
 
+	derived_grid.add_theme_constant_override("v_separation", 0)
 	player_stats.stats_changed.connect(refresh)
 	player_stats.xp_changed.connect(refresh.unbind(2))
 	player_stats.health_changed.connect(refresh.unbind(2))

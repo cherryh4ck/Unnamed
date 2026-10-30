@@ -31,6 +31,7 @@
 [ext_resource type="PackedScene" path="res://world/mundo.tscn" id="31_world"]
 [ext_resource type="Script" path="res://ui/world_map_panel.gd" id="32_map"]
 [ext_resource type="Script" path="res://scripts/world/occlusion_fader.gd" id="33_fader"]
+[ext_resource type="Script" path="res://ui/title_screen.gd" id="34_title"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g4v7s"]
 
@@ -112,6 +113,7 @@ mesh = SubResource("CylinderMesh_g4v7s")
 stream = ExtResource("24_amb")
 volume_db = -14.0
 autoplay = true
+bus = &"Ambiente"
 
 [node name="Merchant" parent="." unique_id=1129475806 instance=ExtResource("27_merchant")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -650, 0, -450)
@@ -151,6 +153,9 @@ script = ExtResource("32_map")
 [node name="GameMenu" type="PanelContainer" parent="UI/inventoryInterface" unique_id=1873402551]
 layout_mode = 1
 script = ExtResource("29_menu")
+
+[node name="TitleScreen" type="CanvasLayer" parent="."]
+script = ExtResource("34_title")
 
 [node name="PickupSword" parent="." unique_id=1234567890 instance=ExtResource("7_pick")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 110.42383, 5, 644.3662)

@@ -73,6 +73,7 @@ func _ready() -> void:
 	reproductor_pasos.unit_size = sfx.UNIT_SIZE_3D
 	reproductor_pasos.max_distance = sfx.MAX_DISTANCE_3D
 	reproductor_pasos.volume_db = -8.0
+	reproductor_pasos.bus = &"Efectos"
 	add_child(reproductor_pasos)
 
 	player_stats.died.connect(_on_died)

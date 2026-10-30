@@ -19,6 +19,15 @@ con licencia [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/).
   botones, rellenos de barra nuevos. Se regeneran con
   `ui/theme/textures/build_textures.gd` a partir de `ui/theme/textures/source/`.
 
+## Fuentes (SIL Open Font License 1.1)
+
+En `assets/fonts/`, cada una con su `OFL.txt`:
+
+- **Cinzel** (títulos y encabezados): Natanael Gama, The Cinzel Project Authors.
+  https://github.com/NDISCOVER/Cinzel
+- **EB Garamond** (texto): Georg Duffner y Octavio Pardo, The EB Garamond
+  Project Authors. https://github.com/octaviopardo/EBGaramond12
+
 ## Íconos (CC BY 3.0)
 
 Íconos de [game-icons.net](https://game-icons.net), con licencia

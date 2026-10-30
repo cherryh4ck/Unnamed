@@ -54,6 +54,7 @@ func _ready() -> void:
 		_streams[sound_name] = list
 	for i in POOL_SIZE:
 		var player := AudioStreamPlayer.new()
+		player.bus = &"Efectos"
 		add_child(player)
 		_pool.append(player)
 
@@ -90,6 +91,7 @@ func play_at(sound_name: String, position: Vector3, volume_db: float = 0.0, pitc
 	if stream == null or scene == null:
 		return
 	var player := AudioStreamPlayer3D.new()
+	player.bus = &"Efectos"
 	player.stream = stream
 	player.volume_db = volume_db
 	player.unit_size = UNIT_SIZE_3D
