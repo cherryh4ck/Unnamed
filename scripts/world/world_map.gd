@@ -174,8 +174,16 @@ func _capture() -> void:
 	# la foto desde el origen.
 	await get_tree().process_frame
 	await get_tree().process_frame
+	# Si en el medio se recargo la escena (partida nueva), el viewport ya no
+	# esta: se saca la foto la proxima vez que se pida.
+	if not is_instance_valid(viewport):
+		_capturing = false
+		return
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	await RenderingServer.frame_post_draw
+	if not is_instance_valid(viewport):
+		_capturing = false
+		return
 	var image: Image = viewport.get_texture().get_image()
 	viewport.queue_free()
 	_capturing = false
