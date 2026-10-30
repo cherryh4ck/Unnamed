@@ -22,6 +22,12 @@ func _ready():
 	_actualizar_offset()
 	$Camera3D.look_at(global_position, Vector3.UP)
 
+## Se pone de una sobre el jugador (al viajar o reaparecer).
+func snap() -> void:
+	if player_node:
+		global_position = player_node.global_position
+
+
 func _unhandled_input(event):
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:

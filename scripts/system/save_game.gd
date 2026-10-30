@@ -89,6 +89,7 @@ func _write() -> bool:
 		"combo": skill_book.combo,
 		"world": {"day": world_time.day, "hour": world_time.hour},
 		"collected_pickups": collected_pickups,
+		"world_map": world_map.to_save(),
 	}
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
@@ -138,6 +139,8 @@ func load_saved() -> bool:
 	var world: Dictionary = data.get("world", {})
 	world_time.set_time(float(world.get("hour", world_time.hour)), int(world.get("day", world_time.day)))
 	collected_pickups.assign(data.get("collected_pickups", []))
+	world_map.from_save(data.get("world_map", {}))
+	world_map.forget_map()
 
 	inventory_data.inventory_changed.emit(-1)
 	for i in inventory_data.EQUIP_COUNT:
@@ -171,6 +174,8 @@ func new_game(difficulty_level: int) -> void:
 	skill_book.reset()
 	world_time.set_time(9.0, 1)
 	collected_pickups.clear()
+	world_map.reset()
+	world_map.forget_map()
 	player_position = Vector3.INF
 	# Se escribe antes de rearmar la escena (sin posicion: arranca en el
 	# inicio del mapa), asi el menu nuevo ya encuentra la partida.

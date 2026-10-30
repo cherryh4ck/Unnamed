@@ -49,6 +49,7 @@ func _ready() -> void:
 		show_message("Cae la noche: los muertos se vuelven más fuertes", Color(0.6, 0.7, 1.0), 3.5))
 	world_time.day_started.connect(func() -> void:
 		show_message("Amanece", Color(1.0, 0.85, 0.5), 2.5))
+	world_map.portal_discovered.connect(_on_portal_discovered)
 	_on_health_changed(player_stats.health, player_stats.get_max_health())
 	_on_xp_changed(player_stats.xp, player_stats.xp_for_next_level())
 	level_label.text = str(player_stats.level)
@@ -231,6 +232,10 @@ func _update_potion_count() -> void:
 	var count: int = player_stats.count_potions()
 	_potion_count.text = str(count)
 	_potion_icon.modulate = Color.WHITE if count > 0 else Color(0.3, 0.3, 0.3)
+
+
+func _on_portal_discovered(_id: String, display_name: String) -> void:
+	show_message("Portal descubierto: %s\nClic en un portal para viajar" % display_name, Color(0.55, 0.82, 1.0), 3.5)
 
 
 func _on_combo_unlocked() -> void:

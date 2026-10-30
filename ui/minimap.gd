@@ -1,8 +1,10 @@
 extends Control
 
 ## Minimapa circular. Gira igual que la camara (arriba en el minimapa es
-## "hacia adelante" en pantalla) y muestra el area caminable (sacada de los
-## NavigationRegion3D), al jugador, a los enemigos y a los items del piso.
+## "hacia adelante" en pantalla) y muestra la foto del mundo desde arriba
+## (world_map) con la niebla de lo no explorado, al jugador, a los enemigos,
+## los portales y los items del piso. Sin foto (sin GPU) dibuja el area
+## caminable sacada de los NavigationRegion3D.
 
 ## Radio del mundo (en unidades) que entra en el minimapa.
 @export var world_radius: float = 2200.0
@@ -13,6 +15,9 @@ const FRAME := Color(0.6, 0.47, 0.26)
 const ENEMY := Color(0.9, 0.2, 0.15)
 const PLAYER := Color(1.0, 0.92, 0.6)
 const GOLD := Color(1.0, 0.85, 0.35)
+const PORTAL := Color(0.45, 0.78, 1.0)
+const MAP_TINT := Color(0.9, 0.82, 0.66)
+const FOG_TINT := Color(0.2, 0.16, 0.11)
 
 var player: Node3D
 var _mask: Control
@@ -97,11 +102,25 @@ func _draw_content() -> void:
 	var origin := Vector2(player.global_position.x, player.global_position.z)
 	var axes: Array[Vector2] = _camera_axes()
 
-	for polygon in _ground_polygons:
-		var points := PackedVector2Array()
-		for point in polygon:
-			points.append(_to_map(point, origin, axes))
-		_content.draw_colored_polygon(points, GROUND)
+	var texture: Texture2D = world_map.get_map_texture()
+	if texture:
+		# La foto cubre world_rect: se dibuja con la misma rotacion y escala
+		# que el resto del minimapa.
+		var world: Rect2 = world_map.world_rect()
+		var px: Vector2 = world.size / Vector2(texture.get_size())
+		var corner: Vector2 = _to_map(world.position, origin, axes)
+		var x_axis: Vector2 = _to_map(world.position + Vector2(px.x, 0.0), origin, axes) - corner
+		var y_axis: Vector2 = _to_map(world.position + Vector2(0.0, px.y), origin, axes) - corner
+		_content.draw_set_transform_matrix(Transform2D(x_axis, y_axis, corner))
+		_content.draw_texture(texture, Vector2.ZERO, MAP_TINT)
+		_content.draw_texture_rect(world_map.get_fog_texture(), Rect2(Vector2.ZERO, texture.get_size()), false, FOG_TINT)
+		_content.draw_set_transform_matrix(Transform2D.IDENTITY)
+	else:
+		for polygon in _ground_polygons:
+			var points := PackedVector2Array()
+			for point in polygon:
+				points.append(_to_map(point, origin, axes))
+			_content.draw_colored_polygon(points, GROUND)
 
 	var max_dist: float = _radius() + 4.0
 	for pickup in get_tree().get_nodes_in_group("pickups"):
@@ -113,6 +132,14 @@ func _draw_content() -> void:
 		var is_gold: bool = pickup.item_data.item_type == Itemdata.ItemType.GOLD
 		var color: Color = GOLD if is_gold else pickup.item_data.get_rarity_color()
 		_content.draw_rect(Rect2(pos - Vector2(2, 2), Vector2(4, 4)), color)
+
+	for portal in get_tree().get_nodes_in_group("portals"):
+		if not portal.is_discovered():
+			continue
+		var pos: Vector2 = _to_map(Vector2(portal.global_position.x, portal.global_position.z), origin, axes)
+		if pos.distance_to(size / 2.0) <= max_dist:
+			_content.draw_circle(pos, 5.5, Color(0, 0, 0, 0.6))
+			_content.draw_arc(pos, 4.0, 0.0, TAU, 16, PORTAL, 2.0)
 
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var pos: Vector2 = _to_map(Vector2(enemy.global_position.x, enemy.global_position.z), origin, axes)

@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/portal.gd" id="1_portal"]
+
+[node name="Portal" type="StaticBody3D"]
+script = ExtResource("1_portal")

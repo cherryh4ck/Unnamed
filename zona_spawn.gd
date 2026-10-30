@@ -9,6 +9,9 @@ extends Node3D
 @export var enemy_types: Array[EnemyData] = []
 ## Peso de cada tipo (mismo orden que enemy_types). Vacio = todos igual de probables.
 @export var type_weights: Array[float] = []
+## Tamaño de la zona (si no es cero reemplaza la caja de la escena; lo usa
+## world/build_world.gd para que cada zona tenga su propia caja).
+@export var zone_size := Vector3.ZERO
 
 @onready var zone_shape: CollisionShape3D = $Area3D/CollisionShape3D
 @onready var timer: Timer = $Timer
@@ -16,6 +19,12 @@ extends Node3D
 var enemies_alive := 0
 
 func _ready():
+	# El mapa grande marca las zonas peligrosas ya exploradas.
+	add_to_group("enemy_zones")
+	if zone_size != Vector3.ZERO:
+		var box := BoxShape3D.new()
+		box.size = zone_size
+		zone_shape.shape = box
 	if enemy_types.is_empty():
 		enemy_types = [
 			load("res://enemies/types/esqueleto.tres"),

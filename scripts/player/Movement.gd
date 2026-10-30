@@ -469,16 +469,44 @@ func _on_leveled_up(_new_level: int) -> void:
 
 
 func _on_died() -> void:
-	target_enemy = null
-	pending_skill = -1
-	pending_combo = false
-	_holding_move = false
+	_clear_targets()
 	stop_moving()
 	if click_reference:
 		click_reference.hide()
 	await get_tree().create_timer(respawn_delay, false).timeout
-	global_position = spawn_position
-	stop_moving()
+	# Reaparece en el portal descubierto mas cercano (o en el inicio).
+	var portal: Node3D = world_map.nearest_portal(global_position)
+	_place_at(portal.arrival_point() if portal else spawn_position)
 	player_stats.respawn()
 	sfx.play_at("portal", global_position)
 	Effects.aura(get_parent(), global_position, Color(0.55, 0.75, 1.0))
+
+
+## Viaje por portal: aparece en el punto indicado con un destello.
+func teleport_to(point: Vector3) -> void:
+	_clear_targets()
+	Effects.aura(get_parent(), global_position, Color(0.45, 0.75, 1.0))
+	_place_at(point)
+	sfx.play_at("portal", global_position)
+	Effects.aura(get_parent(), global_position, Color(0.45, 0.75, 1.0))
+
+
+func _clear_targets() -> void:
+	target_enemy = null
+	target_pickup = null
+	target_npc = null
+	pending_skill = -1
+	pending_combo = false
+	_holding_move = false
+
+
+func _place_at(point: Vector3) -> void:
+	global_position = point
+	velocity = Vector3.ZERO
+	stop_moving()
+	if click_reference:
+		click_reference.hide()
+	# La camara salta con el jugador en vez de cruzar el mapa.
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera and camera.get_parent().has_method("snap"):
+		camera.get_parent().snap()
