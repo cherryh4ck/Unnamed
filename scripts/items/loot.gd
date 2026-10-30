@@ -21,6 +21,9 @@ const BASE_ITEMS := [
 	"res://item/items/ballesta_pesada.tres",
 ]
 
+## Probabilidad de que un enemigo suelte una gema (los elite, un poco mas).
+const GEM_CHANCE: float = 0.05
+
 ## Peso de cada rareza (normal, magico, raro, unico, set).
 const RARITY_WEIGHTS := [60.0, 28.0, 10.0, 2.0, 3.0]
 ## Cantidad de bonificaciones por rareza.
@@ -70,6 +73,28 @@ static func roll_enemy_drops(data: EnemyData, level: int, gold_mult: float = 1.0
 	var item_chance: float = clampf((0.12 + data.xp_reward / 200.0) * (1.0 + magic_find), 0.0, 0.6)
 	if randf() < item_chance:
 		drops.append({"item": generate_item(level, -1, magic_find), "quantity": 1})
+	if randf() < GEM_CHANCE * (1.0 + data.xp_reward / 100.0) * (1.0 + magic_find):
+		var gem: Itemdata = Gems.roll_gem(level)
+		if gem:
+			drops.append({"item": gem, "quantity": 1})
+	return drops
+
+
+## Lo que hay en un cofre del mundo: siempre oro, a veces pociones, uno o dos
+## items con mas chance de ser buenos y, a veces, una gema. quality 1 = cofre
+## bueno (mas items y gemas).
+static func roll_chest_drops(level: int, quality: int, gold_mult: float = 1.0, magic_find: float = 0.0) -> Array[Dictionary]:
+	var drops: Array[Dictionary] = []
+	var gold: int = roundi(randi_range(15, 40) * (1.0 + 0.25 * (level - 1)) * (1.0 + quality) * gold_mult)
+	drops.append({"item": GOLD, "quantity": gold})
+	if randf() < 0.5:
+		drops.append({"item": POTION, "quantity": randi_range(1, 2)})
+	for i in 1 + quality:
+		drops.append({"item": generate_item(level, -1, magic_find + 0.5 * (quality + 1)), "quantity": 1})
+	if randf() < 0.25 + 0.2 * quality:
+		var gem: Itemdata = Gems.roll_gem(level + 2 * quality)
+		if gem:
+			drops.append({"item": gem, "quantity": 1})
 	return drops
 
 
@@ -109,6 +134,8 @@ static func generate_item(item_level: int, forced_rarity: int = -1, magic_find: 
 	elif count > 0:
 		item.suffix = AFFIXES[keys[0]][3]
 	item.value = roundi(item.value * VALUE_MULT[rarity] * (1.0 + 0.1 * (item_level - 1)))
+	item.sockets = Gems.roll_sockets(rarity)
+	item.gems = PackedStringArray()
 	return item
 
 

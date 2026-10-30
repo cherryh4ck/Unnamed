@@ -32,6 +32,10 @@
 [ext_resource type="Script" path="res://ui/world_map_panel.gd" id="32_map"]
 [ext_resource type="Script" path="res://scripts/world/occlusion_fader.gd" id="33_fader"]
 [ext_resource type="Script" path="res://ui/title_screen.gd" id="34_title"]
+[ext_resource type="PackedScene" path="res://world/stash.tscn" id="35_stash"]
+[ext_resource type="Script" path="res://ui/stash_panel.gd" id="36_stashpanel"]
+[ext_resource type="Script" path="res://ui/smith_panel.gd" id="37_smithpanel"]
+[ext_resource type="Script" path="res://scripts/world/weather_fx.gd" id="38_weather"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g4v7s"]
 
@@ -95,6 +99,10 @@ sun_path = NodePath("../Sol")
 environment_path = NodePath("../WorldEnvironment")
 ambience_path = NodePath("../Ambiente")
 
+[node name="Clima" type="Node3D" parent="."]
+script = ExtResource("38_weather")
+environment_path = NodePath("../WorldEnvironment")
+
 [node name="CameraRig" type="Node3D" parent="." unique_id=1372666457]
 script = ExtResource("4_fdmbg")
 player = NodePath("../CharacterBody3D/Player")
@@ -117,6 +125,9 @@ bus = &"Ambiente"
 
 [node name="Merchant" parent="." unique_id=1129475806 instance=ExtResource("27_merchant")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -650, 0, -450)
+
+[node name="Baul" parent="." instance=ExtResource("35_stash")]
+transform = Transform3D(0.8075, 0, 0.5898, 0, 1, 0, -0.5898, 0, 0.8075, -380, 0, -720)
 
 [node name="HUD" parent="." unique_id=1270664312 instance=ExtResource("23_hud")]
 
@@ -145,6 +156,14 @@ script = ExtResource("25_combo")
 [node name="ShopPanel" type="PanelContainer" parent="UI/inventoryInterface" unique_id=1460391528]
 layout_mode = 1
 script = ExtResource("28_shop")
+
+[node name="StashPanel" type="PanelContainer" parent="UI/inventoryInterface"]
+layout_mode = 1
+script = ExtResource("36_stashpanel")
+
+[node name="SmithPanel" type="PanelContainer" parent="UI/inventoryInterface"]
+layout_mode = 1
+script = ExtResource("37_smithpanel")
 
 [node name="WorldMap" type="Control" parent="UI/inventoryInterface"]
 layout_mode = 1

@@ -1,0 +1,30 @@
+[gd_scene format=4]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tq6jk"]
+cull_mode = 2
+albedo_color = Color(0.75, 0.585, 0.15, 1)
+metallic = 0.35
+metallic_specular = 0.9
+roughness = 0.45
+emission_enabled = true
+emission = Color(1, 0.78, 0.2, 1)
+emission_energy_multiplier = 0.08
+rim_enabled = true
+rim = 0.4
+rim_tint = 0.6
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_eurqs"]
+_surfaces = [{
+"aabb": AABB(-0.9444045, -0.5468216, -0.8135273, 1.89198, 0.89947456, 1.7163017),
+"format": 34359738375,
+"primitive": 3,
+"uv_scale": Vector4(0, 0, 0, 0),
+"vertex_count": 72,
+"vertex_data": PackedByteArray("AAAAAArXoz4AAAAAzXEGPx2Ijz5BPps+UR1CJPByrT7B+y8/zXEGPx2Ijz5BPps+e24FP176LL05HGc/UR1CJPByrT7B+y8/UJRyPxPCNT0AAAAAe24FP176LL05HGc/zXEGPx2Ijz5BPps+UJRyPxPCNT0AAAAAY/TfvYD8C78AAAAAe24FP176LL05HGc/AAAAAArXoz4AAAAAUR1CJPByrT7B+y8/twAVv/jTiz64Daw+UR1CJPByrT7B+y8/YgkBv7yFfjx/f18/twAVv/jTiz64Daw+e24FP176LL05HGc/YgkBv7yFfjx/f18/UR1CJPByrT7B+y8/e24FP176LL05HGc/Y/TfvYD8C78AAAAAYgkBv7yFfjx/f18/AAAAAArXoz4AAAAAtwAVv/jTiz64Daw+Wj0hv8okgz77Lrq+twAVv/jTiz64Daw+fsRxv67Q9zyOVgUlWj0hv8okgz77Lrq+YgkBv7yFfjx/f18/fsRxv67Q9zyOVgUltwAVv/jTiz64Daw+YgkBv7yFfjx/f18/Y/TfvYD8C78AAAAAfsRxv67Q9zyOVgUlAAAAAArXoz4AAAAAWj0hv8okgz77Lrq++egTpe6OtD74yjK/Wj0hv8okgz77Lrq+tvnfviP4R73q90G/+egTpe6OtD74yjK/fsRxv67Q9zyOVgUltvnfviP4R73q90G/Wj0hv8okgz77Lrq+fsRxv67Q9zyOVgUlY/TfvYD8C78AAAAAtvnfviP4R73q90G/AAAAAArXoz4AAAAA+egTpe6OtD74yjK/ujcEP14lrT79q5i++egTpe6OtD74yjK/PHvwPqhyvLxTQ1C/ujcEP14lrT79q5i+tvnfviP4R73q90G/PHvwPqhyvLxTQ1C/+egTpe6OtD74yjK/tvnfviP4R73q90G/Y/TfvYD8C78AAAAAPHvwPqhyvLxTQ1C/AAAAAArXoz4AAAAAujcEP14lrT79q5i+zXEGPx2Ijz5BPps+ujcEP14lrT79q5i+UJRyPxPCNT0AAAAAzXEGPx2Ijz5BPps+PHvwPqhyvLxTQ1C/UJRyPxPCNT0AAAAAujcEP14lrT79q5i+PHvwPqhyvLxTQ1C/Y/TfvYD8C78AAAAAUJRyPxPCNT0AAAAAkY2M9XgKU8aRjYz1eApTxpGNjPV4ClPGsZ96vq04/cWxn3q+rTj9xbGfer6tOP3FurBUs0xKjsu6sFSzTEqOy7qwVLNMSo7LcKnoNVIzZ6twqeg1UjNnq3Cp6DVSM2er6XEF9R4LaLnpcQX1HgtouelxBfUeC2i5jWN8wHZU56qNY3zAdlTnqo1jfMB2VOeqP4BYruNpSJ4/gFiu42lInj+AWK7jaUieX3oFNJQU36BfegU0lBTfoF96BTSUFN+ganN+9ZkKIbpqc371mQohumpzfvWZCiG6X0ynyiVGp6tfTKfKJUanq19Mp8olRqerMEhPq7V7mKUwSE+rtXuYpTBIT6u1e5ilRFS4QB8+09hEVLhAHz7T2ERUuEAfPtPYA3Lr7OIU9rgDcuvs4hT2uANy6+ziFPa4ASxx3ts6j5oBLHHe2zqPmgEscd7bOo+akhHvvtVVTKuSEe++1VVMq5IR777VVUyrdz4rK6dDnM13Pisrp0OczXc+KyunQ5zNAH9U+e0GXr8Af1T57QZevwB/VPntBl6/AsrU3poFLdwCytTemgUt3ALK1N6aBS3c/xVC+U9gjIX/FUL5T2CMhf8VQvlPYIyF7UzmAM1BOrPtTOYAzUE6s+1M5gDNQTqzT4Kv8mAMocBPgq/yYAyhwE+Cr/JgDKHAiq7ryvhAV9KKruvK+EBX0oqu68r4QFfSJNbpyzmBA9wk1unLOYED3CTW6cs5gQPcFrmpJ+dJkKwWuakn50mQrBa5qSfnSZCs")
+}]
+
+[node name="Gema" type="Node3D" unique_id=861272906]
+
+[node name="Talla" type="MeshInstance3D" parent="." unique_id=1786766692]
+material_override = SubResource("StandardMaterial3D_tq6jk")
+mesh = SubResource("ArrayMesh_eurqs")

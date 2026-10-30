@@ -4,7 +4,7 @@ class_name Itemdata
 
 # Los valores nuevos van siempre al final para no romper los .tres existentes
 # (Godot guarda el enum como numero).
-enum ItemType { GENERIC, MELEE_WEAPON, SPECIAL, POTION, GOLD }
+enum ItemType { GENERIC, MELEE_WEAPON, SPECIAL, POTION, GOLD, GEM }
 enum WeightClass { LIGHT, MEDIUM, HEAVY }
 enum Rarity { NORMAL, MAGIC, RARE, UNIQUE, SET }
 
@@ -71,6 +71,15 @@ const BONUS_COLOR := Color(0.5, 0.68, 1.0)
 ## Ruta del .tres base de un item generado (para guardar la partida).
 @export var base_path: String = ""
 
+@export_group("Gemas")
+## Ranuras abiertas (armas, escudos y ballestas). Ver scripts/items/gems.gd.
+@export var sockets: int = 0
+## Gemas engarzadas, como "tipo:calidad" (ej: "rubi:2").
+@export var gems: PackedStringArray = []
+## Si el item es una gema: su tipo (clave de Gems.KINDS) y calidad (0 a 2).
+@export var gem_kind: String = ""
+@export var gem_tier: int = 0
+
 @export_group("Comercio")
 ## Precio base en oro (para el comerciante, mas adelante).
 @export var value: int = 0
@@ -92,11 +101,17 @@ func get_footprint() -> Vector2i:
 
 
 func get_rarity_color() -> Color:
+	if item_type == ItemType.GEM:
+		return Gems.color_of(gem_kind).lightened(0.25)
 	return RARITY_COLORS[rarity]
 
 
+## Bonificacion del item mas la de las gemas engarzadas.
 func get_bonus(key: String) -> float:
-	return bonuses.get(key, 0.0)
+	var total: float = bonuses.get(key, 0.0)
+	if not gems.is_empty():
+		total += Gems.socket_bonuses(self).get(key, 0.0)
+	return total
 
 
 func get_bonus_lines() -> PackedStringArray:
@@ -134,6 +149,8 @@ func get_type_line() -> String:
 			return "Poción"
 		ItemType.GOLD:
 			return "Oro"
+		ItemType.GEM:
+			return "Gema"
 	return "Objeto"
 
 
@@ -162,4 +179,16 @@ func get_stats_lines() -> PackedStringArray:
 		lines.append("Bloqueo: %d%%" % block_chance)
 	if is_equipment():
 		lines.append("Peso: %s" % WEIGHT_NAMES[weight_class])
+	return lines
+
+
+## Lo que da una gema segun donde se engarce (para el tooltip).
+func get_gem_lines() -> PackedStringArray:
+	var lines := PackedStringArray()
+	if item_type != ItemType.GEM or not Gems.KINDS.has(gem_kind):
+		return lines
+	var weapon: Array = Gems.bonus_of(gem_kind, gem_tier, true)
+	var shield: Array = Gems.bonus_of(gem_kind, gem_tier, false)
+	lines.append("En armas y ballestas: " + bonus_text(weapon[0], weapon[1]))
+	lines.append("En escudos: " + bonus_text(shield[0], shield[1]))
 	return lines

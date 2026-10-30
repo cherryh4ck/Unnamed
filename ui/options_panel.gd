@@ -3,7 +3,7 @@ extends VBoxContainer
 ## Opciones (volumenes y pantalla), ligadas al autoload options. Lo usan la
 ## pantalla de titulo y el menu del juego.
 
-const VOLUMES := [["Master", "Volumen general"], ["Efectos", "Efectos y golpes"], ["Ambiente", "Ambiente"]]
+const VOLUMES := [["Master", "Volumen general"], ["Musica", "Música"], ["Efectos", "Efectos y golpes"], ["Ambiente", "Ambiente"]]
 const TRACK := Color(0.12, 0.09, 0.06)
 const FILL := Color(0.7, 0.5, 0.22)
 const BORDER := Color(0.45, 0.34, 0.18)

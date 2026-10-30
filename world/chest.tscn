@@ -1,0 +1,17 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/chest.gd" id="1_chest"]
+[ext_resource type="PackedScene" uid="uid://duxlrto8quk8e" path="res://assets/props/treasure_chest/treasure_chest_1k.gltf" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_chest"]
+size = Vector3(190, 124, 112)
+
+[node name="Cofre" type="StaticBody3D"]
+script = ExtResource("1_chest")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 62, 0)
+shape = SubResource("BoxShape3D_chest")
+
+[node name="Modelo" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 0, 0, 0)

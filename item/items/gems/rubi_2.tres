@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="PackedScene" path="res://item/gems/models/rubi_2.tscn" id="1_erayq"]
+[ext_resource type="Script" path="res://item/item_data.gd" id="2_n5cxq"]
+
+[resource]
+script = ExtResource("2_n5cxq")
+name = "Rubí perfecto"
+description = "Se engarza en una ranura de un arma, un escudo o una ballesta. El herrero de la aldea la pone y la saca."
+stackable = true
+item_type = 5
+model_3d = ExtResource("1_erayq")
+gems = PackedStringArray()
+gem_kind = "rubi"
+gem_tier = 2
+value = 400

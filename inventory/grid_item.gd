@@ -64,8 +64,12 @@ func _draw() -> void:
 func _make_custom_tooltip(_for_text: String) -> Object:
 	if inventory_data.held != null:
 		return null
+	if get_parent().get("grid") == inventory_data.stash:
+		return ItemTooltip.build(slot.item_data, slot.quantity, "Clic: agarrar · Doble clic o clic derecho: al inventario")
 	var right_click: String = "tirar"
-	if inventory_data.shop_mode:
+	if inventory_data.stash_open:
+		right_click = "guardar en el baúl"
+	elif inventory_data.shop_mode:
 		right_click = "vender (%d oro)" % (maxi(1, slot.item_data.value / 4) * slot.quantity)
 	var hint: String = "Clic: agarrar · Clic derecho: " + right_click
 	if slot.item_data.is_equipment():

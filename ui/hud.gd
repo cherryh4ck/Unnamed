@@ -126,7 +126,8 @@ func _update_target() -> void:
 
 func _update_clock() -> void:
 	var night: bool = world_time.is_night()
-	clock_label.text = "Día %d · %s%s" % [world_time.day, world_time.get_clock_text(), " · Noche" if night else ""]
+	var sky: String = "" if weather.state == weather.State.CLEAR else " · " + weather.get_state_name()
+	clock_label.text = "Día %d · %s%s%s" % [world_time.day, world_time.get_clock_text(), " · Noche" if night else "", sky]
 	clock_label.add_theme_color_override("font_color", Color(0.6, 0.72, 1.0) if night else Color(1.0, 0.88, 0.55))
 
 

@@ -14,7 +14,7 @@ const SAVE_VERSION: int = 1
 const AUTOSAVE_INTERVAL: float = 60.0
 ## Campos que la generacion de botin cambia respecto del item base
 ## (ver Loot.generate_item e ItemSets.generate_piece).
-const ITEM_FIELDS := ["rarity", "min_damage", "max_damage", "defense", "suffix", "unique_name", "bonuses", "set_id", "value"]
+const ITEM_FIELDS := ["rarity", "min_damage", "max_damage", "defense", "suffix", "unique_name", "bonuses", "set_id", "value", "sockets", "gems"]
 
 ## Archivo de la partida (los tests usan otro para no pisar la del jugador).
 var save_path: String = SAVE_PATH
@@ -83,11 +83,13 @@ func _write() -> bool:
 		"version": SAVE_VERSION,
 		"difficulty": difficulty.current,
 		"player": player_data,
-		"inventory": _grid_to_array(),
+		"inventory": _grid_to_array(inventory_data.backpack, true),
 		"inventory_overflow": inventory_data.overflow.map(_slot_to_dict),
+		"stash": _grid_to_array(inventory_data.stash, false),
 		"equipment": _slots_to_array(inventory_data.equipment),
 		"combo": skill_book.combo,
 		"world": {"day": world_time.day, "hour": world_time.hour},
+		"weather": weather.to_save(),
 		"collected_pickups": collected_pickups,
 		"world_map": world_map.to_save(),
 	}
@@ -115,8 +117,9 @@ func load_saved() -> bool:
 	# Primero el equipo: cambia la vida maxima.
 	inventory_data.reset()
 	inventory_data.shop_mode = false
-	_array_to_grid(data.get("inventory", []))
-	_array_to_grid(data.get("inventory_overflow", []))
+	_array_to_grid(data.get("inventory", []), inventory_data.backpack)
+	_array_to_grid(data.get("inventory_overflow", []), inventory_data.backpack)
+	_array_to_grid(data.get("stash", []), inventory_data.stash)
 	_array_to_slots(data.get("equipment", []), inventory_data.equipment)
 
 	var player_data: Dictionary = data.get("player", {})
@@ -138,11 +141,13 @@ func load_saved() -> bool:
 	skill_book.set_combo(data.get("combo", []))
 	var world: Dictionary = data.get("world", {})
 	world_time.set_time(float(world.get("hour", world_time.hour)), int(world.get("day", world_time.day)))
+	weather.from_save(data.get("weather", {}))
 	collected_pickups.assign(data.get("collected_pickups", []))
 	world_map.from_save(data.get("world_map", {}))
 	world_map.forget_map()
 
 	inventory_data.inventory_changed.emit(-1)
+	inventory_data.stash_changed.emit()
 	for i in inventory_data.EQUIP_COUNT:
 		inventory_data.equipment_changed.emit(i)
 	player_stats.gold_changed.emit(player_stats.gold)
@@ -173,6 +178,7 @@ func new_game(difficulty_level: int) -> void:
 	player_stats.reset()
 	skill_book.reset()
 	world_time.set_time(9.0, 1)
+	weather.reset()
 	collected_pickups.clear()
 	world_map.reset()
 	world_map.forget_map()
@@ -219,21 +225,24 @@ func _slots_to_array(slots: Array[Slotdata]) -> Array:
 	return result
 
 
-# La grilla se guarda con la posicion de cada item; el agarrado con el
-# mouse va sin posicion (al cargar se acomoda en el primer lugar libre).
-func _grid_to_array() -> Array:
+# Cada grilla se guarda con la posicion de cada item. Con la mochila van
+# tambien el item agarrado con el mouse y el del yunque, sin posicion (al
+# cargar se acomodan en el primer lugar libre).
+func _grid_to_array(grid: ItemGrid, with_loose: bool) -> Array:
 	var result: Array = []
-	for slot in inventory_data.slots:
+	for slot in grid.slots:
 		var entry: Dictionary = _slot_to_dict(slot)
 		entry["pos"] = [slot.grid_pos.x, slot.grid_pos.y]
 		result.append(entry)
-	if inventory_data.held:
-		result.append(_slot_to_dict(inventory_data.held))
+	if with_loose:
+		for loose in [inventory_data.held, inventory_data.anvil]:
+			if loose:
+				result.append(_slot_to_dict(loose))
 	return result
 
 
 # Partidas viejas (casillas sin posicion, con huecos) entran en orden.
-func _array_to_grid(data: Array) -> void:
+func _array_to_grid(data: Array, grid: ItemGrid) -> void:
 	for entry in data:
 		if not entry is Dictionary:
 			continue
@@ -245,8 +254,8 @@ func _array_to_grid(data: Array) -> void:
 		slot.quantity = int(entry.get("quantity", 1))
 		var pos: Array = entry.get("pos", [])
 		var grid_pos := Vector2i(int(pos[0]), int(pos[1])) if pos.size() == 2 else Vector2i(-1, -1)
-		# Lo que no entra queda esperando lugar (no se pierde).
-		if not inventory_data.restore_slot(slot, grid_pos):
+		# Lo que no entra queda esperando lugar en la mochila (no se pierde).
+		if not grid.restore_slot(slot, grid_pos) and not inventory_data.restore_slot(slot, Vector2i(-1, -1)):
 			inventory_data.park(slot)
 
 

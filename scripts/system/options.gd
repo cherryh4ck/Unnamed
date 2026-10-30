@@ -2,16 +2,17 @@ extends Node
 
 ## Autoload con las opciones del jugador (volumen, pantalla). Se guardan
 ## aparte de la partida, en user://opciones.cfg, y se aplican al abrir.
-## Los sonidos van por buses: "Efectos" (golpes, hechizos, interfaz, pasos) y
-## "Ambiente" (grillos, viento); los dos pasan por "Master" (volumen general).
+## Los sonidos van por buses: "Efectos" (golpes, hechizos, interfaz, pasos),
+## "Ambiente" (grillos, lluvia, viento) y "Musica"; todos pasan por "Master"
+## (volumen general).
 
 signal changed
 
 const PATH := "user://opciones.cfg"
-const BUSES := ["Efectos", "Ambiente"]
+const BUSES := ["Efectos", "Ambiente", "Musica"]
 
 ## Volumen lineal de 0 a 1 por bus ("Master" = general).
-var volumes: Dictionary = {"Master": 0.8, "Efectos": 1.0, "Ambiente": 0.8}
+var volumes: Dictionary = {"Master": 0.8, "Efectos": 1.0, "Ambiente": 0.8, "Musica": 0.6}
 var fullscreen: bool = false
 var vsync: bool = true
 

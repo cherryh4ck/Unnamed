@@ -29,6 +29,10 @@ const SOUNDS := {
 	"unknown_spell": ["res://sounds/spells/unknown_spell.wav", "res://sounds/spells/unknown_spell2.wav"],
 	"bow_shoot": ["res://sounds/weapons/bow_shoot.wav"],
 	"portal": ["res://sounds/ambient/portal.wav"],
+	"chest_open": ["res://sounds/interact/chest/open.ogg"],
+	"anvil": ["res://sounds/interact/smith/anvil1.ogg", "res://sounds/interact/smith/anvil2.ogg"],
+	"coins": ["res://sounds/interact/smith/coins.ogg"],
+	"gem_socket": ["res://sounds/interact/gems/gem1.ogg", "res://sounds/interact/gems/gem3.ogg", "res://sounds/interact/gems/gem5.ogg"],
 }
 
 # El mundo usa unidades grandes (el personaje mide ~400), asi que la

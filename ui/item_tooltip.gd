@@ -1,7 +1,8 @@
 class_name ItemTooltip
 
 ## Arma el contenido del tooltip de un item: nombre con el color de su rareza,
-## tipo, stats, bonificaciones (en azul), descripcion y valor.
+## tipo, stats, bonificaciones (en azul), ranuras con sus gemas, descripcion
+## y valor.
 ## Lo usan los slots del inventario desde _make_custom_tooltip.
 
 const WIDTH: float = 240.0
@@ -28,10 +29,19 @@ static func build(item: Itemdata, quantity: int = 1, hint: String = "") -> Contr
 		for line in stats:
 			_add(box, line, STAT_COLOR, 15)
 
+	var gem_lines: PackedStringArray = item.get_gem_lines()
+	if not gem_lines.is_empty():
+		_add_separator(box)
+		for line in gem_lines:
+			_add(box, line, Itemdata.BONUS_COLOR, 14)
+
 	if not item.bonuses.is_empty():
 		_add_separator(box)
 		for key in item.bonuses:
 			_add(box, Itemdata.bonus_text(key, item.bonuses[key]), Itemdata.bonus_color(key), 15)
+
+	if item.sockets > 0:
+		_add_sockets(box, item)
 
 	if not item.set_id.is_empty():
 		_add_set_info(box, item)
@@ -48,6 +58,21 @@ static func build(item: Itemdata, quantity: int = 1, hint: String = "") -> Contr
 	if not hint.is_empty():
 		_add(box, hint, DIM_COLOR, 12)
 	return box
+
+
+# Una linea por ranura: la gema con lo que da, o vacia.
+static func _add_sockets(box: VBoxContainer, item: Itemdata) -> void:
+	_add_separator(box)
+	_add(box, "Ranuras (%d/%d)" % [item.gems.size(), item.sockets], DIM_COLOR, 13)
+	for i in item.sockets:
+		if i >= item.gems.size():
+			_add(box, "  ◇ Vacía", DIM_COLOR, 14)
+			continue
+		var gem: Itemdata = Gems.from_id(item.gems[i])
+		if gem == null:
+			continue
+		var bonus: Array = Gems.bonus_of(gem.gem_kind, gem.gem_tier, item.has_damage())
+		_add(box, "  ◆ %s: %s" % [gem.name, Itemdata.bonus_text(bonus[0], bonus[1])], Gems.color_of(gem.gem_kind).lightened(0.3), 14)
 
 
 # Nombre del set, piezas (las equipadas en verde) y bonus del set completo.

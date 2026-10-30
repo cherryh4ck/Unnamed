@@ -3,7 +3,7 @@ extends SceneTree
 ## Arma el mundo (world/mundo.tscn) con los assets libres de assets/:
 ## piso con mapas de mezcla (caminos, adoquines, bosque, musgo, piedra), las
 ## piezas de cada zona con su colision, las zonas de enemigos, los portales,
-## los nombres de cada lugar para el mapa y la navegacion horneada.
+## los cofres, los nombres de cada lugar para el mapa y la navegacion horneada.
 ## Es deterministico (semilla fija): correrlo de nuevo da el mismo mundo.
 ##
 ##   godot --headless --path . --script res://world/build_world.gd
@@ -25,6 +25,8 @@ const PROP_SCRIPT := preload("res://scripts/world/prop.gd")
 const ZONE_SCENE := "res://zona_spawn.tscn"
 const PORTAL_SCENE := "res://world/portal.tscn"
 const ENEMY_SCENE := "res://enemi.tscn"
+const CHEST_SCENE := "res://world/chest.tscn"
+const SMITH_SCENE := "res://npc/blacksmith.tscn"
 
 const N := "res://assets/nature/"
 const P := "res://assets/props/"
@@ -46,6 +48,12 @@ const SHRUB := N + "shrub_02/shrub_02_1k.gltf"
 const SHRUB_PIECES := ["shrub_02_a", "shrub_02_b", "shrub_02_c", "shrub_02_d"]
 const STUMP := N + "tree_stump_01/tree_stump_01_1k.gltf"
 const FORT := P + "modular_fort_01/modular_fort_01_1k.gltf"
+const FORGE := P + "forge/forge_doncarson.glb"
+const FORGE_SCALE: float = 220.0
+## Herreria: entre los cajones del oeste y el camino al porton norte, abierta
+## hacia el camino (x, z, angulo). El herrero se para adelante.
+const FORGE_SPOT := Vector3(-450, -1400, PI / 2.0)
+const SMITH_DISTANCE: float = 420.0
 const GRAVESTONES := ["gravestone-bevel", "gravestone-broken", "gravestone-cross", "gravestone-cross-large", "gravestone-decorative", "gravestone-round", "gravestone-wide", "gravestone-roof"]
 
 const FOLIAGE_TINT := Color(0.78, 0.82, 0.74)
@@ -98,6 +106,9 @@ func _initialize() -> void:
 	_build_portals()
 	_build_labels()
 	_paint_splats()
+	# Al final: asi no cambia nada de lo que se reparte antes con la misma semilla.
+	_build_chests()
+	_build_forge()
 	# Los duenos se ponen ahora, antes de que corran los _ready: lo que las
 	# piezas crean al cargar (llamas, piedras del portal) no se guarda.
 	_set_owner(_root, _root)
@@ -381,6 +392,41 @@ func _portal(parent: Node3D, id: String, display_name: String, pos: Vector3) -> 
 	_occupied.append(Vector3(pos.x, pos.z, 420.0))
 
 
+# Cofres con botin del nivel de cada zona; los de las ruinas y el cementerio,
+# buenos.
+func _build_chests() -> void:
+	var chests := _node("Cofres", _root)
+	# Las zonas estan llenas de piezas: mas intentos y menos margen que lo normal.
+	_scatter(chests, FOREST, 400.0, FOREST.z * 0.85, 5, _chest.bind(3, 0), false, 90.0, 600)
+	_scatter(chests, Vector3(3200, 3600, 2000), 0.0, 2000.0, 2, _chest.bind(1, 0), false, 90.0, 600)
+	_scatter(chests, Vector3(GRAVEYARD.x, GRAVEYARD.y, 1300.0), 300.0, 1250.0, 3, _chest.bind(4, 1), false, 90.0, 600)
+	_scatter(chests, RUINS, 300.0, RUINS.z * 0.9, 4, _chest.bind(6, 1), false, 90.0, 600)
+
+
+# Herreria de la aldea (el modelo esta abierto hacia +Z) con el herrero adelante.
+func _build_forge() -> void:
+	var village: Node3D = _props.get_node("Aldea")
+	var basis := Basis(Vector3.UP, FORGE_SPOT.z)
+	var pos := Vector3(FORGE_SPOT.x, 0, FORGE_SPOT.y)
+	var forge: Node3D = _prop(village, FORGE, pos, FORGE_SPOT.z, FORGE_SCALE, 1.0, {"fade_when_occluding": true}, true)
+	forge.name = "Herreria"
+	if ResourceLoader.exists(SMITH_SCENE):
+		var smith: Node3D = load(SMITH_SCENE).instantiate()
+		smith.name = "Herrero"
+		smith.transform = Transform3D(basis, pos + basis * Vector3.BACK * SMITH_DISTANCE)
+		_root.add_child(smith, true)
+
+
+func _chest(parent: Node3D, pos: Vector3, level: int, quality: int) -> void:
+	var chest: Node3D = load(CHEST_SCENE).instantiate()
+	chest.name = "Cofre"
+	chest.level = level
+	chest.quality = quality
+	chest.transform = Transform3D(Basis(Vector3.UP, _rng.randf() * TAU), pos)
+	parent.add_child(chest, true)
+	_occupied.append(Vector3(pos.x, pos.z, 150.0))
+
+
 func _build_labels() -> void:
 	var labels := _node("NombresDelMapa", _root)
 	for entry in [["Aldea del Vado", Vector2(VILLAGE.x, VILLAGE.y)], ["Bosque Umbrío", Vector2(FOREST.x, FOREST.y)],
@@ -404,13 +450,14 @@ func _node(node_name: String, parent: Node) -> Node3D:
 
 
 ## Reparte count piezas al azar dentro del anillo [inner, outer] de la zona
-## (x, z = centro). Evita caminos, la aldea y lo ya ocupado. square = en vez de
-## circulo, todo el cuadrado del mundo.
-func _scatter(parent: Node3D, zone: Vector3, inner: float, outer: float, count: int, maker: Callable, square: bool = false) -> void:
+## (x, z = centro). Evita caminos, la aldea y lo ya ocupado (a clearance de
+## distancia). square = en vez de circulo, todo el cuadrado del mundo.
+func _scatter(parent: Node3D, zone: Vector3, inner: float, outer: float, count: int, maker: Callable, square: bool = false,
+		clearance: float = 160.0, tries_per_piece: int = 30) -> void:
 	var placed: int = 0
 	var tries: int = 0
 	var center := Vector2(zone.x, zone.y)
-	while placed < count and tries < count * 30:
+	while placed < count and tries < count * tries_per_piece:
 		tries += 1
 		var point: Vector2
 		if square:
@@ -430,7 +477,7 @@ func _scatter(parent: Node3D, zone: Vector3, inner: float, outer: float, count: 
 			continue
 		if zone != VILLAGE and point.distance_to(Vector2(VILLAGE.x, VILLAGE.y)) < 900.0:
 			continue
-		if not _is_free(point, 160.0):
+		if not _is_free(point, clearance):
 			continue
 		maker.call(parent, Vector3(point.x, 0, point.y))
 		placed += 1

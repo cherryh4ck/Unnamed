@@ -2,6 +2,8 @@ extends Node
 
 ## Parte visual del ciclo dia/noche: mueve el sol (de noche una luna azulada),
 ## cambia los colores del cielo y el volumen del ambiente segun world_time.
+## Con el cielo cubierto (weather.overcast) el sol pierde fuerza y el cielo se
+## pone gris.
 
 @export var sun_path: NodePath
 @export var environment_path: NodePath
@@ -21,6 +23,8 @@ const NIGHT_SKY_HORIZON := Color(0.06, 0.08, 0.16)
 const SUN_COLOR := Color(1.0, 0.96, 0.88)
 const DUSK_SUN_COLOR := Color(1.0, 0.62, 0.35)
 const MOON_COLOR := Color(0.55, 0.65, 1.0)
+const OVERCAST_SKY_TOP := Color(0.42, 0.45, 0.5)
+const OVERCAST_SKY_HORIZON := Color(0.58, 0.6, 0.63)
 
 @onready var sun: DirectionalLight3D = get_node_or_null(sun_path)
 @onready var world_environment: WorldEnvironment = get_node_or_null(environment_path)
@@ -43,6 +47,7 @@ func _apply() -> void:
 	var daylight: float = world_time.get_daylight()
 	# Cerca del horizonte (amanecer/atardecer) los colores tiran a naranja.
 	var dusk: float = clampf(1.0 - daylight * 1.6, 0.0, 1.0) if not world_time.is_night() else 0.0
+	var cover: float = weather.overcast
 
 	if sun:
 		if world_time.is_night():
@@ -56,15 +61,18 @@ func _apply() -> void:
 			sun.rotation_degrees = Vector3(-elevation, day_t * 180.0 - 90.0, 0.0)
 			sun.light_color = SUN_COLOR.lerp(DUSK_SUN_COLOR, dusk)
 			sun.light_energy = lerpf(0.3, 0.7, daylight)
+		sun.light_energy *= lerpf(1.0, 0.4, cover)
+		sun.shadow_opacity = lerpf(1.0, 0.35, cover)
 
 	if _sky:
 		var top: Color = NIGHT_SKY_TOP.lerp(DAY_SKY_TOP, daylight)
 		var horizon: Color = NIGHT_SKY_HORIZON.lerp(DAY_SKY_HORIZON, daylight)
-		_sky.sky_top_color = top.lerp(DUSK_SKY_TOP, dusk * 0.6)
-		_sky.sky_horizon_color = horizon.lerp(DUSK_SKY_HORIZON, dusk * 0.7)
+		_sky.sky_top_color = top.lerp(DUSK_SKY_TOP, dusk * 0.6).lerp(OVERCAST_SKY_TOP * maxf(daylight, 0.12), cover * 0.85)
+		_sky.sky_horizon_color = horizon.lerp(DUSK_SKY_HORIZON, dusk * 0.7).lerp(OVERCAST_SKY_HORIZON * maxf(daylight, 0.12), cover * 0.85)
 		_sky.ground_horizon_color = _sky.sky_horizon_color
 	if world_environment and world_environment.environment:
-		world_environment.environment.ambient_light_energy = lerpf(0.35, 0.7, daylight)
+		world_environment.environment.ambient_light_energy = lerpf(0.35, 0.7, daylight) * lerpf(1.0, 0.8, cover)
 
 	if ambience:
-		ambience.volume_db = lerpf(-8.0, -22.0, daylight)
+		# Con lluvia los grillos se callan.
+		ambience.volume_db = lerpf(-8.0, -22.0, daylight) - weather.rain * 20.0

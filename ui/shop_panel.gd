@@ -70,8 +70,8 @@ func _ready() -> void:
 
 
 func _connect_merchants() -> void:
-	for npc in get_tree().get_nodes_in_group("npcs"):
-		if npc.has_signal("interacted") and not npc.interacted.is_connected(open_for):
+	for npc in get_tree().get_nodes_in_group("merchants"):
+		if not npc.interacted.is_connected(open_for):
 			npc.interacted.connect(open_for)
 
 

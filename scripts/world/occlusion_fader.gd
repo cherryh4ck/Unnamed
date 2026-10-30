@@ -1,8 +1,9 @@
 extends Node
 
 ## Desvanece las piezas altas (arboles, casas, muros) que quedan entre la
-## camara y el jugador, como en los ARPG con camara desde arriba. Las piezas
-## se anotan solas en el grupo "occluders" (ver scripts/world/prop.gd).
+## camara y el jugador, como en los ARPG con camara desde arriba. Tambien las
+## que tapan un cofre sin abrir cercano, para que se pueda encontrar. Las
+## piezas se anotan solas en el grupo "occluders" (ver scripts/world/prop.gd).
 
 ## Solo se revisan las piezas a esta distancia del jugador.
 const CHECK_RADIUS: float = 2200.0
@@ -12,6 +13,9 @@ const SPEED: float = 6.0
 const BODY_HEIGHTS := [60.0, 220.0, 380.0]
 ## Lo que queda casi pegado a la camara tambien se desvanece (tapa media pantalla).
 const NEAR_CAMERA: float = 350.0
+## Los cofres sin abrir a esta distancia del jugador tambien se dejan ver.
+const CHEST_RADIUS: float = 1300.0
+const CHEST_HEIGHT: float = 70.0
 
 var _faded: Dictionary = {}
 
@@ -22,6 +26,12 @@ func _process(delta: float) -> void:
 	if player == null or camera == null:
 		return
 	var eye: Vector3 = camera.global_position
+	var points: Array[Vector3] = []
+	for height in BODY_HEIGHTS:
+		points.append(player.global_position + Vector3.UP * height)
+	for chest in get_tree().get_nodes_in_group("chests"):
+		if not chest.opened and chest.global_position.distance_to(player.global_position) < CHEST_RADIUS:
+			points.append(chest.global_position + Vector3.UP * CHEST_HEIGHT)
 	var targets: Dictionary = {}
 	for prop in get_tree().get_nodes_in_group("occluders"):
 		var bounds: AABB = prop.world_bounds
@@ -30,8 +40,8 @@ func _process(delta: float) -> void:
 		if bounds.grow(NEAR_CAMERA).has_point(eye):
 			targets[prop] = true
 			continue
-		for height in BODY_HEIGHTS:
-			if bounds.intersects_segment(eye, player.global_position + Vector3.UP * height):
+		for point in points:
+			if bounds.intersects_segment(eye, point):
 				targets[prop] = true
 				break
 

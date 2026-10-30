@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="PackedScene" path="res://item/gems/models/amatista_0.tscn" id="1_j8r7i"]
+[ext_resource type="Script" path="res://item/item_data.gd" id="2_s75av"]
+
+[resource]
+script = ExtResource("2_s75av")
+name = "Amatista astillada"
+description = "Se engarza en una ranura de un arma, un escudo o una ballesta. El herrero de la aldea la pone y la saca."
+stackable = true
+item_type = 5
+model_3d = ExtResource("1_j8r7i")
+gems = PackedStringArray()
+gem_kind = "amatista"
+value = 40

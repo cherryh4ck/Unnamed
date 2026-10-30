@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="PackedScene" path="res://item/gems/models/esmeralda_2.tscn" id="1_l3xlg"]
+[ext_resource type="Script" path="res://item/item_data.gd" id="2_7rtou"]
+
+[resource]
+script = ExtResource("2_7rtou")
+name = "Esmeralda perfecta"
+description = "Se engarza en una ranura de un arma, un escudo o una ballesta. El herrero de la aldea la pone y la saca."
+stackable = true
+item_type = 5
+model_3d = ExtResource("1_l3xlg")
+gems = PackedStringArray()
+gem_kind = "esmeralda"
+gem_tier = 2
+value = 400

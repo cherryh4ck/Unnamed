@@ -1,0 +1,34 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/stash.gd" id="1_stash"]
+[ext_resource type="PackedScene" uid="uid://duxlrto8quk8e" path="res://assets/props/treasure_chest/treasure_chest_1k.gltf" id="2_model"]
+[ext_resource type="Texture2D" path="res://assets/icons/game-icons/delapouite/chest.svg" id="3_icon"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_stash"]
+size = Vector3(230, 150, 135)
+
+[node name="Baul" type="StaticBody3D"]
+script = ExtResource("1_stash")
+map_icon = ExtResource("3_icon")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 75, 0)
+shape = SubResource("BoxShape3D_stash")
+
+[node name="Modelo" parent="." instance=ExtResource("2_model")]
+transform = Transform3D(240, 0, 0, 0, 240, 0, 0, 0, 240, 0, 0, 0)
+
+[node name="NameLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 230, 0)
+layers = 2
+pixel_size = 0.0016
+billboard = 1
+no_depth_test = true
+fixed_size = true
+render_priority = 10
+outline_render_priority = 9
+modulate = Color(0.95, 0.8, 0.55, 1)
+outline_modulate = Color(0, 0, 0, 0.85)
+text = "Baúl"
+font_size = 30
+outline_size = 10

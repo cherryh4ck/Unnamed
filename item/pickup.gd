@@ -178,6 +178,8 @@ func _pickup_sound() -> String:
 			return "pickup_gold"
 		Itemdata.ItemType.POTION:
 			return "pickup_potion"
+		Itemdata.ItemType.GEM:
+			return "pickup_magic"
 	if item_data.rarity != Itemdata.Rarity.NORMAL:
 		return "pickup_magic"
 	return "drag_weapon"

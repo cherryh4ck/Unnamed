@@ -8,7 +8,6 @@ extends Control
 
 const PORTAL_ICON := preload("res://assets/icons/game-icons/lorc/magic-portal.svg")
 const SKULL_ICON := preload("res://assets/icons/game-icons/lorc/skull-crossed-bones.svg")
-const COIN_ICON := preload("res://assets/icons/game-icons/delapouite/two-coins.svg")
 const MAP_TINT := Color(0.93, 0.82, 0.62)
 const FOG_TINT := Color(0.36, 0.28, 0.18)
 const PAPER := Color(0.16, 0.12, 0.08)
@@ -170,12 +169,13 @@ func _draw_map() -> void:
 			_icon(SKULL_ICON, pos, DANGER_COLOR, 20.0)
 			_text(font, pos + Vector2(0, 22), "Nv %d" % zone.level, 13, Color(1.0, 0.6, 0.5))
 
-	for merchant in get_tree().get_nodes_in_group("npcs"):
-		if merchant.is_in_group("portals"):
+	for npc in get_tree().get_nodes_in_group("npcs"):
+		var icon: Texture2D = npc.get("map_icon")
+		if icon == null:
 			continue
-		var xz := Vector2(merchant.global_position.x, merchant.global_position.z)
+		var xz := Vector2(npc.global_position.x, npc.global_position.z)
 		if world_map.is_explored(xz):
-			_icon(COIN_ICON, _to_view(xz), Color(1.0, 0.84, 0.35), 20.0)
+			_icon(icon, _to_view(xz), npc.map_icon_color, 20.0)
 
 	for portal in get_tree().get_nodes_in_group("portals"):
 		if not portal.is_discovered():

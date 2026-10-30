@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="PackedScene" path="res://item/gems/models/zafiro_1.tscn" id="1_ywf71"]
+[ext_resource type="Script" path="res://item/item_data.gd" id="2_m70oi"]
+
+[resource]
+script = ExtResource("2_m70oi")
+name = "Zafiro"
+description = "Se engarza en una ranura de un arma, un escudo o una ballesta. El herrero de la aldea la pone y la saca."
+stackable = true
+item_type = 5
+model_3d = ExtResource("1_ywf71")
+gems = PackedStringArray()
+gem_kind = "zafiro"
+gem_tier = 1
+value = 120

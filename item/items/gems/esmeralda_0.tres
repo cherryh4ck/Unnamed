@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="PackedScene" path="res://item/gems/models/esmeralda_0.tscn" id="1_x7tbq"]
+[ext_resource type="Script" path="res://item/item_data.gd" id="2_4rrsh"]
+
+[resource]
+script = ExtResource("2_4rrsh")
+name = "Esmeralda astillada"
+description = "Se engarza en una ranura de un arma, un escudo o una ballesta. El herrero de la aldea la pone y la saca."
+stackable = true
+item_type = 5
+model_3d = ExtResource("1_x7tbq")
+gems = PackedStringArray()
+gem_kind = "esmeralda"
+value = 40

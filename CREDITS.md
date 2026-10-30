@@ -43,7 +43,11 @@ Cambios: se les sacó el fondo negro y el juego los tiñe de colores. Los ícono
 de habilidades (`ui/icons/skills/`) son esos dibujos recoloreados sobre un fondo
 propio: Golpe Brutal (Lorc, hammer-drop), Torbellino (Lorc, sword-spin), Bola de
 Fuego (Lorc, fireball), Furia (Delapouite, enrage) y Piel de Piedra
-(Delapouite, rock-golem).
+(Delapouite, rock-golem). En el mapa grande, el yunque del herrero es "anvil"
+de Lorc y el baúl es "chest" de Delapouite.
+
+Las gemas (`item/gems/`) no usan arte de afuera: su talla y sus materiales los
+genera `item/gems/build_gems.gd`.
 
 ## Efectos
 
@@ -90,6 +94,7 @@ lo dejamos anotado.
 | Fogata (Stone Fire Pit) | Sebastian Platen | https://polyhaven.com/a/stone_fire_pit |
 | Muros, torre y portón (Modular Fort 01) | Rico Cilliers | https://polyhaven.com/a/modular_fort_01 |
 | Estatua (Gothic Statue) | Benny Weimer | https://polyhaven.com/a/gothic_statue |
+| Cofres y baúl (Treasure Chest) | Rico Cilliers | https://polyhaven.com/a/treasure_chest |
 | Lápidas, criptas, rejas, faroles y braseros (Graveyard Kit) | Kenney | https://kenney.nl/assets/graveyard-kit (licencia en `assets/props/graveyard/License.txt`) |
 | Casas, pozo, carro y puesto ("Medieval Village") | Quaternius | https://quaternius.com · modelos bajados de https://poly.pizza (CC0 1.0) |
 
@@ -106,5 +111,42 @@ modelos de Poly Haven o Kenney.
 |---|---|---|
 | Caballo con animaciones (montura) | Quaternius | https://poly.pizza/m/qvTrSG9pZF (CC0 1.0) |
 
+### Con atribución (CC-BY 3.0)
+
+| Modelo | Autor | Fuente |
+|---|---|---|
+| Herrería de la aldea ("Forge") | Don Carson | https://poly.pizza/m/2ZnLsJJL4Pe ([CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)) |
+
 Cambios en el juego: escalas, tintes y materiales de piedra o hierro (ver
 `scripts/world/prop.gd`). El mundo se arma con `world/build_world.gd`.
+
+## Música (`sounds/music/`)
+
+Todos los temas son CC0 (dominio público) y salen de OpenGameArt. Se pasaron
+a OGG y algunos se recortaron como loop.
+
+| Tema en el juego | Obra | Autor | Fuente |
+|---|---|---|---|
+| Aldea (`aldea.ogg`) | Medieval: The Bard's Tale (versión loop) | RandomMind | https://opengameart.org/content/medieval-the-bards-tale |
+| Bosque (`bosque.ogg`) | Forest Whisper Theme | Cleyton Kauffman | https://opengameart.org/content/forest-whisper-theme |
+| Cementerio (`cementerio.ogg`) | Kokopelli's Graveyard Theme | Cleyton Kauffman | https://opengameart.org/content/kokopellis-graveyard-theme |
+| Ruinas (`ruinas.ogg`) | Village Ruins | isaiah658 | https://opengameart.org/content/village-ruins |
+| Praderas (`pradera.ogg`) | Medieval: Exploration | RandomMind | https://opengameart.org/content/medieval-exploration |
+| Combate (`combate.ogg`) | Determined Pursuit (epic orchestra loop) | Emma_MA | https://opengameart.org/content/determined-pursuit-epic-orchestra-loop |
+| Pantalla de título (`titulo.ogg`) | Fantasy: Lament for a Warrior's Soul | RandomMind | https://opengameart.org/content/fantasy-lament-for-a-warriors-soul |
+
+## Sonidos nuevos
+
+CC0 o dominio público. Los de antes (golpes, interfaz, pasos y hechizos de
+`sounds/`) no están acá.
+
+| Sonido | Autor | Fuente |
+|---|---|---|
+| Lluvia suave y fuerte (`sounds/ambient/weather/rain_*.ogg`) | Ylmir | https://opengameart.org/content/rain-loopable (CC0) |
+| Truenos (`thunder1-4.ogg`), recortes de "Storm, Thunderbolts" | stephan (pdsounds.org) | https://commons.wikimedia.org/wiki/File:Storm_thunderbolts.ogg (dominio público) |
+| Viento (`wind_loop.ogg`, "wind1") | Luke.RUSTLTD | https://opengameart.org/content/wind1 (CC0) |
+| Cofre que se abre (`sounds/interact/chest/open.ogg`, mezcla de metalLatch y creak2) | Kenney | https://kenney.nl/assets/rpg-audio (CC0) |
+| Monedas del herrero (`coins.ogg`, handleCoins) | Kenney | https://kenney.nl/assets/rpg-audio (CC0) |
+| Yunque (`anvil1.ogg`, "Blacksmith's Hammer") | VishwaJai | https://opengameart.org/content/blacksmiths-hammer (CC0) |
+| Yunque (`anvil2.ogg`, "Hammer on Anvil") | themightyglider | https://opengameart.org/content/hammer-on-anvil (CC0) |
+| Gemas engarzadas (`sounds/interact/gems/`, glass) | Kenney | https://kenney.nl/assets/interface-sounds (CC0) |

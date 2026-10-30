@@ -1,9 +1,7 @@
-extends StaticBody3D
+extends "res://scripts/npc/npc.gd"
 
 ## Comerciante: NPC que vende items y compra los del jugador.
 ## Al hacerle clic el jugador camina hasta el y se abre la tienda (ui/shop_panel.gd).
-
-signal interacted(merchant: Node3D)
 
 ## Cantidad de items de equipo a la venta (ademas de las pociones).
 const STOCK_ITEMS: int = 10
@@ -12,11 +10,6 @@ const MAX_STOCK: int = 16
 ## Los items que el jugador vende quedan a la venta por este multiplicador del valor.
 const BUYBACK_MARKUP: float = 1.0
 
-@export var display_name: String = "Comerciante"
-@export var idle_animation: String = "82_BT3_0"
-
-@onready var anim_player: AnimationPlayer = find_child("AnimationPlayer", true, false)
-
 ## Stock actual: lista de {item, quantity}.
 var stock: Array[Dictionary] = []
 var _stock_day: int = -1
@@ -24,30 +17,13 @@ var _stock_level: int = -1
 
 
 func _ready() -> void:
-	add_to_group("npcs")
-	if anim_player and anim_player.has_animation(idle_animation):
-		anim_player.get_animation(idle_animation).loop_mode = Animation.LOOP_LINEAR
-		anim_player.play(idle_animation)
-	$NameLabel.text = display_name
-
-
-func _process(delta: float) -> void:
-	# Mira al jugador cuando esta cerca.
-	var player: Node3D = get_tree().get_first_node_in_group("player")
-	if player and global_position.distance_to(player.global_position) < 900.0:
-		var dir: Vector3 = player.global_position - global_position
-		dir.y = 0.0
-		if dir.length() > 1.0:
-			rotation.y = lerp_angle(rotation.y, atan2(dir.x, dir.z), 4.0 * delta)
-
-
-func get_display_name() -> String:
-	return display_name
+	super()
+	add_to_group("merchants")
 
 
 func interact() -> void:
 	_refresh_stock_if_needed()
-	interacted.emit(self)
+	super()
 
 
 ## El stock se renueva cada dia del juego o cuando el jugador sube de nivel.
