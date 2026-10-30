@@ -103,8 +103,17 @@ static func soft_dot() -> GradientTexture2D:
 	return texture
 
 
+## Agrega un nodo 3D al padre ya ubicado en la posicion global indicada.
+## La posicion se pone ANTES de entrar al arbol: si se agrega primero y se mueve
+## despues, las particulas del primer cuadro salen desde el origen del mundo
+## (quedaban chispas sueltas en el centro del mapa).
+static func add_at(parent: Node, node: Node3D, position: Vector3) -> void:
+	var parent_3d := parent as Node3D
+	node.position = parent_3d.global_transform.affine_inverse() * position if parent_3d else position
+	parent.add_child(node)
+
+
 static func _spawn(parent: Node, particles: CPUParticles3D, position: Vector3) -> void:
-	parent.add_child(particles)
-	particles.global_position = position
+	add_at(parent, particles, position)
 	particles.emitting = true
 	particles.finished.connect(particles.queue_free)

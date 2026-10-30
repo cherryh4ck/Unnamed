@@ -135,8 +135,7 @@ func _fireball(skill: SkillData, aim_point: Vector3) -> void:
 	ball.radius = skill.radius
 	ball.damage_multiplier = skill.damage_multiplier
 	ball.color = skill.effect_color
-	character.get_parent().add_child(ball)
-	ball.global_position = character.global_position + Vector3.UP * 220.0 + direction * 80.0
+	Effects.add_at(character.get_parent(), ball, character.global_position + Vector3.UP * 220.0 + direction * 80.0)
 
 
 func _buff(skill: SkillData) -> void:
@@ -175,6 +174,5 @@ func _shoot_bolt(direction: Vector3, hit: Dictionary) -> void:
 	bolt.damage = hit.amount
 	bolt.crit = hit.crit
 	bolt.max_range = character.ranged_attack_range + 400.0
-	character.get_parent().add_child(bolt)
-	bolt.global_position = character.global_position + Vector3.UP * 230.0 + direction * 60.0
+	Effects.add_at(character.get_parent(), bolt, character.global_position + Vector3.UP * 230.0 + direction * 60.0)
 	sfx.play_at("bow_shoot", character.global_position)
