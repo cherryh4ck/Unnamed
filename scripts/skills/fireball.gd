@@ -8,9 +8,8 @@ const SPEED: float = 1500.0
 const HIT_RADIUS: float = 60.0
 
 var direction: Vector3 = Vector3.FORWARD
-var max_range: float = 1800.0
-var radius: float = 300.0
-var damage_multiplier: float = 2.0
+## Habilidad que la lanzo (alcance, radio, multiplicador y tipo de daño).
+var skill: SkillData
 var color: Color = Color(1, 0.5, 0.12)
 
 var _traveled: float = 0.0
@@ -82,7 +81,7 @@ func _physics_process(delta: float) -> void:
 		if offset.length() <= HIT_RADIUS + enemy.data.collision_radius:
 			_explode()
 			return
-	if _traveled >= max_range:
+	if _traveled >= skill.max_range:
 		_explode()
 
 
@@ -92,10 +91,9 @@ func _explode() -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var offset: Vector3 = enemy.global_position - global_position
 		offset.y = 0.0
-		if offset.length() <= radius:
-			var hit: Dictionary = player_stats.roll_damage()
-			enemy.take_damage(hit.amount * damage_multiplier, hit.crit)
+		if offset.length() <= skill.radius:
+			enemy.take_hit(player_stats.roll_hit(skill.damage_multiplier, skill.damage_type, skill.damage_conversion))
 	sfx.play_at("hit", global_position, 2.0, 0.15)
 	Effects.burst(get_parent(), global_position, color, 70, 80.0)
-	Effects.ring(get_parent(), ground, color, radius)
+	Effects.ring(get_parent(), ground, color, skill.radius)
 	queue_free()

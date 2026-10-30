@@ -96,8 +96,7 @@ func _strike(skill: SkillData, target: Node3D) -> void:
 	await get_tree().create_timer(0.25, false).timeout
 	if not is_instance_valid(target) or target.dead or player_stats.dead:
 		return
-	var hit: Dictionary = player_stats.roll_damage()
-	target.take_damage(hit.amount * skill.damage_multiplier, hit.crit)
+	target.take_hit(_roll_skill_hit(skill))
 	sfx.play_at("hit", target.global_position, 3.0)
 	Effects.burst(character.get_parent(), target.global_position + Vector3.UP * 200.0, skill.effect_color, 45)
 
@@ -112,8 +111,7 @@ func _whirlwind(skill: SkillData) -> void:
 		var offset: Vector3 = enemy.global_position - character.global_position
 		offset.y = 0.0
 		if offset.length() <= skill.radius + enemy.data.collision_radius:
-			var hit: Dictionary = player_stats.roll_damage()
-			enemy.take_damage(hit.amount * skill.damage_multiplier, hit.crit)
+			enemy.take_hit(_roll_skill_hit(skill))
 			hit_any = true
 	if hit_any:
 		sfx.play_at("hit", character.global_position, 2.0)
@@ -131,11 +129,14 @@ func _fireball(skill: SkillData, aim_point: Vector3) -> void:
 		return
 	var ball: Node3D = FIREBALL.new()
 	ball.direction = direction
-	ball.max_range = skill.max_range
-	ball.radius = skill.radius
-	ball.damage_multiplier = skill.damage_multiplier
+	ball.skill = skill
 	ball.color = skill.effect_color
 	Effects.add_at(character.get_parent(), ball, character.global_position + Vector3.UP * 220.0 + direction * 80.0)
+
+
+## Tirada de daño de una habilidad: su multiplicador y su tipo de daño.
+func _roll_skill_hit(skill: SkillData) -> Dictionary:
+	return player_stats.roll_hit(skill.damage_multiplier, skill.damage_type, skill.damage_conversion)
 
 
 func _buff(skill: SkillData) -> void:
@@ -146,6 +147,7 @@ func _buff(skill: SkillData) -> void:
 		"damage_mult": skill.buff_damage_multiplier,
 		"attack_speed_mult": skill.buff_attack_speed_multiplier,
 		"defense": skill.buff_defense,
+		"resist": skill.buff_resistance,
 	})
 	Effects.aura(character.get_parent(), character.global_position, skill.effect_color)
 	floating_text.spawn(character.global_position + Vector3.UP * 450.0, skill.name, skill.effect_color, 22)
@@ -158,21 +160,20 @@ func _deliver_hit(target: Node3D, delay: float) -> void:
 		return
 	var to_target: Vector3 = target.global_position - character.global_position
 	to_target.y = 0.0
-	var hit: Dictionary = player_stats.roll_damage()
+	var hit: Dictionary = player_stats.roll_hit()
 	if player_stats.is_ranged():
 		_shoot_bolt(to_target.normalized(), hit)
 		return
 	if to_target.length() > character.attack_range * REACH_TOLERANCE:
 		return
-	target.take_damage(hit.amount, hit.crit)
+	target.take_hit(hit)
 	sfx.play_at("hit", target.global_position)
 
 
 func _shoot_bolt(direction: Vector3, hit: Dictionary) -> void:
 	var bolt: Node3D = BOLT.new()
 	bolt.direction = direction
-	bolt.damage = hit.amount
-	bolt.crit = hit.crit
+	bolt.hit = hit
 	bolt.max_range = character.ranged_attack_range + 400.0
 	Effects.add_at(character.get_parent(), bolt, character.global_position + Vector3.UP * 230.0 + direction * 60.0)
 	sfx.play_at("bow_shoot", character.global_position)

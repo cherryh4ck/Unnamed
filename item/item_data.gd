@@ -29,7 +29,14 @@ const BONUS_TEXT := {
 	"velocidad_pct": "+%s%% Velocidad de ataque",
 	"critico": "+%s%% Crítico",
 	"regeneracion": "+%s Vida por segundo",
+	"daño_magia": "+%s Daño mágico",
+	"daño_veneno": "+%s Daño de veneno",
+	"daño_fuego": "+%s Daño de fuego",
+	"res_magia": "+%s%% Resistencia a la magia",
+	"res_veneno": "+%s%% Resistencia al veneno",
+	"res_fuego": "+%s%% Resistencia al fuego",
 }
+const BONUS_COLOR := Color(0.5, 0.68, 1.0)
 
 @export var name: String = ""
 @export_multiline var description: String = ""
@@ -88,10 +95,21 @@ func get_bonus(key: String) -> float:
 func get_bonus_lines() -> PackedStringArray:
 	var lines := PackedStringArray()
 	for key in bonuses:
-		var value: float = bonuses[key]
-		var text: String = str(roundi(value)) if is_equal_approx(value, roundf(value)) else "%.1f" % value
-		lines.append(BONUS_TEXT.get(key, key + " %s") % text)
+		lines.append(bonus_text(key, bonuses[key]))
 	return lines
+
+
+static func bonus_text(key: String, value: float) -> String:
+	var text: String = str(roundi(value)) if is_equal_approx(value, roundf(value)) else "%.1f" % value
+	return BONUS_TEXT.get(key, key + " %s") % text
+
+
+## Las bonificaciones de daño y resistencia elemental van con el color de su tipo.
+static func bonus_color(key: String) -> Color:
+	for type in Damage.ELEMENTS:
+		if key == Damage.damage_key(type) or key == Damage.resist_key(type):
+			return Damage.COLORS[type]
+	return BONUS_COLOR
 
 
 ## Ej: "Arma mágica", "Escudo raro" (para el tooltip).

@@ -7,9 +7,15 @@ const ATTRIBUTES := {
 	"fuerza": ["Fuerza", "+2% de daño por punto."],
 	"destreza": ["Destreza", "+1% de velocidad de ataque y +0.2% de crítico por punto."],
 	"vitalidad": ["Vitalidad", "+4 de vida máxima, +0.5 de defensa y más regeneración."],
-	"concentracion": ["Concentración", "Las habilidades se recargan más rápido."],
+	"concentracion": ["Concentración", "Las habilidades se recargan más rápido y el daño mágico, de veneno y de fuego sube un 1,5% por punto."],
 }
-const DERIVED := ["Vida", "Daño", "Velocidad de ataque", "Crítico", "Defensa", "Bloqueo", "Regeneración", "Recarga de habilidades"]
+const DERIVED := ["Vida", "Daño", "Daño mágico", "Daño de veneno", "Daño de fuego", "Velocidad de ataque", "Crítico",
+		"Defensa", "Res. a la magia", "Res. al veneno", "Res. al fuego", "Bloqueo", "Regeneración", "Recarga de habilidades"]
+## Filas que van con el color de su tipo de daño.
+const DERIVED_TYPES := {
+	"Daño mágico": Damage.Type.MAGIC, "Daño de veneno": Damage.Type.POISON, "Daño de fuego": Damage.Type.FIRE,
+	"Res. a la magia": Damage.Type.MAGIC, "Res. al veneno": Damage.Type.POISON, "Res. al fuego": Damage.Type.FIRE,
+}
 
 @onready var level_label: Label = %LevelLabel
 @onready var xp_bar: ProgressBar = %XPBar
@@ -57,6 +63,8 @@ func _ready() -> void:
 		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		var value_label := Label.new()
 		value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		if DERIVED_TYPES.has(stat_name):
+			value_label.add_theme_color_override("font_color", Damage.COLORS[DERIVED_TYPES[stat_name]])
 		derived_grid.add_child(name_label)
 		derived_grid.add_child(value_label)
 		_derived_labels[stat_name] = value_label
@@ -124,7 +132,14 @@ func refresh() -> void:
 	_derived_labels["Daño"].text = "%d - %d" % [player_stats.get_min_damage(), player_stats.get_max_damage()]
 	_derived_labels["Velocidad de ataque"].text = "%.2f /s" % player_stats.get_attack_speed()
 	_derived_labels["Crítico"].text = "%.1f%%" % player_stats.get_crit_chance()
-	_derived_labels["Defensa"].text = str(player_stats.get_defense())
+	_derived_labels["Defensa"].text = "%d (-%d%% físico)" % [player_stats.get_defense(), roundi(player_stats.get_resistance(Damage.Type.PHYSICAL))]
+	for stat_name in DERIVED_TYPES:
+		var type: int = DERIVED_TYPES[stat_name]
+		if stat_name.begins_with("Daño"):
+			var amount: float = player_stats.get_elemental_damage(type)
+			_derived_labels[stat_name].text = "+%d" % roundi(amount) if amount > 0.0 else "—"
+		else:
+			_derived_labels[stat_name].text = "%d%%" % roundi(player_stats.get_resistance(type))
 	_derived_labels["Bloqueo"].text = "%d%%" % roundi(player_stats.get_block_chance())
 	_derived_labels["Regeneración"].text = "%.1f /s" % player_stats.get_health_regen()
 	_derived_labels["Recarga de habilidades"].text = "-%d%%" % roundi((1.0 - player_stats.get_cooldown_multiplier()) * 100.0)

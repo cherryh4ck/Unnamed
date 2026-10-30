@@ -7,13 +7,15 @@
 script = ExtResource("1_skill")
 icon = ExtResource("2_icon")
 name = "Bola de Fuego"
-description = "Lanzás una bola de fuego hacia el cursor que explota al impactar: 200% de daño en área."
+description = "Lanzás una bola de fuego hacia el cursor que explota al impactar: 200% del daño del arma como fuego, en área. Los que alcanza quedan ardiendo."
 kind = 2
 unlock_level = 3
 base_cooldown = 8.0
 damage_multiplier = 2.0
 radius = 300.0
 max_range = 1800.0
+damage_type = 3
+damage_conversion = 1.0
 sound = "fireball"
 animation = "85_BT2_18"
 animation_speed = 2.0

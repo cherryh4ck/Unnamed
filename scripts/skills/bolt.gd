@@ -7,8 +7,8 @@ const HIT_RADIUS: float = 40.0
 
 var direction: Vector3 = Vector3.FORWARD
 var max_range: float = 1700.0
-var damage: float = 1.0
-var crit: bool = false
+## Golpe que lleva: {parts, crit} (ver player_stats.roll_hit).
+var hit: Dictionary = {}
 
 var _traveled: float = 0.0
 
@@ -46,7 +46,7 @@ func _physics_process(delta: float) -> void:
 		var offset: Vector3 = enemy.global_position - global_position
 		offset.y = 0.0
 		if offset.length() <= HIT_RADIUS + enemy.data.collision_radius:
-			enemy.take_damage(damage, crit)
+			enemy.take_hit(hit)
 			sfx.play_at("hit", global_position, -2.0)
 			queue_free()
 			return

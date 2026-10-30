@@ -55,6 +55,7 @@ func _initialize() -> void:
 	_save(_bar_fill(Color(0.72, 0.1, 0.07)), "fill_health")
 	_save(_bar_fill(Color(0.78, 0.6, 0.18)), "fill_xp")
 	_save(_bar_fill(Color(0.52, 0.07, 0.05)), "fill_enemy")
+	_save(_bar_fill(Color(0.22, 0.62, 0.12)), "fill_poison")
 	quit()
 
 

@@ -11,6 +11,8 @@ const POTION := preload("res://item/items/potion_of_health.tres")
 const PORTRAIT_HEAD_HEIGHT: float = 325.0
 const PORTRAIT_DISTANCE: float = 300.0
 const LOW_HEALTH_RATIO: float = 0.25
+## Relleno verde de la barra de vida mientras el personaje esta envenenado.
+const POISON_FILL := preload("res://ui/theme/textures/fill_poison.png")
 
 @onready var health_bar: ProgressBar = %HealthBar
 @onready var health_label: Label = %HealthLabel
@@ -32,6 +34,8 @@ var _pulse: float = 0.0
 var _buff_labels: Dictionary = {}
 var _potion_count: Label
 var _potion_icon: TextureRect
+var _poison_style: StyleBoxTexture
+var _poisoned_look: bool = false
 
 
 func _ready() -> void:
@@ -67,6 +71,8 @@ func _ready() -> void:
 	inventory_data.inventory_changed.connect(_update_potion_count.unbind(1))
 	_update_potion_count()
 	player_stats.buffs_changed.connect(_rebuild_buffs)
+	_poison_style = health_bar.get_theme_stylebox("fill").duplicate()
+	_poison_style.texture = POISON_FILL
 
 
 func _process(delta: float) -> void:
@@ -137,14 +143,25 @@ func _on_xp_changed(current: int, needed: int) -> void:
 	xp_bar.tooltip_text = "Experiencia: %d / %d" % [current, needed]
 
 
-# La barra de vida late en rojo cuando queda poca vida.
+# La barra de vida se pone verde con veneno, titila naranja mientras se quema
+# y late en rojo cuando queda poca vida.
 func _update_low_health(delta: float) -> void:
+	var poisoned: bool = player_stats.status.is_poisoned() and not player_stats.dead
+	if poisoned != _poisoned_look:
+		_poisoned_look = poisoned
+		if poisoned:
+			health_bar.add_theme_stylebox_override("fill", _poison_style)
+		else:
+			health_bar.remove_theme_stylebox_override("fill")
+	_pulse += delta * 6.0
+	var glow: float = 0.5 + 0.5 * sin(_pulse)
+	if player_stats.status.is_burning() and not player_stats.dead:
+		health_bar.modulate = Color(1.0 + glow * 0.5, 1.0 + glow * 0.25, 1.0 - glow * 0.2)
+		return
 	var ratio: float = health_bar.value / maxf(health_bar.max_value, 1.0)
 	if ratio > LOW_HEALTH_RATIO or player_stats.dead:
 		health_bar.modulate = Color.WHITE
 		return
-	_pulse += delta * 6.0
-	var glow: float = 0.5 + 0.5 * sin(_pulse)
 	health_bar.modulate = Color(1.0 + glow * 0.6, 1.0 - glow * 0.3, 1.0 - glow * 0.3)
 
 

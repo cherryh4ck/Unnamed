@@ -46,6 +46,8 @@ var _moving: bool = false
 var _holding_move: bool = false
 var _hold_timer: float = 0.0
 var _last_chase_target: Vector3 = Vector3.INF
+## Daño por tiempo acumulado que todavia no llego a 1 (para el numero flotante).
+var _dot_shown: Dictionary = {}
 
 var sonidos_pasos: Array[AudioStream] = []
 var reproductor_pasos: AudioStreamPlayer3D
@@ -77,6 +79,7 @@ func _ready() -> void:
 	player_stats.leveled_up.connect(_on_leveled_up)
 	inventory_data.item_dropped.connect(_on_item_dropped)
 	player_stats.potion_used.connect(_on_potion_used)
+	player_stats.dot_damaged.connect(_on_dot_damaged)
 
 
 func is_moving() -> bool:
@@ -415,15 +418,25 @@ func _raycast_mouse(mask: int = 0xFFFFFFFF, areas_only: bool = false) -> Diction
 	return get_world_3d().direct_space_state.intersect_ray(ray_query)
 
 
-## Lo llaman los enemigos al pegarle al jugador.
-func take_damage(amount: float) -> void:
-	var result: Dictionary = player_stats.take_damage(amount)
+## Lo llaman los enemigos al pegarle al jugador ({Damage.Type: cantidad}).
+func take_hit(parts: Dictionary) -> void:
+	var result: Dictionary = player_stats.take_hit(parts)
 	var head: Vector3 = global_position + Vector3.UP * 420.0
 	if result.blocked:
 		floating_text.spawn(head, "Bloqueo", Color(0.65, 0.8, 1.0), 20)
 		return
-	floating_text.spawn(head, str(maxi(1, roundi(result.amount))), Color(1.0, 0.3, 0.25), 22)
+	if result.amount > 0.0:
+		# Rojo el fisico; los demas tipos con su color.
+		var color: Color = Color(1.0, 0.3, 0.25) if result.type == Damage.Type.PHYSICAL else Damage.COLORS[result.type]
+		floating_text.spawn(head, str(maxi(1, roundi(result.amount))), color, 22)
 	sfx.play_at("hit", global_position, -4.0)
+
+
+func _on_dot_damaged(amount: float, type: int) -> void:
+	_dot_shown[type] = _dot_shown.get(type, 0.0) + amount
+	if _dot_shown[type] >= 1.0:
+		floating_text.spawn(global_position + Vector3.UP * 380.0, str(floori(_dot_shown[type])), Damage.COLORS[type], 16)
+		_dot_shown[type] -= floorf(_dot_shown[type])
 
 
 func drink_potion() -> void:

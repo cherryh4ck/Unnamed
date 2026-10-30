@@ -12,7 +12,7 @@ const SETS := {
 			"res://item/items/escudo_pesado.tres": "Muro del Centinela",
 		},
 		"piece_bonuses": {"defensa": 6.0, "vitalidad": 3.0},
-		"set_bonus": {"defensa": 25.0, "vida": 40.0},
+		"set_bonus": {"defensa": 25.0, "vida": 40.0, "res_magia": 20.0, "res_fuego": 20.0},
 	},
 	"berserker": {
 		"name": "Furia del Berserker",
@@ -21,7 +21,7 @@ const SETS := {
 			"res://item/items/escudo_ligero.tres": "Rodela del Berserker",
 		},
 		"piece_bonuses": {"fuerza": 4.0, "daño_pct": 6.0},
-		"set_bonus": {"daño_pct": 25.0, "velocidad_pct": 10.0},
+		"set_bonus": {"daño_pct": 25.0, "velocidad_pct": 10.0, "daño_fuego": 10.0},
 	},
 	"cazador": {
 		"name": "Ojo del Cazador",
@@ -30,7 +30,7 @@ const SETS := {
 			"res://item/items/espada_ligera.tres": "Daga del Cazador",
 		},
 		"piece_bonuses": {"destreza": 4.0, "critico": 2.0},
-		"set_bonus": {"critico": 10.0, "velocidad_pct": 15.0},
+		"set_bonus": {"critico": 10.0, "velocidad_pct": 15.0, "daño_veneno": 12.0},
 	},
 }
 

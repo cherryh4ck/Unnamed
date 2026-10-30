@@ -41,7 +41,17 @@ const AFFIXES := {
 	"velocidad_pct": [4, 10, 0.5, "del Viento"],
 	"critico": [1, 4, 0.3, "de la Precisión"],
 	"regeneracion": [0.3, 1.0, 0.15, "de la Sanación"],
+	"daño_magia": [2, 5, 1.0, "del Arcano"],
+	"daño_veneno": [3, 7, 1.4, "de la Víbora"],
+	"daño_fuego": [2, 5, 1.0, "de las Llamas"],
+	"res_magia": [5, 12, 0.8, "del Hechicero"],
+	"res_veneno": [5, 12, 0.8, "de la Serpiente"],
+	"res_fuego": [5, 12, 0.8, "de la Salamandra"],
 }
+## Bonificaciones que solo salen en items que pegan (armas y ballestas).
+const WEAPON_ONLY_AFFIXES := ["daño_magia", "daño_veneno", "daño_fuego"]
+## Los unicos que pegan traen siempre uno de estos, mas fuerte.
+const UNIQUE_ELEMENTS := ["daño_magia", "daño_veneno", "daño_fuego"]
 
 const UNIQUE_WEAPON_NAMES := ["Colmillo del Crepúsculo", "Lamento de Hierro", "Mordida del Invierno", "Segadora Carmesí"]
 const UNIQUE_SHIELD_NAMES := ["Muralla de Ceniza", "Égida del Ocaso", "Bastión Silencioso"]
@@ -79,16 +89,18 @@ static func generate_item(item_level: int, forced_rarity: int = -1, magic_find: 
 	item.defense = roundi(item.defense * mult)
 
 	var bonuses: Dictionary = {}
-	var keys: Array = AFFIXES.keys()
+	var keys: Array = AFFIXES.keys().filter(func(key: String) -> bool:
+		return item.has_damage() or key not in WEAPON_ONLY_AFFIXES)
 	keys.shuffle()
 	var count: int = randi_range(BONUS_COUNT[rarity].x, BONUS_COUNT[rarity].y)
 	var strength: float = 1.5 if rarity == Itemdata.Rarity.UNIQUE else 1.0
+	if rarity == Itemdata.Rarity.UNIQUE and item.has_damage():
+		var element: String = UNIQUE_ELEMENTS.pick_random()
+		keys.erase(element)
+		bonuses[element] = _roll_affix(element, item_level, 2.0)
 	for i in count:
 		var key: String = keys[i]
-		var affix: Array = AFFIXES[key]
-		var growth: float = affix[2] * (item_level - 1)
-		var value: float = randf_range(affix[0] + growth, affix[1] + growth) * strength
-		bonuses[key] = snappedf(value, 0.1) if key == "regeneracion" else float(maxi(1, roundi(value)))
+		bonuses[key] = _roll_affix(key, item_level, strength)
 	item.bonuses = bonuses
 
 	if rarity == Itemdata.Rarity.UNIQUE:
@@ -98,6 +110,13 @@ static func generate_item(item_level: int, forced_rarity: int = -1, magic_find: 
 		item.suffix = AFFIXES[keys[0]][3]
 	item.value = roundi(item.value * VALUE_MULT[rarity] * (1.0 + 0.1 * (item_level - 1)))
 	return item
+
+
+static func _roll_affix(key: String, item_level: int, strength: float) -> float:
+	var affix: Array = AFFIXES[key]
+	var growth: float = affix[2] * (item_level - 1)
+	var value: float = randf_range(affix[0] + growth, affix[1] + growth) * strength
+	return snappedf(value, 0.1) if key == "regeneracion" else float(maxi(1, roundi(value)))
 
 
 ## magic_find multiplica el peso de todas las rarezas mejores que normal.

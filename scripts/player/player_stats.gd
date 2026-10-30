@@ -13,6 +13,8 @@ signal gold_changed(amount: int)
 signal potion_used(amount: float)
 signal died
 signal respawned
+## Daño de veneno o quemadura que acaba de restar (para el texto flotante).
+signal dot_damaged(amount: float, type: int)
 
 const BASE_HEALTH: float = 80.0
 const HEALTH_PER_VITALITY: float = 4.0
@@ -29,6 +31,8 @@ const ATTRIBUTE_POINTS_PER_LEVEL: int = 5
 const POTION_HEAL_PERCENT: float = 0.35
 const POTION_HEAL_FLAT: float = 20.0
 const POTION_COOLDOWN: float = 0.6
+## Cada punto de Concentracion sube el daño magico, de veneno y de fuego.
+const ELEMENTAL_PER_CONCENTRATION: float = 0.015
 
 var level: int = 1
 var xp: int = 0
@@ -38,13 +42,15 @@ var attributes: Dictionary = {
 	"fuerza": 10,        # +2% daño por punto
 	"destreza": 10,      # +1% velocidad de ataque y +0.2% critico por punto
 	"vitalidad": 10,     # +4 vida maxima, +0.5 defensa y regeneracion
-	"concentracion": 10, # acelera la recarga de las habilidades
+	"concentracion": 10, # acelera la recarga y sube el daño elemental
 }
 var health: float = 0.0
 var dead: bool = false
 ## Mejoras temporales activas: id -> {name, icon, duration, time_left,
-## damage_mult, attack_speed_mult, defense}.
+## damage_mult, attack_speed_mult, defense, resist}.
 var buffs: Dictionary = {}
+## Veneno y quemadura que tiene encima el personaje.
+var status := StatusEffects.new()
 var _potion_timer: float = 0.0
 var _base_attributes: Dictionary
 
@@ -63,6 +69,7 @@ func reset() -> void:
 	gold = 0
 	attributes = _base_attributes.duplicate()
 	buffs.clear()
+	status.clear()
 	dead = false
 	_potion_timer = 0.0
 	health = get_max_health()
@@ -71,9 +78,20 @@ func reset() -> void:
 func _process(delta: float) -> void:
 	_tick_buffs(delta)
 	_potion_timer = maxf(_potion_timer - delta, 0.0)
-	if dead or health >= get_max_health():
+	if dead:
+		return
+	_tick_status(delta)
+	# Envenenado no se regenera vida.
+	if dead or health >= get_max_health() or status.is_poisoned():
 		return
 	heal(get_health_regen() * delta)
+
+
+func _tick_status(delta: float) -> void:
+	var ticks: Dictionary = status.tick(delta)
+	for type in ticks:
+		_lose_health(ticks[type])
+		dot_damaged.emit(ticks[type], type)
 
 
 # --- Oro y pociones --------------------------------------------------------
@@ -230,6 +248,26 @@ func get_damage_multiplier() -> float:
 	return (1.0 + get_attribute("fuerza") * 0.02 + get_equipment_bonus("daño_pct") / 100.0) 			* _buff_product("damage_mult")
 
 
+## Multiplicador del daño magico, de veneno y de fuego (Concentracion en vez de Fuerza).
+func get_elemental_multiplier() -> float:
+	return (1.0 + get_attribute("concentracion") * ELEMENTAL_PER_CONCENTRATION 			+ get_equipment_bonus("daño_pct") / 100.0) * _buff_product("damage_mult")
+
+
+## Daño extra de un tipo que suma el equipo en cada golpe (sin la variacion de la tirada).
+func get_elemental_damage(type: int) -> float:
+	if type == Damage.Type.PHYSICAL:
+		return 0.0
+	return get_equipment_bonus(Damage.damage_key(type)) * get_elemental_multiplier()
+
+
+## Resistencia a magia, veneno o fuego, en % (con tope). Para el fisico
+## devuelve cuanto reduce la defensa.
+func get_resistance(type: int) -> float:
+	if type == Damage.Type.PHYSICAL:
+		return (1.0 - Damage.armor_multiplier(get_defense())) * 100.0
+	return minf(get_equipment_bonus(Damage.resist_key(type)) + _buff_sum("resist"), Damage.RESIST_CAP)
+
+
 func get_min_damage() -> int:
 	var weapon: Itemdata = get_weapon()
 	var base: int = weapon.min_damage if weapon else UNARMED_MIN_DAMAGE
@@ -274,31 +312,54 @@ func get_cooldown_multiplier() -> float:
 
 # --- Combate ---------------------------------------------------------------
 
-## Tira el daño de un golpe basico. Devuelve {amount, crit}.
-func roll_damage() -> Dictionary:
-	var amount: float = randi_range(get_min_damage(), get_max_damage())
+## Tira el daño de un golpe: el fisico del arma mas el elemental del equipo,
+## todo por multiplier (el de la habilidad). conversion pasa esa parte del
+## fisico a convert_to. Devuelve {parts: {Damage.Type: cantidad}, crit}.
+func roll_hit(multiplier: float = 1.0, convert_to: int = Damage.Type.PHYSICAL, conversion: float = 0.0) -> Dictionary:
 	var crit: bool = randf() * 100.0 < get_crit_chance()
-	if crit:
-		amount *= CRIT_MULTIPLIER
-	return {"amount": roundi(amount), "crit": crit}
+	var scale: float = multiplier * (CRIT_MULTIPLIER if crit else 1.0)
+	var physical: float = randi_range(get_min_damage(), get_max_damage()) * scale
+	var parts: Dictionary = Damage.split(physical, convert_to, conversion)
+	for type in Damage.ELEMENTS:
+		var extra: float = get_elemental_damage(type)
+		if extra > 0.0:
+			parts[type] = parts.get(type, 0.0) + extra * randf_range(0.8, 1.2) * scale
+	return {"parts": parts, "crit": crit}
 
 
-## Aplica un golpe recibido. Devuelve {blocked, amount} con el daño final.
-func take_damage(amount: float) -> Dictionary:
+func get_resistances() -> Dictionary:
+	var resists := {}
+	for type in Damage.ELEMENTS:
+		resists[type] = get_resistance(type)
+	return resists
+
+
+## Aplica un golpe recibido ({Damage.Type: cantidad}). Devuelve {blocked,
+## amount, type} con el daño que entro de una (el veneno se resta despues).
+func take_hit(parts: Dictionary) -> Dictionary:
 	if dead:
-		return {"blocked": false, "amount": 0.0}
+		return {"blocked": false, "amount": 0.0, "type": Damage.Type.PHYSICAL}
 	if randf() * 100.0 < get_block_chance():
-		return {"blocked": true, "amount": 0.0}
+		return {"blocked": true, "amount": 0.0, "type": Damage.Type.PHYSICAL}
 
-	var final_amount: float = amount * 100.0 / (100.0 + get_defense())
-	health = maxf(health - final_amount, 0.0)
+	var result: Dictionary = Damage.mitigate(parts, get_defense(), get_resistances())
+	status.add_poison(result.poison)
+	status.add_burn(result.burn)
+	_lose_health(result.direct)
+	return {"blocked": false, "amount": result.direct, "type": result.type}
+
+
+func _lose_health(amount: float) -> void:
+	if dead or amount <= 0.0:
+		return
+	health = maxf(health - amount, 0.0)
 	health_changed.emit(health, get_max_health())
 	if health <= 0.0:
 		dead = true
 		buffs.clear()
+		status.clear()
 		buffs_changed.emit()
 		died.emit()
-	return {"blocked": false, "amount": final_amount}
 
 
 func heal(amount: float) -> void:
@@ -310,6 +371,7 @@ func heal(amount: float) -> void:
 
 func respawn() -> void:
 	dead = false
+	status.clear()
 	health = get_max_health()
 	health_changed.emit(health, get_max_health())
 	respawned.emit()

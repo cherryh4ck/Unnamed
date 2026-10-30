@@ -45,6 +45,12 @@ var _meshes: Array[MeshInstance3D] = []
 var _overlay: StandardMaterial3D
 var _highlighted: bool = false
 var _flash_time: float = 0.0
+## Veneno y quemadura que tiene encima.
+var status := StatusEffects.new()
+var _burn_fx: CPUParticles3D
+var _status_pulse: float = 0.0
+## Daño por tiempo acumulado que todavia no llego a 1 (para el numero flotante).
+var _dot_shown: Dictionary = {}
 
 
 func _ready() -> void:
@@ -147,6 +153,9 @@ func _physics_process(delta: float) -> void:
 	if dead:
 		return
 	_update_flash(delta)
+	_update_status(delta)
+	if dead:
+		return
 
 	if not is_on_floor():
 		velocity.y -= GRAVITY * delta
@@ -284,9 +293,9 @@ func _attack() -> void:
 		return
 	var to_player: Vector3 = player.global_position - global_position
 	to_player.y = 0.0
-	if to_player.length() <= data.attack_range * 1.3 and player.has_method("take_damage"):
+	if to_player.length() <= data.attack_range * 1.3 and player.has_method("take_hit"):
 		var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2) * difficulty.get_value("enemy_damage")
-		player.take_damage(damage)
+		player.take_hit(Damage.split(damage, data.attack_damage_type, data.attack_conversion))
 
 
 # --- Animaciones de movimiento --------------------------------------------
@@ -319,24 +328,69 @@ func _on_animation_finished(anim_name: StringName) -> void:
 
 # --- Daño, resaltado y muerte ---------------------------------------------
 
-func take_damage(amount: float, crit: bool = false) -> void:
+## Recibe un golpe: {parts: {Damage.Type: cantidad}, crit}. La defensa y las
+## resistencias del tipo de enemigo reducen cada parte; el veneno y parte del
+## fuego quedan pegando por tiempo.
+func take_hit(hit: Dictionary) -> void:
 	if dead:
 		return
-	var final_amount: float = maxf(1.0, amount * 100.0 / (100.0 + data.defense))
-	var head := global_position + Vector3.UP * 420.0 * data.model_scale
-	if crit:
-		floating_text.spawn(head, "%d!" % roundi(final_amount), Color(1.0, 0.85, 0.2), 30, 1.6)
-	else:
-		floating_text.spawn(head, str(roundi(final_amount)), Color.WHITE, 22)
+	var result: Dictionary = Damage.mitigate(hit.parts, data.defense, data.get_resistances())
+	var was_poisoned: bool = status.is_poisoned()
+	status.add_poison(result.poison)
+	status.add_burn(result.burn)
 
-	current_health = maxf(current_health - final_amount, 0.0)
-	_flash_time = 0.12
+	var head := global_position + Vector3.UP * 420.0 * data.model_scale
+	if result.direct > 0.0:
+		var amount: float = maxf(1.0, result.direct)
+		var color: Color = Damage.COLORS[result.type]
+		if hit.get("crit", false):
+			var crit_color: Color = Color(1.0, 0.85, 0.2) if result.type == Damage.Type.PHYSICAL else color.lightened(0.25)
+			floating_text.spawn(head, "%d!" % roundi(amount), crit_color, 30, 1.6)
+		else:
+			floating_text.spawn(head, str(roundi(amount)), color, 22)
+		current_health = maxf(current_health - amount, 0.0)
+		_flash_time = 0.12
+	elif result.poison > 0.0 and not was_poisoned:
+		floating_text.spawn(head, "Envenenado", Damage.COLORS[Damage.Type.POISON], 18)
+
 	if current_health <= 0.0:
 		_die()
 		return
 	if state != State.RETURN:
 		_enter_chase()
 		_alert_pack()
+
+
+## Golpe fisico simple (compatibilidad con codigo que todavia pasa un numero).
+func take_damage(amount: float, crit: bool = false) -> void:
+	take_hit({"parts": {Damage.Type.PHYSICAL: amount}, "crit": crit})
+
+
+# Veneno y quemadura: restan vida de a poco y se ven en el modelo
+# (tinte verde pulsante y llamitas).
+func _update_status(delta: float) -> void:
+	var ticks: Dictionary = status.tick(delta)
+	for type in ticks:
+		current_health = maxf(current_health - ticks[type], 0.0)
+		_dot_shown[type] = _dot_shown.get(type, 0.0) + ticks[type]
+		if _dot_shown[type] >= 1.0:
+			var head := global_position + Vector3.UP * 380.0 * data.model_scale
+			floating_text.spawn(head, str(floori(_dot_shown[type])), Damage.COLORS[type], 16)
+			_dot_shown[type] -= floorf(_dot_shown[type])
+	if current_health <= 0.0 and not ticks.is_empty():
+		_die()
+		return
+
+	if status.is_burning() and _burn_fx == null:
+		_burn_fx = Effects.burning(self, 160.0 * data.model_scale, data.collision_radius)
+	if _burn_fx:
+		_burn_fx.emitting = status.is_burning()
+	if status.is_poisoned():
+		_status_pulse += delta * 5.0
+		_refresh_overlay()
+	elif _status_pulse > 0.0:
+		_status_pulse = 0.0
+		_refresh_overlay()
 
 
 func heal(amount: float) -> void:
@@ -373,6 +427,9 @@ func _refresh_overlay() -> void:
 		return
 	if _flash_time > 0.0:
 		_overlay.albedo_color = Color(0.45, 0.06, 0.03)
+	elif status.is_poisoned():
+		var glow: float = 0.5 + 0.5 * sin(_status_pulse)
+		_overlay.albedo_color = Color(0.02, 0.1 + 0.12 * glow, 0.0) + (Color(0.14, 0.12, 0.1) if _highlighted else Color.BLACK)
 	elif _highlighted:
 		_overlay.albedo_color = Color(0.14, 0.12, 0.1)
 	else:
@@ -388,6 +445,9 @@ func _die() -> void:
 	remove_from_group("enemies")
 	_highlighted = false
 	_flash_time = 0.0
+	status.clear()
+	if _burn_fx:
+		_burn_fx.emitting = false
 	_refresh_overlay()
 	_attacking = false
 	var xp: int = get_xp_reward()

@@ -7,12 +7,13 @@
 script = ExtResource("1_skill")
 icon = ExtResource("2_icon")
 name = "Piel de Piedra"
-description = "Durante 12 segundos tu piel se endurece: +40 de defensa."
+description = "Durante 12 segundos tu piel se endurece: +40 de defensa y +25% de resistencia a la magia, el veneno y el fuego."
 kind = 3
 unlock_level = 7
 base_cooldown = 35.0
 buff_duration = 12.0
 buff_defense = 40
+buff_resistance = 25.0
 sound = "resistance"
 animation = "85_BT2_15"
 animation_speed = 1.5

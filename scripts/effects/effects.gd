@@ -60,6 +60,25 @@ static func ring(parent: Node, position: Vector3, color: Color, radius: float) -
 	_spawn(parent, particles, position + Vector3.UP * 40.0)
 
 
+## Llamitas sobre un personaje que se esta quemando. Queda como hijo del
+## personaje y se prende o apaga con emitting.
+static func burning(parent: Node3D, height: float, radius: float) -> CPUParticles3D:
+	var particles: CPUParticles3D = _burst(Damage.COLORS[Damage.Type.FIRE], 36, 0.55)
+	particles.one_shot = false
+	particles.explosiveness = 0.0
+	particles.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	particles.emission_sphere_radius = radius
+	particles.direction = Vector3.UP
+	particles.spread = 15.0
+	particles.initial_velocity_min = 60.0
+	particles.initial_velocity_max = 140.0
+	particles.gravity = Vector3(0, 220.0, 0)
+	particles.scale_amount_min = 1.2
+	particles.scale_amount_max = 2.4
+	add_at(parent, particles, parent.global_position + Vector3.UP * height)
+	return particles
+
+
 static func _burst(color: Color, amount: int, lifetime: float) -> CPUParticles3D:
 	var particles := CPUParticles3D.new()
 	particles.one_shot = true

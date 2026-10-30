@@ -38,8 +38,25 @@ class_name EnemyData
 @export var attack_cooldown: float = 1.6
 @export var attack_range: float = 230.0
 @export var detection_range: float = 1200.0
+## Parte del daño del ataque que es de otro tipo (ej: el zombi envenena).
+@export var attack_damage_type: Damage.Type = Damage.Type.PHYSICAL
+@export_range(0.0, 1.0) var attack_conversion: float = 0.0
+
+@export_group("Resistencias")
+## En %. Negativo = debilidad (recibe mas daño). El fisico se reduce con la defensa.
+@export_range(-100, 75) var resist_magic: float = 0.0
+@export_range(-100, 75) var resist_poison: float = 0.0
+@export_range(-100, 75) var resist_fire: float = 0.0
 
 @export_group("Recompensas")
 @export var xp_reward: int = 20
 @export var gold_min: int = 2
 @export var gold_max: int = 10
+
+
+func get_resistances() -> Dictionary:
+	return {
+		Damage.Type.MAGIC: resist_magic,
+		Damage.Type.POISON: resist_poison,
+		Damage.Type.FIRE: resist_fire,
+	}
