@@ -30,7 +30,11 @@ con licencia [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/).
 - **Sbed** (http://opengameart.org/content/95-game-icons)
 - **Carl Olsen** (https://twitter.com/unstoppableCarl)
 
-Cambios: se les sacó el fondo negro y el juego los tiñe de colores.
+Cambios: se les sacó el fondo negro y el juego los tiñe de colores. Los íconos
+de habilidades (`ui/icons/skills/`) son esos dibujos recoloreados sobre un fondo
+propio: Golpe Brutal (Lorc, hammer-drop), Torbellino (Lorc, sword-spin), Bola de
+Fuego (Lorc, fireball), Furia (Delapouite, enrage) y Piel de Piedra
+(Delapouite, rock-golem).
 
 ## Efectos
 
@@ -86,6 +90,12 @@ publicó en 2026 una licencia propia para descargas nuevas que no permite
 redistribuir los modelos sueltos como pack; las copias que ya salieron como CC0
 siguen siéndolo, pero si se quiere evitar cualquier duda, se pueden cambiar por
 modelos de Poly Haven o Kenney.
+
+### Animales (`assets/animals/`)
+
+| Modelo | Autor | Fuente |
+|---|---|---|
+| Caballo con animaciones (montura) | Quaternius | https://poly.pizza/m/qvTrSG9pZF (CC0 1.0) |
 
 Cambios en el juego: escalas, tintes y materiales de piedra o hierro (ver
 `scripts/world/prop.gd`). El mundo se arma con `world/build_world.gd`.
