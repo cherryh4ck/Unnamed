@@ -25,6 +25,7 @@ skill_book="*res://scripts/skills/skill_book.gd"
 world_time="*res://scripts/world/world_time.gd"
 difficulty="*res://scripts/system/difficulty.gd"
 save_game="*res://scripts/system/save_game.gd"
+item_icons="*res://scripts/items/item_icons.gd"
 
 [display]
 
@@ -33,8 +34,8 @@ window/stretch/aspect="expand"
 
 [gui]
 
-theme/custom="res://ui/theme/game_theme.tres"
 timers/tooltip_delay_sec=0.15
+theme/custom="res://ui/theme/game_theme.tres"
 
 [input]
 

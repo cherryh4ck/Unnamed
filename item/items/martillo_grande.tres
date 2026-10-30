@@ -13,6 +13,7 @@ region = Rect2(128, 320, 32, 32)
 [resource]
 script = ExtResource("1_w2qoy")
 name = "martillo grande"
+grid_size = Vector2i(2, 3)
 item_type = 1
 texture = SubResource("AtlasTexture_ijx45")
 model_3d = SubResource("Resource_2uipj")

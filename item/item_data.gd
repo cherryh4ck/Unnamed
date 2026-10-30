@@ -44,6 +44,8 @@ const BONUS_COLOR := Color(0.5, 0.68, 1.0)
 @export var item_type: ItemType = ItemType.GENERIC
 @export var texture: Texture2D
 @export var model_3d: PackedScene
+## Casillas que ocupa en el inventario (ancho x alto).
+@export var grid_size: Vector2i = Vector2i(1, 1)
 
 @export_group("Combate")
 ## Un item pesado solo se puede combinar con uno ligero en el otro slot.
@@ -82,6 +84,11 @@ func get_display_name() -> String:
 	if not suffix.is_empty():
 		return "%s %s" % [name, suffix]
 	return name
+
+
+## Casillas que ocupa en la grilla (al menos 1x1).
+func get_footprint() -> Vector2i:
+	return Vector2i(maxi(grid_size.x, 1), maxi(grid_size.y, 1))
 
 
 func get_rarity_color() -> Color:

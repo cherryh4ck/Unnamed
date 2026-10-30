@@ -23,7 +23,8 @@ func setup(slot_index: int, slot_item: Itemdata, slot_quantity: int, price: int,
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(holder)
 	var icon := TextureRect.new()
-	icon.texture = item.texture
+	icon.texture = item_icons.get_icon(item)
+	icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if icon.texture == item.texture 			else CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -1,42 +1,90 @@
 extends PanelContainer
 
+## Slot de equipo del inventario (arma o especial). Clic con un item agarrado:
+## lo equipa y queda agarrado lo que habia. Clic sin nada: agarra lo equipado.
+## Con un item agarrado encima se marca verde si va ahi y rojo si no.
+
+const CELL: int = 44
+const FIT_COLOR := Color(0.35, 0.85, 0.35, 0.22)
+const BLOCKED_COLOR := Color(0.9, 0.25, 0.2, 0.25)
+
 var equip_index: int = -1
 
-@onready var type_label: Label = $MarginContainer/Control/TypeLabel
-@onready var texture_rect: TextureRect = $MarginContainer/Control/TextureRect
+var _icon: TextureRect
+var _type_label: Label
+var _hover: bool = false
 
-var _type_name: String = ""
 
-
-func setup(index: int) -> void:
+func setup(index: int, cells: Vector2i, type_name: String) -> void:
 	equip_index = index
-	_type_name = "MELEE" if index == inventory_data.MELEE_EQUIP else "ESPECIAL"
-	type_label.text = _type_name
-	inventory_data.equipment_changed.connect(update)
+	theme_type_variation = &"SlotPanel"
+	custom_minimum_size = Vector2(cells * CELL)
+	mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var holder := Control.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(holder)
+	_type_label = Label.new()
+	_type_label.text = type_name
+	_type_label.theme_type_variation = &"DimLabel"
+	_type_label.add_theme_font_size_override("font_size", 12)
+	_type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_type_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_type_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_type_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_type_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(_type_label)
+	_icon = TextureRect.new()
+	_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(_icon)
+
+	mouse_entered.connect(func() -> void:
+		_hover = true
+		queue_redraw())
+	mouse_exited.connect(func() -> void:
+		_hover = false
+		queue_redraw())
+	inventory_data.equipment_changed.connect(update.unbind(1))
+	inventory_data.held_changed.connect(queue_redraw)
+	item_icons.icon_ready.connect(update.unbind(1))
 	update()
 
 
-func update(_equip_index: int = -1) -> void:
-	if _equip_index != -1 and _equip_index != equip_index:
-		return
-	var equip_slot: Slotdata = inventory_data.equipment[equip_index] \
-			if equip_index >= 0 and equip_index < inventory_data.equipment.size() else null
-	tooltip_text = " " if equip_slot and equip_slot.item_data else ""
-	if equip_slot and equip_slot.item_data:
-		texture_rect.texture = equip_slot.item_data.texture
-		texture_rect.visible = true
-		type_label.visible = false
+func update() -> void:
+	var item: Itemdata = inventory_data.get_equipped(equip_index)
+	tooltip_text = " " if item else ""
+	_type_label.visible = item == null
+	_icon.visible = item != null
+	if item:
+		var icon: Texture2D = item_icons.get_icon(item)
+		_icon.texture = icon
+		_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST if icon == item.texture \
+				else CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		self_modulate = Color.WHITE.lerp(item.get_rarity_color(), 0.3) if item.rarity != Itemdata.Rarity.NORMAL else Color.WHITE
 	else:
-		texture_rect.texture = null
-		texture_rect.visible = false
-		type_label.visible = true
+		self_modulate = Color.WHITE
+	queue_redraw()
+
+
+func _draw() -> void:
+	var held: Slotdata = inventory_data.held
+	if not _hover or held == null:
+		return
+	var fits: bool = inventory_data.equip_index_for(held.item_data) == equip_index
+	var color: Color = FIT_COLOR if fits else BLOCKED_COLOR
+	var rect := Rect2(Vector2(4, 4), size - Vector2(8, 8))
+	draw_rect(rect, color)
+	draw_rect(rect, Color(color, 0.9), false, 2.0)
 
 
 func _make_custom_tooltip(_for_text: String) -> Object:
 	var item: Itemdata = inventory_data.get_equipped(equip_index)
-	if item == null:
+	if item == null or inventory_data.held != null:
 		return null
-	return ItemTooltip.build(item, 1, "Clic: desequipar")
+	return ItemTooltip.build(item, 1, "Clic: agarrar")
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -44,8 +92,13 @@ func _gui_input(event: InputEvent) -> void:
 	if mouse_event == null or not mouse_event.pressed:
 		return
 	if mouse_event.button_index == MOUSE_BUTTON_LEFT:
-		var item: Itemdata = inventory_data.get_equipped(equip_index)
+		var moving: Slotdata = inventory_data.held if inventory_data.held else inventory_data.equipment[equip_index]
 		inventory_data.on_equipment_clicked(equip_index)
-		if item and inventory_data.get_equipped(equip_index) == null:
-			sfx.play_item(item)
+		if moving:
+			sfx.play_item(moving.item_data)
+		accept_event()
+	elif mouse_event.button_index == MOUSE_BUTTON_RIGHT and inventory_data.held == null:
+		# Clic derecho: desequipa directo a la grilla.
+		if inventory_data.unequip(equip_index):
+			sfx.play("drag_weapon")
 		accept_event()

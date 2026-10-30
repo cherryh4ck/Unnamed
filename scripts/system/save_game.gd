@@ -83,7 +83,7 @@ func _write() -> bool:
 		"version": SAVE_VERSION,
 		"difficulty": difficulty.current,
 		"player": player_data,
-		"inventory": _slots_to_array(inventory_data.slots),
+		"inventory": _grid_to_array(),
 		"equipment": _slots_to_array(inventory_data.equipment),
 		"combo": skill_book.combo,
 		"world": {"day": world_time.day, "hour": world_time.hour},
@@ -113,7 +113,7 @@ func load_saved() -> bool:
 	# Primero el equipo: cambia la vida maxima.
 	inventory_data.reset()
 	inventory_data.shop_mode = false
-	_array_to_slots(data.get("inventory", []), inventory_data.slots)
+	_array_to_grid(data.get("inventory", []))
 	_array_to_slots(data.get("equipment", []), inventory_data.equipment)
 
 	var player_data: Dictionary = data.get("player", {})
@@ -137,8 +137,7 @@ func load_saved() -> bool:
 	world_time.set_time(float(world.get("hour", world_time.hour)), int(world.get("day", world_time.day)))
 	collected_pickups.assign(data.get("collected_pickups", []))
 
-	for i in inventory_data.SLOT_COUNT:
-		inventory_data.inventory_changed.emit(i)
+	inventory_data.inventory_changed.emit(-1)
 	for i in inventory_data.EQUIP_COUNT:
 		inventory_data.equipment_changed.emit(i)
 	player_stats.gold_changed.emit(player_stats.gold)
@@ -209,8 +208,42 @@ func _slots_to_array(slots: Array[Slotdata]) -> Array:
 		if slot == null or slot.item_data == null:
 			result.append(null)
 		else:
-			result.append({"item": _item_to_dict(slot.item_data), "quantity": slot.quantity})
+			result.append(_slot_to_dict(slot))
 	return result
+
+
+# La grilla se guarda con la posicion de cada item; el agarrado con el
+# mouse va sin posicion (al cargar se acomoda en el primer lugar libre).
+func _grid_to_array() -> Array:
+	var result: Array = []
+	for slot in inventory_data.slots:
+		var entry: Dictionary = _slot_to_dict(slot)
+		entry["pos"] = [slot.grid_pos.x, slot.grid_pos.y]
+		result.append(entry)
+	if inventory_data.held:
+		result.append(_slot_to_dict(inventory_data.held))
+	return result
+
+
+# Partidas viejas (casillas sin posicion, con huecos) entran en orden.
+func _array_to_grid(data: Array) -> void:
+	for entry in data:
+		if not entry is Dictionary:
+			continue
+		var item: Itemdata = _item_from_dict(entry.get("item", {}))
+		if item == null:
+			continue
+		var slot := Slotdata.new()
+		slot.item_data = item
+		slot.quantity = int(entry.get("quantity", 1))
+		var pos: Array = entry.get("pos", [])
+		var grid_pos := Vector2i(int(pos[0]), int(pos[1])) if pos.size() == 2 else Vector2i(-1, -1)
+		if not inventory_data.restore_slot(slot, grid_pos):
+			push_warning("No entró en el inventario: %s" % item.get_display_name())
+
+
+func _slot_to_dict(slot: Slotdata) -> Dictionary:
+	return {"item": _item_to_dict(slot.item_data), "quantity": slot.quantity}
 
 
 func _array_to_slots(data: Array, slots: Array[Slotdata]) -> void:
