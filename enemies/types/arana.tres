@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+[ext_resource type="PackedScene" path="res://enemies/models/arana.tscn" id="2_model"]
+
+[resource]
+script = ExtResource("1_data")
+name = "Araña gigante"
+model = ExtResource("2_model")
+model_offset_y = 0.0
+collision_radius = 120.0
+idle_animation = "SpiderArmature|Spider_Idle"
+walk_animations = Array[String](["SpiderArmature|Spider_Walk"])
+attack_animations = Array[String](["SpiderArmature|Spider_Attack"])
+walk_animation_speed = 1.6
+death_animation = "SpiderArmature|Spider_Death"
+max_health = 70.0
+min_damage = 6
+max_damage = 11
+defense = 5
+speed = 320.0
+attack_cooldown = 1.4
+attack_range = 240.0
+detection_range = 1200.0
+attack_damage_type = 2
+attack_conversion = 0.5
+resist_poison = 75.0
+resist_fire = -25.0
+aggro_sound = "spider_chitter"
+attack_sound = "spider_attack"
+death_sound = "spider_chitter"
+xp_reward = 34
+gold_min = 0
+gold_max = 5

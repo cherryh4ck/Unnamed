@@ -110,6 +110,8 @@ modelos de Poly Haven o Kenney.
 | Modelo | Autor | Fuente |
 |---|---|---|
 | Caballo con animaciones (montura) | Quaternius | https://poly.pizza/m/qvTrSG9pZF (CC0 1.0) |
+| Lobo con animaciones (enemigo) | Quaternius | https://poly.pizza/m/P1gU3Qkr9r (CC0 1.0) |
+| Araña con animaciones (enemigo) | Quaternius | https://poly.pizza/m/yRYJiAJyiM (CC0 1.0) |
 
 ### Con atribución (CC-BY 3.0)
 
@@ -150,3 +152,9 @@ CC0 o dominio público. Los de antes (golpes, interfaz, pasos y hechizos de
 | Yunque (`anvil1.ogg`, "Blacksmith's Hammer") | VishwaJai | https://opengameart.org/content/blacksmiths-hammer (CC0) |
 | Yunque (`anvil2.ogg`, "Hammer on Anvil") | themightyglider | https://opengameart.org/content/hammer-on-anvil (CC0) |
 | Gemas engarzadas (`sounds/interact/gems/`, glass) | Kenney | https://kenney.nl/assets/interface-sounds (CC0) |
+| Aullido del lobo (`sounds/creatures/wolf/howl.ogg`, "Wolf howls") | US Fish & Wildlife Service | https://commons.wikimedia.org/wiki/File:Wolf_howls.ogg (dominio público) |
+| Gruñidos del lobo (`attack*.ogg`, recortes de "Monster snarls") | Darsycho | https://opengameart.org/content/monster-snarls (CC0) |
+| Gruñidos cortos (`growl1.ogg` "Dog Growl", `growl2.ogg` "Dog Grunt") | bonebrah, qubodup | https://opengameart.org/content/dog-growl · https://opengameart.org/content/dog-grunt (CC0) |
+| Mordidas (`bite1.ogg` de RPG Sound Pack, `bite2.ogg` "Crunchy bite") | artisticdude, fvcalderan | https://opengameart.org/content/rpg-sound-pack · https://opengameart.org/content/crunchy-bite (CC0) |
+| Araña (`sounds/creatures/spider/chitter*.ogg`, "bug" de 80 CC0 creature SFX) | rubberduck | https://opengameart.org/content/80-cc0-creature-sfx · https://opengameart.org/content/80-cc0-creture-sfx-2 (CC0) |
+| Siseo de la araña (`hiss.ogg`, `chirp.ogg`, "Alien Sounds") | EZduzziteh | https://opengameart.org/content/alien-sounds-0 (CC0) |

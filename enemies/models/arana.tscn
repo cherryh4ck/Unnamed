@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/animals/spider/qt_spider.glb" id="1_spider"]
+
+[node name="Arana" type="Node3D"]
+
+[node name="Modelo" parent="." instance=ExtResource("1_spider")]
+transform = Transform3D(80, 0, 0, 0, 80, 0, 0, 0, 80, 0, 0, 0)

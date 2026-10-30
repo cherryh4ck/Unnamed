@@ -259,7 +259,7 @@ func _credits_text() -> String:
 		"RandomMind · Cleyton Kauffman · isaiah658 · Emma_MA",
 		"",
 		"[color=#%s][b]Sonidos (CC0 y dominio público)[/b][/color]" % gold,
-		"Ylmir · stephan (pdsounds.org) · Luke.RUSTLTD · VishwaJai · themightyglider",
+		"Ylmir · stephan (pdsounds.org) · Luke.RUSTLTD · VishwaJai · themightyglider · Darsycho · rubberduck · EZduzziteh · US Fish & Wildlife Service",
 		"",
 		"[color=#%s][b]Fuentes (SIL OFL)[/b][/color]" % gold,
 		"Cinzel — Natanael Gama · EB Garamond — Georg Duffner, Octavio Pardo",

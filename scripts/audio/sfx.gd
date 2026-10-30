@@ -32,6 +32,11 @@ const SOUNDS := {
 	"chest_open": ["res://sounds/interact/chest/open.ogg"],
 	"anvil": ["res://sounds/interact/smith/anvil1.ogg", "res://sounds/interact/smith/anvil2.ogg"],
 	"coins": ["res://sounds/interact/smith/coins.ogg"],
+	"wolf_growl": ["res://sounds/creatures/wolf/growl1.ogg", "res://sounds/creatures/wolf/growl2.ogg", "res://sounds/creatures/wolf/howl.ogg"],
+	"wolf_attack": ["res://sounds/creatures/wolf/attack01.ogg", "res://sounds/creatures/wolf/attack03.ogg", "res://sounds/creatures/wolf/attack05.ogg", "res://sounds/creatures/wolf/attack07.ogg", "res://sounds/creatures/wolf/bite1.ogg", "res://sounds/creatures/wolf/bite2.ogg"],
+	"wolf_death": ["res://sounds/creatures/wolf/growl2.ogg"],
+	"spider_chitter": ["res://sounds/creatures/spider/chitter01.ogg", "res://sounds/creatures/spider/chitter02.ogg", "res://sounds/creatures/spider/chitter04.ogg"],
+	"spider_attack": ["res://sounds/creatures/spider/hiss.ogg", "res://sounds/creatures/spider/chirp.ogg"],
 	"gem_socket": ["res://sounds/interact/gems/gem1.ogg", "res://sounds/interact/gems/gem3.ogg", "res://sounds/interact/gems/gem5.ogg"],
 }
 

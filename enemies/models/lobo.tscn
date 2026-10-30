@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/animals/wolf/qt_wolf.glb" id="1_wolf"]
+
+[node name="Lobo" type="Node3D"]
+
+[node name="Modelo" parent="." instance=ExtResource("1_wolf")]
+transform = Transform3D(95, 0, 0, 0, 95, 0, 0, 0, 95, 0, 0, 0)

@@ -1,0 +1,29 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+[ext_resource type="PackedScene" path="res://enemies/models/lobo.tscn" id="2_model"]
+
+[resource]
+script = ExtResource("1_data")
+name = "Lobo"
+model = ExtResource("2_model")
+model_offset_y = 0.0
+collision_radius = 85.0
+idle_animation = "Idle"
+walk_animations = Array[String](["Gallop"])
+attack_animations = Array[String](["Attack"])
+death_animation = "Death"
+max_health = 42.0
+min_damage = 5
+max_damage = 9
+speed = 430.0
+attack_cooldown = 1.1
+attack_range = 220.0
+detection_range = 1500.0
+resist_fire = -15.0
+aggro_sound = "wolf_growl"
+attack_sound = "wolf_attack"
+death_sound = "wolf_death"
+xp_reward = 22
+gold_min = 0
+gold_max = 3

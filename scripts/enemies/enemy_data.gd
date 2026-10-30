@@ -20,6 +20,8 @@ class_name EnemyData
 @export var idle_animation: String = ""
 @export var walk_animations: Array[String] = []
 @export var attack_animations: Array[String] = []
+## Velocidad de la animacion de caminar (para bichos que solo traen una lenta).
+@export var walk_animation_speed: float = 1.0
 @export var death_animation: String = ""
 ## Si es true, la animacion de muerte se reproduce al reves (sirve cuando el
 ## modelo solo tiene una animacion de "levantarse del suelo").
@@ -47,6 +49,12 @@ class_name EnemyData
 @export_range(-100, 75) var resist_magic: float = 0.0
 @export_range(-100, 75) var resist_poison: float = 0.0
 @export_range(-100, 75) var resist_fire: float = 0.0
+
+@export_group("Sonidos")
+## Nombres de scripts/audio/sfx.gd ("" = sin sonido).
+@export var aggro_sound: String = ""
+@export var attack_sound: String = ""
+@export var death_sound: String = ""
 
 @export_group("Recompensas")
 @export var xp_reward: int = 20

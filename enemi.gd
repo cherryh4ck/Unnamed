@@ -243,6 +243,8 @@ func _enter_wander() -> void:
 func _enter_chase() -> void:
 	if state == State.CHASE or state == State.ATTACK or state == State.DEAD:
 		return
+	if not data.aggro_sound.is_empty():
+		sfx.play_at(data.aggro_sound, global_position, -4.0)
 	state = State.CHASE
 	_last_nav_target = Vector3.INF
 
@@ -288,6 +290,8 @@ func _attack() -> void:
 			_play(anim_name, speed_scale)
 			_anim_player.seek(0.0, true)
 			hit_delay = length * 0.45 / speed_scale
+	if not data.attack_sound.is_empty():
+		sfx.play_at(data.attack_sound, global_position, -3.0)
 
 	await get_tree().create_timer(hit_delay, false).timeout
 	if dead or not is_instance_valid(player) or player_stats.dead:
@@ -308,7 +312,7 @@ func _update_walk_animation(moving: bool) -> void:
 	if moving and not current in data.walk_animations:
 		_walk_step = 0
 		if not data.walk_animations.is_empty():
-			_play(data.walk_animations[0])
+			_play(data.walk_animations[0], data.walk_animation_speed)
 	elif not moving and current != data.idle_animation:
 		_play(data.idle_animation)
 
@@ -324,7 +328,7 @@ func _on_animation_finished(anim_name: StringName) -> void:
 		_play(data.idle_animation)
 	elif anim_name in data.walk_animations and not data.walk_animations.is_empty():
 		_walk_step = (_walk_step + 1) % data.walk_animations.size()
-		_play(data.walk_animations[_walk_step])
+		_play(data.walk_animations[_walk_step], data.walk_animation_speed)
 
 
 # --- Daño, resaltado y muerte ---------------------------------------------
@@ -444,6 +448,8 @@ func _refresh_overlay() -> void:
 func _die() -> void:
 	dead = true
 	state = State.DEAD
+	if not data.death_sound.is_empty():
+		sfx.play_at(data.death_sound, global_position)
 	velocity = Vector3.ZERO
 	collision_layer = 0
 	collision_mask = 0
