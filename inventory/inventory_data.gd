@@ -7,6 +7,8 @@ extends Node
 ## slots: los items guardados (sin huecos), cada uno con su casilla de arriba a
 ## la izquierda en Slotdata.grid_pos. held: el item agarrado con el mouse; sale
 ## de la grilla hasta que se suelta en otro lugar (o vuelve si se cancela).
+## overflow: lo que no entro al cargar una partida (por ejemplo, de antes de la
+## grilla). Se guarda con la partida y entra solo apenas se libera lugar.
 
 signal inventory_changed(slot_index: int)
 signal picked_up(item: Itemdata, quantity: int)
@@ -15,8 +17,9 @@ signal equip_rejected(message: String)
 signal item_dropped(item: Itemdata, quantity: int)
 signal sell_requested(slot_index: int)
 signal held_changed
+signal overflow_changed
 
-const GRID_SIZE := Vector2i(12, 6)
+const GRID_SIZE := Vector2i(14, 7)
 
 const MELEE_EQUIP: int = 0
 const SPECIAL_EQUIP: int = 1
@@ -26,6 +29,8 @@ var slots: Array[Slotdata] = []
 var equipment: Array[Slotdata] = []
 ## Item agarrado con el mouse (null = ninguno).
 var held: Slotdata = null
+## Items esperando lugar en la grilla.
+var overflow: Array[Slotdata] = []
 ## Con la tienda abierta, el clic derecho vende en vez de tirar.
 var shop_mode: bool = false
 
@@ -44,6 +49,7 @@ func reset() -> void:
 	for i in EQUIP_COUNT:
 		equipment.append(null)
 	held = null
+	overflow.clear()
 	_held_from = Vector2i(-1, -1)
 	_held_from_equip = -1
 
@@ -152,6 +158,28 @@ func restore_slot(slot: Slotdata, pos: Vector2i) -> bool:
 	return true
 
 
+## Guarda un stack que no entro en la grilla hasta que haya lugar.
+func park(slot: Slotdata) -> void:
+	overflow.append(slot)
+	overflow_changed.emit()
+
+
+## Mete en la grilla lo que estaba esperando, si ahora entra.
+func retry_overflow() -> void:
+	if overflow.is_empty():
+		return
+	var placed: bool = false
+	for i in range(overflow.size() - 1, -1, -1):
+		var pos: Vector2i = find_free_position(overflow[i].item_data)
+		if pos.x >= 0:
+			_insert(overflow[i], pos)
+			overflow.remove_at(i)
+			placed = true
+	if placed:
+		inventory_changed.emit(-1)
+		overflow_changed.emit()
+
+
 func count_item(item: Itemdata) -> int:
 	if item == null:
 		return 0
@@ -177,6 +205,7 @@ func remove_item(item: Itemdata, quantity: int = 1) -> bool:
 			if remaining <= 0:
 				break
 	inventory_changed.emit(-1)
+	retry_overflow()
 	return remaining <= 0
 
 
@@ -186,6 +215,7 @@ func remove_slot(index: int) -> Slotdata:
 	var slot: Slotdata = slots[index]
 	slots.remove_at(index)
 	inventory_changed.emit(-1)
+	retry_overflow()
 	return slot
 
 
@@ -255,6 +285,7 @@ func return_held() -> void:
 	_held_from_equip = -1
 	inventory_changed.emit(-1)
 	held_changed.emit()
+	retry_overflow()
 
 
 ## Tira al piso el item agarrado.
@@ -266,6 +297,7 @@ func drop_held() -> void:
 	_held_from_equip = -1
 	held_changed.emit()
 	item_dropped.emit(slot.item_data, slot.quantity)
+	retry_overflow()
 
 
 # --- Equipo ----------------------------------------------------------------
@@ -302,6 +334,7 @@ func equip_from_slot(slot_index: int) -> bool:
 	equipment[equip_index] = slot
 	inventory_changed.emit(-1)
 	equipment_changed.emit(equip_index)
+	retry_overflow()
 	return true
 
 

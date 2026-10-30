@@ -84,6 +84,7 @@ func _write() -> bool:
 		"difficulty": difficulty.current,
 		"player": player_data,
 		"inventory": _grid_to_array(),
+		"inventory_overflow": inventory_data.overflow.map(_slot_to_dict),
 		"equipment": _slots_to_array(inventory_data.equipment),
 		"combo": skill_book.combo,
 		"world": {"day": world_time.day, "hour": world_time.hour},
@@ -114,6 +115,7 @@ func load_saved() -> bool:
 	inventory_data.reset()
 	inventory_data.shop_mode = false
 	_array_to_grid(data.get("inventory", []))
+	_array_to_grid(data.get("inventory_overflow", []))
 	_array_to_slots(data.get("equipment", []), inventory_data.equipment)
 
 	var player_data: Dictionary = data.get("player", {})
@@ -238,8 +240,9 @@ func _array_to_grid(data: Array) -> void:
 		slot.quantity = int(entry.get("quantity", 1))
 		var pos: Array = entry.get("pos", [])
 		var grid_pos := Vector2i(int(pos[0]), int(pos[1])) if pos.size() == 2 else Vector2i(-1, -1)
+		# Lo que no entra queda esperando lugar (no se pierde).
 		if not inventory_data.restore_slot(slot, grid_pos):
-			push_warning("No entró en el inventario: %s" % item.get_display_name())
+			inventory_data.park(slot)
 
 
 func _slot_to_dict(slot: Slotdata) -> Dictionary:

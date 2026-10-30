@@ -14,6 +14,7 @@ const HERO_LAYER: int = 1 << 10
 
 var item_grid: Control
 var _message: Label
+var _overflow_label: Label
 var _gold_label: Label
 var _held_view: TextureRect
 var _hero_camera: Camera3D
@@ -32,6 +33,8 @@ func _ready() -> void:
 	item_icons.icon_ready.connect(func(_key: String) -> void: _on_held_changed())
 	player_stats.gold_changed.connect(_on_gold_changed)
 	_on_gold_changed(player_stats.gold)
+	inventory_data.overflow_changed.connect(_on_overflow_changed)
+	_on_overflow_changed()
 
 
 func _build() -> void:
@@ -87,6 +90,12 @@ func _build() -> void:
 	_gold_label.add_theme_font_size_override("font_size", 18)
 	footer.add_child(_gold_label)
 	box.add_child(footer)
+
+	_overflow_label = Label.new()
+	_overflow_label.add_theme_color_override("font_color", Color(1.0, 0.72, 0.3))
+	_overflow_label.add_theme_font_size_override("font_size", 13)
+	_overflow_label.mouse_filter = Control.MOUSE_FILTER_PASS
+	box.add_child(_overflow_label)
 
 	var help := Label.new()
 	help.text = "Clic: agarrar y soltar · Doble clic: equipar · Clic derecho: tirar · Fuera del panel: tirar al piso"
@@ -184,6 +193,17 @@ func _on_held_changed() -> void:
 			else CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	_held_view.size = Vector2(held.item_data.get_footprint() * CELL)
 	_held_view.global_position = get_global_mouse_position() - _held_view.size / 2.0
+
+
+func _on_overflow_changed() -> void:
+	var waiting: Array[Slotdata] = inventory_data.overflow
+	_overflow_label.visible = not waiting.is_empty()
+	var names := PackedStringArray()
+	for slot in waiting:
+		names.append(slot.item_data.get_display_name())
+	_overflow_label.text = "%d objeto%s sin lugar: entran solos cuando liberes espacio (vendé o tirá algo)" \
+			% [waiting.size(), "" if waiting.size() == 1 else "s"]
+	_overflow_label.tooltip_text = "\n".join(names)
 
 
 func _on_gold_changed(amount: int) -> void:

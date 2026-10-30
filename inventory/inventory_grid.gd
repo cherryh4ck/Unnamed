@@ -6,7 +6,7 @@ extends Control
 ## la tienda abierta, o cancelar si hay algo agarrado.
 
 const GridItem := preload("res://inventory/grid_item.gd")
-const CELL: int = 44
+const CELL: int = 40
 ## Si el segundo clic de un doble clic llega con el item recien agarrado,
 ## se devuelve y se hace la accion del doble clic.
 const DOUBLE_CLICK_GRACE: float = 0.5

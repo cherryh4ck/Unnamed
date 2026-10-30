@@ -4,7 +4,7 @@ extends PanelContainer
 ## lo equipa y queda agarrado lo que habia. Clic sin nada: agarra lo equipado.
 ## Con un item agarrado encima se marca verde si va ahi y rojo si no.
 
-const CELL: int = 44
+const CELL: int = 40
 const FIT_COLOR := Color(0.35, 0.85, 0.35, 0.22)
 const BLOCKED_COLOR := Color(0.9, 0.25, 0.2, 0.25)
 
