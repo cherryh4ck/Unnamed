@@ -43,6 +43,10 @@ class_name EnemyData
 ## Parte del daño del ataque que es de otro tipo (ej: el zombi envenena).
 @export var attack_damage_type: Damage.Type = Damage.Type.PHYSICAL
 @export_range(0.0, 1.0) var attack_conversion: float = 0.0
+## Ataca de lejos: en el momento del golpe tira una flecha hacia donde esta el
+## jugador (se puede esquivar moviendose) en vez de pegar cuerpo a cuerpo.
+@export var shoots: bool = false
+@export var projectile_speed: float = 1800.0
 
 @export_group("Resistencias")
 ## En %. Negativo = debilidad (recibe mas daño). El fisico se reduce con la defensa.

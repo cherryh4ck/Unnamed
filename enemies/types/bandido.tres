@@ -1,0 +1,28 @@
+[gd_resource type="Resource" script_class="EnemyData" format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
+[ext_resource type="PackedScene" path="res://enemies/models/bandido_hacha.tscn" id="2_model"]
+
+[resource]
+script = ExtResource("1_data")
+name = "Bandido"
+model = ExtResource("2_model")
+model_offset_y = 0.0
+collision_radius = 65.0
+idle_animation = "idle_combat"
+walk_animations = Array[String](["run_combat"])
+attack_animations = Array[String](["attack_1h_a", "attack_1h_b", "attack_1h_c"])
+walk_animation_speed = 0.7
+death_animation = "death"
+max_health = 95.0
+min_damage = 9
+max_damage = 15
+defense = 12
+speed = 360.0
+attack_cooldown = 1.25
+attack_range = 240.0
+detection_range = 1400.0
+attack_sound = "throw"
+xp_reward = 55
+gold_min = 12
+gold_max = 35

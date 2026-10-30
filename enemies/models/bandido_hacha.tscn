@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/characters/oad/characters/bandit_axe.glb" id="1_bandit"]
+
+[node name="BandidoHacha" type="Node3D"]
+
+[node name="Modelo" parent="." instance=ExtResource("1_bandit")]
+transform = Transform3D(225, 0, 0, 0, 225, 0, 0, 0, 225, 0, 0, 0)

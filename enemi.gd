@@ -12,6 +12,7 @@ signal died
 enum State { SPAWNING, IDLE, WANDER, CHASE, ATTACK, RETURN, DEAD }
 
 const DEFAULT_DATA: EnemyData = preload("res://enemies/types/esqueleto.tres")
+const BOLT := preload("res://scripts/skills/bolt.gd")
 const GRAVITY: float = 2000.0
 const WANDER_RADIUS: float = 350.0
 const LEASH_RANGE: float = 2400.0
@@ -298,9 +299,24 @@ func _attack() -> void:
 		return
 	var to_player: Vector3 = player.global_position - global_position
 	to_player.y = 0.0
-	if to_player.length() <= data.attack_range * 1.3 and player.has_method("take_hit"):
-		var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2) * difficulty.get_value("enemy_damage")
-		player.take_hit(Damage.split(damage, data.attack_damage_type, data.attack_conversion))
+	var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2) * difficulty.get_value("enemy_damage")
+	var parts: Dictionary = Damage.split(damage, data.attack_damage_type, data.attack_conversion)
+	if data.shoots:
+		_shoot(to_player.normalized(), parts)
+	elif to_player.length() <= data.attack_range * 1.3 and player.has_method("take_hit"):
+		player.take_hit(parts)
+
+
+# Flecha hacia donde esta el jugador ahora: si se mueve, la esquiva.
+func _shoot(direction: Vector3, parts: Dictionary) -> void:
+	var bolt: Node3D = BOLT.new()
+	bolt.direction = direction
+	bolt.speed = data.projectile_speed
+	bolt.max_range = data.attack_range + 600.0
+	bolt.hit = {"parts": parts}
+	bolt.hits_player = true
+	Effects.add_at(get_parent(), bolt, global_position + Vector3.UP * 230.0 * data.model_scale + direction * 60.0)
+	sfx.play_at("bow_shoot", global_position, -4.0)
 
 
 # --- Animaciones de movimiento --------------------------------------------

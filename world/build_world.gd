@@ -351,11 +351,13 @@ func _build_zones() -> void:
 	var warrior := "res://enemies/types/esqueleto_guerrero.tres"
 	var wolf := "res://enemies/types/lobo.tres"
 	var spider := "res://enemies/types/arana.tres"
+	var bandit := "res://enemies/types/bandido.tres"
+	var archer := "res://enemies/types/bandido_arquero.tres"
 	_zone(zones, "Bosque1", Vector3(-5300, 0, -2100), Vector3(1500, 1, 1500), 2, [wolf, spider, skeleton, zombie], [5.0, 2.0, 2.0, 1.0], 8)
 	_zone(zones, "Bosque2", Vector3(-7300, 0, -3700), Vector3(1600, 1, 1600), 3, [spider, wolf, zombie, warrior], [4.0, 3.0, 2.0, 1.0], 9)
 	_zone(zones, "Pradera", Vector3(3200, 0, 3600), Vector3(2200, 1, 1800), 1, [skeleton, wolf], [2.0, 1.0], 5)
 	_zone(zones, "Cementerio", Vector3(GRAVEYARD.x, 0, GRAVEYARD.y), Vector3(2200, 1, 2200), 4, [zombie, skeleton, warrior], [4.0, 3.0, 1.5], 10)
-	_zone(zones, "Ruinas", Vector3(RUINS.x, 0, RUINS.y), Vector3(2200, 1, 2000), 6, [warrior, skeleton, zombie], [4.0, 2.0, 1.0], 10)
+	_zone(zones, "Ruinas", Vector3(RUINS.x, 0, RUINS.y), Vector3(2200, 1, 2000), 6, [bandit, archer, warrior, skeleton], [4.0, 3.0, 2.0, 1.0], 10)
 
 
 func _zone(parent: Node3D, zone_name: String, pos: Vector3, size: Vector3, level: int, types: Array, weights: Array, max_enemies: int) -> void:
