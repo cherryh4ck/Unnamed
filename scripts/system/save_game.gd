@@ -55,7 +55,8 @@ var _discarded: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	_primary_path = save_path
+	_primary_path = ""
+	_ensure_primary()
 	_load_profile()
 	# Con otro archivo (pruebas) se arranca siempre por el primero.
 	if _primary_path != SAVE_PATH:
@@ -189,6 +190,13 @@ func unlock_difficulty(index: int) -> void:
 		_save_profile()
 
 
+# Las pruebas pueden guardar antes de _ready: la primera partida es la que
+# este configurada en ese momento.
+func _ensure_primary() -> void:
+	if _primary_path.is_empty():
+		_primary_path = save_path
+
+
 func _profile_path() -> String:
 	return _side_path("perfil.cfg")
 
@@ -210,8 +218,7 @@ func _load_profile() -> void:
 
 
 func _save_profile() -> void:
-	if _primary_path.is_empty():
-		return
+	_ensure_primary()
 	var config := ConfigFile.new()
 	config.set_value("perfil", "ultima_ranura", slot)
 	config.set_value("perfil", "dificultad_maxima", unlocked_difficulty)
@@ -266,9 +273,9 @@ func save() -> bool:
 
 func _write(fallen: bool = false) -> bool:
 	_autosave_timer = 0.0
-	# Antes de _ready no se sabe donde van la partida ni el baul.
-	if _discarded or _primary_path.is_empty():
+	if _discarded:
 		return false
+	_ensure_primary()
 	var player_data := {
 		"class": player_stats.class_id,
 		"level": player_stats.level,
