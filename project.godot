@@ -30,6 +30,7 @@ world_map="*res://scripts/world/world_map.gd"
 options="*res://scripts/system/options.gd"
 weather="*res://scripts/world/weather.gd"
 music="*res://scripts/audio/music.gd"
+loading_screen="*res://scripts/ui/loading_screen.gd"
 
 [display]
 

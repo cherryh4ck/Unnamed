@@ -42,6 +42,14 @@ func _ready():
 	_camera.fov = 80
 	_actualizar_offset()
 	_camera.look_at(global_position, Vector3.UP)
+	# Distancia de dibujo de las opciones graficas; el sol tambien las toma.
+	_apply_options()
+	options.changed.connect(_apply_options)
+	options.apply_graphics()
+
+
+func _apply_options() -> void:
+	_camera.far = options.view_distance()
 
 ## Se pone de una sobre el jugador (al viajar o reaparecer).
 func snap() -> void:

@@ -4,7 +4,8 @@ extends Node
 ## Al abrir el juego se carga sola la ultima partida, antes de que se arme la
 ## escena: asi la UI y el jugador arrancan leyendo el estado ya cargado.
 ## F5 guarda y F9 vuelve a la ultima partida guardada. Ademas se guarda sola
-## cada AUTOSAVE_INTERVAL segundos y al cerrar la ventana. La partida nueva
+## cada AUTOSAVE_INTERVAL segundos, al viajar por un portal (loading_screen) y
+## al cerrar la ventana; el guardado automatico se avisa con un icono chico. La partida nueva
 ## (con su clase y su dificultad) se arma desde la pantalla de titulo o el
 ## menu del juego (ui/game_menu.gd).
 
@@ -13,6 +14,7 @@ signal saved
 const SAVE_PATH := "user://partida.json"
 const SAVE_VERSION: int = 1
 const AUTOSAVE_INTERVAL: float = 60.0
+const NOTICE_FONT := preload("res://assets/fonts/ebgaramond/EBGaramond-Italic[wght].ttf")
 ## Campos que la generacion de botin cambia respecto del item base
 ## (ver Loot.generate_item e ItemSets.generate_piece).
 const ITEM_FIELDS := ["rarity", "min_damage", "max_damage", "defense", "suffix", "unique_name", "bonuses", "set_id", "value", "sockets", "gems"]
@@ -24,6 +26,8 @@ var player_position: Vector3 = Vector3.INF
 ## Items puestos a mano en el mapa que ya se juntaron (no vuelven a aparecer).
 var collected_pickups: Array[String] = []
 var _autosave_timer: float = 0.0
+var _notice: Label
+var _notice_tween: Tween
 
 
 func _ready() -> void:
@@ -32,9 +36,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# En pausa (titulo, menus) no corre: no hay nada nuevo que guardar.
+	if get_tree().paused:
+		return
 	_autosave_timer += delta
 	if _autosave_timer >= AUTOSAVE_INTERVAL:
-		save()
+		autosave()
 
 
 func _notification(what: int) -> void:
@@ -58,6 +65,17 @@ func has_save() -> bool:
 ## F5: guarda y lo avisa en pantalla.
 func quick_save() -> void:
 	_announce("Partida guardada" if save() else "No se pudo guardar")
+
+
+## Guardado automatico: como save(), pero muerto no guarda (se esperaria a
+## reaparecer) y lo avisa con un cartel chico abajo a la derecha.
+func autosave() -> bool:
+	if player_stats.dead:
+		return false
+	var ok: bool = save()
+	if ok:
+		_show_saving_notice()
+	return ok
 
 
 ## Guarda la partida. Devuelve false si no se pudo escribir el archivo.
@@ -166,19 +184,29 @@ func load_saved() -> bool:
 
 ## F9: vuelve a la ultima partida guardada (rearma la escena con ese estado).
 func reload_last_save() -> void:
-	if not load_saved():
+	if not has_save():
 		_announce("No hay partida guardada")
 		return
 	get_tree().paused = false
-	get_tree().reload_current_scene()
-	await get_tree().create_timer(0.2).timeout
-	_announce("Partida cargada")
+	# La partida se lee ya con la pantalla tapada.
+	if await loading_screen.reload_scene("CARGANDO", "Partida guardada", load_saved):
+		_announce("Partida cargada")
+	else:
+		_announce("No se pudo leer la partida")
 
 
 ## Partida nueva con la clase y la dificultad elegidas: personaje de nivel 1
 ## con el equipo de su clase, y el mapa como al principio. Reemplaza la
 ## partida guardada.
 func new_game(difficulty_level: int, class_id: String = PlayerClasses.DEFAULT) -> void:
+	get_tree().paused = false
+	await loading_screen.reload_scene("PARTIDA NUEVA", PlayerClasses.name_of(class_id),
+			_start_new_game.bind(difficulty_level, class_id))
+	_announce("%s · %s" % [PlayerClasses.name_of(player_stats.class_id), difficulty.get_level_name()])
+
+
+# Arma el estado de la partida nueva (con la pantalla de carga ya tapando).
+func _start_new_game(difficulty_level: int, class_id: String) -> bool:
 	difficulty.set_level(difficulty_level)
 	inventory_data.reset()
 	player_stats.reset(class_id)
@@ -194,10 +222,7 @@ func new_game(difficulty_level: int, class_id: String = PlayerClasses.DEFAULT) -
 	# Se escribe antes de rearmar la escena (sin posicion: arranca en el
 	# inicio del mapa), asi el menu nuevo ya encuentra la partida.
 	_write()
-	get_tree().paused = false
-	get_tree().reload_current_scene()
-	await get_tree().create_timer(0.2).timeout
-	_announce("%s · %s" % [PlayerClasses.name_of(player_stats.class_id), difficulty.get_level_name()])
+	return true
 
 
 # Equipo inicial de la clase (equipado) y unas pociones.
@@ -319,6 +344,35 @@ static func _item_from_dict(data: Dictionary) -> Itemdata:
 		if data.has(field):
 			item.set(field, type_convert(data[field], typeof(item.get(field))))
 	return item
+
+
+func _show_saving_notice() -> void:
+	if _notice == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		add_child(layer)
+		_notice = Label.new()
+		_notice.text = "Guardando…"
+		_notice.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+		_notice.offset_left = -200
+		_notice.offset_top = -44
+		_notice.offset_right = -18
+		_notice.offset_bottom = -14
+		_notice.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_notice.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_notice.add_theme_font_override("font", NOTICE_FONT)
+		_notice.add_theme_font_size_override("font_size", 17)
+		_notice.add_theme_color_override("font_color", Color(0.95, 0.8, 0.48))
+		_notice.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+		_notice.add_theme_constant_override("outline_size", 5)
+		layer.add_child(_notice)
+	if _notice_tween:
+		_notice_tween.kill()
+	_notice.modulate.a = 0.0
+	_notice_tween = create_tween()
+	_notice_tween.tween_property(_notice, "modulate:a", 1.0, 0.25)
+	_notice_tween.tween_interval(1.4)
+	_notice_tween.tween_property(_notice, "modulate:a", 0.0, 0.6)
 
 
 func _announce(text: String) -> void:

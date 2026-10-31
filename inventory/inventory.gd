@@ -175,6 +175,9 @@ func _update_hero_camera() -> void:
 # equipada se crea de nuevo al cambiar de equipo). El caballo no: montado, su
 # cabeza tapa al jinete.
 func _tag_hero() -> void:
+	# Al recargar la escena puede llegar tarde, con este inventario ya afuera.
+	if not is_inside_tree():
+		return
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player == null:
 		return

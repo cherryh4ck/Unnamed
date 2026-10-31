@@ -272,11 +272,12 @@ func _zoom_at(view_pos: Vector2, factor: float) -> void:
 	_center += before - _to_world(view_pos)
 
 
+# El salto se hace con la pantalla de carga tapando (y guarda al llegar).
 func _travel(portal: Node3D) -> void:
 	var player: Node3D = _player()
 	close()
 	if player and player.has_method("teleport_to"):
-		player.teleport_to(portal.arrival_point())
+		loading_screen.travel(portal.display_name, player.teleport_to.bind(portal.arrival_point()))
 
 
 func _player() -> Node3D:
