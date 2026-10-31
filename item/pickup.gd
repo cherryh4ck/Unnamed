@@ -144,8 +144,9 @@ func _collect_bounds_in(node: Node3D, world_xf: Transform3D) -> void:
 		_collect_bounds_in(child as Node3D, world_xf)
 
 
-## Intenta guardar el item. Devuelve true si se junto.
-func get_item() -> bool:
+## Intenta guardar el item. Devuelve true si se junto. batch: se estan
+## juntando varios a la vez (tecla F), el aviso de lleno lo da el jugador.
+func get_item(batch: bool = false) -> bool:
 	if item_data == null or _picked:
 		return false
 	var head: Vector3 = global_position + Vector3.UP * 250.0
@@ -159,9 +160,16 @@ func get_item() -> bool:
 		queue_free()
 		return true
 
+	var before: int = inventory_data.count_item(item_data)
 	if not inventory_data.add_item(item_data, quantity):
-		floating_text.spawn(head, "Inventario lleno", Color(1.0, 0.35, 0.3), 18)
-		sfx.play("stuck")
+		# Si entro una parte del stack, en el piso queda solo el resto.
+		var added: int = inventory_data.count_item(item_data) - before
+		if added > 0:
+			quantity -= added
+			_setup_label()
+		if not batch:
+			floating_text.spawn(head, "Inventario lleno", Color(1.0, 0.35, 0.3), 18)
+			sfx.play("stuck")
 		return false
 
 	_picked = true

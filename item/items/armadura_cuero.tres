@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="2_atlas"]
+[ext_resource type="Texture2D" path="res://assets/characters/oad/armor/cuerpo_cuero.png" id="4_body"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
+atlas = ExtResource("2_atlas")
+region = Rect2(192, 224, 32, 32)
+
+[resource]
+script = ExtResource("1_item")
+name = "Armadura de cuero"
+item_type = 7
+texture = SubResource("AtlasTexture_icon")
+body_texture = ExtResource("4_body")
+grid_size = Vector2i(2, 3)
+defense = 9
+value = 45
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

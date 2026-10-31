@@ -27,6 +27,8 @@ const SKILL_COUNT: int = 5
 const PICKUP_REACH: float = 170.0
 ## Distancia a la que se habla con un NPC.
 const NPC_REACH: float = 300.0
+## La tecla F junta todo lo que hay en el piso hasta esta distancia (unos 4 m).
+const PICKUP_ALL_RADIUS: float = 900.0
 ## Capa de fisica de los items en el piso (ver item/pickup.gd).
 const PICKUP_MASK: int = 4
 ## Cajas del tamaño de cada enemigo para apuntarle con el mouse (ver enemi.gd).
@@ -271,7 +273,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("skill_combo"):
 		use_combo()
 		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("pickup_all"):
+		pick_up_all()
+		get_viewport().set_input_as_handled()
 	else:
+		for i in inventory_data.BELT_SIZE:
+			if event.is_action_pressed("belt_%d" % (i + 1)):
+				use_belt(i)
+				get_viewport().set_input_as_handled()
+				return
 		for i in SKILL_COUNT:
 			if event.is_action_pressed("skill_%d" % (i + 1)):
 				use_skill(i)
@@ -500,8 +510,10 @@ func _raycast_mouse(mask: int = 0xFFFFFFFF, areas_only: bool = false) -> Diction
 
 
 ## Lo llaman los enemigos al pegarle al jugador ({Damage.Type: cantidad}).
-func take_hit(parts: Dictionary) -> void:
-	var result: Dictionary = player_stats.take_hit(parts)
+## attacker: el que pego cuerpo a cuerpo (las flechas no lo pasan), para las
+## espinas de los unicos.
+func take_hit(parts: Dictionary, attacker: Node3D = null) -> void:
+	var result: Dictionary = player_stats.take_hit(parts, attacker)
 	var head: Vector3 = global_position + Vector3.UP * 420.0
 	if result.blocked:
 		floating_text.spawn(head, "Bloqueo", Color(0.65, 0.8, 1.0), 20)
@@ -530,6 +542,43 @@ func drink_potion() -> void:
 	var reason: String = player_stats.use_potion()
 	if not reason.is_empty():
 		_reject(reason)
+
+
+## Usa el consumible de esa ranura del cinturon (teclas W, E, R y T).
+func use_belt(index: int) -> void:
+	var item: Itemdata = inventory_data.belt_item(index)
+	if item == null:
+		_reject("Ranura vacía")
+	elif inventory_data.count_item(item) <= 0:
+		_reject("No tenés %s" % item.get_display_name().to_lower())
+	else:
+		player_stats.try_consume(item)
+
+
+## Tecla F: junta todo lo que hay en el piso cerca, del mas cercano al mas
+## lejano. Lo que no entra en la mochila queda en el piso. Lo que tiro el
+## jugador recien no se junta (igual que al pasar por encima).
+func pick_up_all() -> void:
+	var near: Array = []
+	for pickup in get_tree().get_nodes_in_group("pickups"):
+		if not is_instance_valid(pickup) or pickup.is_queued_for_deletion() or pickup.get("_suspended"):
+			continue
+		var offset: Vector3 = pickup.global_position - global_position
+		offset.y = 0.0
+		if offset.length() <= PICKUP_ALL_RADIUS:
+			near.append([offset.length(), pickup])
+	if near.is_empty():
+		_reject("No hay nada cerca")
+		return
+	near.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var left: int = 0
+	for entry in near:
+		if not entry[1].get_item(true):
+			left += 1
+	if left == 1:
+		_reject("No entra: un objeto quedó en el piso")
+	elif left > 1:
+		_reject("No entran: %d objetos quedaron en el piso" % left)
 
 
 ## Texto gris sobre el personaje + sonido de "no se puede".

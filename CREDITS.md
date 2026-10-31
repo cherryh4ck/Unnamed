@@ -50,7 +50,10 @@ Virotes (Lorc, arrow-cluster), Rayo Arcano (Lorc, arcing-bolt), Anillo de
 Llamas (Lorc, fire-ring), Escudo Arcano (Lorc, magic-shield) y Meteoro (Lorc,
 meteor-impact). Las clases usan "broadsword" y "wizard-staff" de Lorc y
 "crossbow" de Carl Olsen. En el mapa grande, el yunque del herrero es "anvil"
-de Lorc y el baúl es "chest" de Delapouite.
+de Lorc y el baúl es "chest" de Delapouite. Los lugares vacíos del equipo en el
+inventario usan "visored-helm", "breastplate", "boots", "gem-pendant",
+"broadsword" y "checked-shield" de Lorc, y "gauntlet", "leg-armor",
+"belt-armor" y "ring" de Delapouite.
 
 Las gemas (`item/gems/`) no usan arte de afuera: su talla y sus materiales los
 genera `item/gems/build_gems.gd`.
@@ -72,6 +75,11 @@ Están en `assets/characters/oad/` junto con la licencia original
   pelo fijados en las texturas; un clip corto de "golpe recibido" sacado del
   de muerte. Las armas y escudos de `item/models/` usan esos accesorios
   (espada celta, hacha, martillo, ballesta, escudo redondo y escudo oval).
+- Armaduras: el yelmo de hierro y las capuchas equipables son accesorios de
+  0 A.D. (`props/`). Las texturas de peto de `armor/` (cuero, acolchado y
+  malla) son las texturas de cuerpo "brit" de 0 A.D. (`leather_01`,
+  `padded_01_01` y `chainmail_04_01`) con el color de equipo fijado; se ponen
+  sobre el cuerpo del personaje al equipar la armadura.
 - No-muertos: el zombi (`characters/zombie.glb`) es un cuerpo de 0 A.D. con la
   textura repintada (piel podrida, moretones, heridas, costillas a la vista y
   pantalón roto). `enemies/models/no_muertos/animaciones.res` tiene clips

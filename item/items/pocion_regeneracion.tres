@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="2_atlas"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
+atlas = ExtResource("2_atlas")
+region = Rect2(256, 288, 32, 32)
+
+[resource]
+script = ExtResource("1_item")
+name = "Poción de regeneración"
+description = "Regenera el 40% de la vida en 12 segundos."
+stackable = true
+item_type = 3
+texture = SubResource("AtlasTexture_icon")
+use_effect = "regeneracion"
+value = 35
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

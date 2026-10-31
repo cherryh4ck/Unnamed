@@ -2,7 +2,8 @@ extends Node
 
 ## Autoload con el inventario: la mochila (backpack), una grilla de GRID_SIZE
 ## casillas donde cada item ocupa su tamaño (ver inventory/item_grid.gd), los
-## dos slots de equipo y el baul de la aldea (stash, otra grilla igual). La UI
+## slots de equipo (arma, escudo o ballesta y las partes de la armadura) y el
+## baul de la aldea (stash, otra grilla igual). La UI
 ## (inventory/inventory.gd, ui/stash_panel.gd) solo dibuja lo que hay aca.
 ##
 ## held: el item agarrado con el mouse; sale de su grilla hasta que se suelta
@@ -10,6 +11,8 @@ extends Node
 ## una partida (por ejemplo, de antes de la grilla). Se guarda con la partida y
 ## entra solo apenas se libera lugar. anvil: el item puesto en el yunque del
 ## herrero (ui/smith_panel.gd); vuelve a la mochila al cerrar el panel.
+## belt: el cinturon de consumibles del HUD (teclas W, E, R y T); cada ranura
+## guarda que consumible usa, y la cantidad sale de la mochila.
 
 signal inventory_changed(slot_index: int)
 signal stash_changed
@@ -21,13 +24,33 @@ signal sell_requested(slot_index: int)
 signal held_changed
 signal overflow_changed
 signal anvil_changed
+signal belt_changed
 
 const GRID_SIZE := Vector2i(14, 7)
 const STASH_SIZE := Vector2i(12, 10)
 
 const MELEE_EQUIP: int = 0
 const SPECIAL_EQUIP: int = 1
-const EQUIP_COUNT: int = 2
+const HELMET_EQUIP: int = 2
+const CHEST_EQUIP: int = 3
+const GLOVES_EQUIP: int = 4
+const LEGS_EQUIP: int = 5
+const BOOTS_EQUIP: int = 6
+const BELT_EQUIP: int = 7
+const RING_EQUIP: int = 8
+const RING2_EQUIP: int = 9
+const AMULET_EQUIP: int = 10
+## Las partidas de antes de la armadura guardaban solo los dos primeros.
+const EQUIP_COUNT: int = 11
+## Orden de las categorias al ordenar la mochila (ver sort_backpack).
+const SORT_ORDER := [Itemdata.ItemType.MELEE_WEAPON, Itemdata.ItemType.SPECIAL, Itemdata.ItemType.HELMET,
+		Itemdata.ItemType.CHEST, Itemdata.ItemType.GLOVES, Itemdata.ItemType.LEGS, Itemdata.ItemType.BOOTS,
+		Itemdata.ItemType.BELT, Itemdata.ItemType.RING, Itemdata.ItemType.AMULET, Itemdata.ItemType.GEM,
+		Itemdata.ItemType.POTION, Itemdata.ItemType.SCROLL, Itemdata.ItemType.GOLD, Itemdata.ItemType.GENERIC]
+## Ranuras del cinturon y lo que llevan al empezar (la pocion de vida va en la Q).
+const BELT_SIZE: int = 4
+const DEFAULT_BELT := ["res://item/items/antidoto.tres", "res://item/items/pocion_fuego.tres",
+		"res://item/items/pocion_regeneracion.tres", "res://item/items/pergamino_retorno.tres"]
 
 var backpack := ItemGrid.new(GRID_SIZE)
 var stash := ItemGrid.new(STASH_SIZE)
@@ -46,6 +69,8 @@ var shop_mode: bool = false
 var stash_open: bool = false
 ## Item en el yunque del herrero (null = vacio).
 var anvil: Slotdata = null
+## Consumible de cada ranura del cinturon (ruta del .tres, "" = vacia).
+var belt: PackedStringArray = PackedStringArray(DEFAULT_BELT)
 
 # De donde salio el item agarrado, para devolverlo si se cancela.
 var _held_from: Vector2i = Vector2i(-1, -1)
@@ -68,6 +93,7 @@ func reset() -> void:
 	overflow.clear()
 	shop_mode = false
 	stash_open = false
+	belt = PackedStringArray(DEFAULT_BELT)
 	_held_from = Vector2i(-1, -1)
 	_held_from_grid = null
 	_held_from_equip = -1
@@ -310,16 +336,139 @@ func clear_anvil() -> void:
 	anvil_changed.emit()
 
 
+# --- Cinturon --------------------------------------------------------------
+
+## Consumible de la ranura index del cinturon (null si esta vacia).
+func belt_item(index: int) -> Itemdata:
+	if index < 0 or index >= belt.size() or belt[index].is_empty() or not ResourceLoader.exists(belt[index]):
+		return null
+	return load(belt[index])
+
+
+## Pone un consumible en la ranura (si ya estaba en otra, se cambian de lugar).
+## Solo van consumibles del juego (no generados), menos la pocion de vida.
+func set_belt(index: int, item: Itemdata) -> bool:
+	if index < 0 or index >= BELT_SIZE or item == null or not item.is_consumable() 			or item.is_health_potion() or item.resource_path.is_empty():
+		return false
+	var previous: int = belt.find(item.resource_path)
+	if previous >= 0:
+		belt[previous] = belt[index]
+	belt[index] = item.resource_path
+	belt_changed.emit()
+	return true
+
+
+## Carga el cinturon de una partida (las de antes no lo tenian).
+func load_belt(paths: Array) -> void:
+	belt = PackedStringArray(DEFAULT_BELT)
+	for i in mini(paths.size(), BELT_SIZE):
+		var path: String = str(paths[i])
+		belt[i] = path if path.is_empty() or ResourceLoader.exists(path) else ""
+	belt_changed.emit()
+
+
+# --- Ordenar ---------------------------------------------------------------
+
+## Reacomoda la mochila: junta los stacks iguales y pone primero el equipo
+## (por tipo, lo mas grande y mejor primero), despues gemas y consumibles.
+## Si con el orden nuevo algo no entrara, la deja como estaba.
+func sort_backpack() -> bool:
+	# Se trabaja con copias: si no entra todo, la mochila queda intacta.
+	var merged: Array[Slotdata] = []
+	for original in backpack.slots:
+		var slot: Slotdata = original.duplicate()
+		var joined: bool = false
+		if slot.item_data.stackable:
+			for other in merged:
+				if other.item_data == slot.item_data and other.quantity < Slotdata.MAX_STACK_SIZE:
+					var moved: int = mini(Slotdata.MAX_STACK_SIZE - other.quantity, slot.quantity)
+					other.quantity += moved
+					slot.quantity -= moved
+					if slot.quantity <= 0:
+						joined = true
+						break
+		if not joined:
+			merged.append(slot)
+	merged.sort_custom(_sorts_before)
+	var trial := ItemGrid.new(GRID_SIZE)
+	for slot in merged:
+		var pos: Vector2i = trial.find_free_position(slot.item_data)
+		if pos.x < 0:
+			return false
+		trial.insert(slot, pos)
+	backpack.slots = trial.slots
+	inventory_changed.emit(-1)
+	return true
+
+
+func _sorts_before(a: Slotdata, b: Slotdata) -> bool:
+	var order_a: int = SORT_ORDER.find(a.item_data.item_type)
+	var order_b: int = SORT_ORDER.find(b.item_data.item_type)
+	if order_a != order_b:
+		return order_a < order_b
+	var area_a: int = a.item_data.get_footprint().x * a.item_data.get_footprint().y
+	var area_b: int = b.item_data.get_footprint().x * b.item_data.get_footprint().y
+	if area_a != area_b:
+		return area_a > area_b
+	if a.item_data.rarity != b.item_data.rarity:
+		return a.item_data.rarity > b.item_data.rarity
+	return a.item_data.get_display_name() < b.item_data.get_display_name()
+
+
 # --- Equipo ----------------------------------------------------------------
 
+## Slot de equipo donde va el item (-1 si no se equipa). Los anillos van al
+## primer anillo libre.
 func equip_index_for(item: Itemdata) -> int:
 	match item.item_type:
 		Itemdata.ItemType.MELEE_WEAPON:
 			return MELEE_EQUIP
 		Itemdata.ItemType.SPECIAL:
 			return SPECIAL_EQUIP
+		Itemdata.ItemType.HELMET:
+			return HELMET_EQUIP
+		Itemdata.ItemType.CHEST:
+			return CHEST_EQUIP
+		Itemdata.ItemType.GLOVES:
+			return GLOVES_EQUIP
+		Itemdata.ItemType.LEGS:
+			return LEGS_EQUIP
+		Itemdata.ItemType.BOOTS:
+			return BOOTS_EQUIP
+		Itemdata.ItemType.BELT:
+			return BELT_EQUIP
+		Itemdata.ItemType.RING:
+			if equipment[RING_EQUIP] != null and equipment[RING2_EQUIP] == null:
+				return RING2_EQUIP
+			return RING_EQUIP
+		Itemdata.ItemType.AMULET:
+			return AMULET_EQUIP
 		_:
 			return -1
+
+
+## Si el item puede ir en ese slot (un anillo entra en cualquiera de los dos).
+func fits_slot(item: Itemdata, equip_index: int) -> bool:
+	if item.item_type == Itemdata.ItemType.RING:
+		return equip_index == RING_EQUIP or equip_index == RING2_EQUIP
+	return equip_index_for(item) == equip_index
+
+
+## Todo lo equipado (sin los slots vacios).
+func get_equipped_items() -> Array[Itemdata]:
+	var result: Array[Itemdata] = []
+	for slot in equipment:
+		if slot and slot.item_data:
+			result.append(slot.item_data)
+	return result
+
+
+# Motivo por el que no se puede equipar ("" si se puede): nivel o atributos.
+func _requirement_problem(item: Itemdata) -> String:
+	for line in item.get_requirement_lines():
+		if not line[1]:
+			return line[0]
+	return ""
 
 
 ## Doble clic: equipa el item de la grilla. Lo que estaba equipado vuelve a
@@ -331,6 +480,10 @@ func equip_from_slot(slot_index: int) -> bool:
 	var equip_index: int = equip_index_for(slot.item_data)
 	if equip_index == -1:
 		return false  # este item no es equipable (pociones, oro, etc.)
+	var problem: String = _requirement_problem(slot.item_data)
+	if not problem.is_empty():
+		equip_rejected.emit(problem)
+		return false
 	if not _combo_allowed(slot.item_data, equip_index):
 		equip_rejected.emit("Muy pesado para combinarlo con lo que llevás")
 		return false
@@ -363,8 +516,12 @@ func on_equipment_clicked(equip_index: int) -> void:
 		held_changed.emit()
 		return
 
-	if equip_index_for(held.item_data) != equip_index:
+	if not fits_slot(held.item_data, equip_index):
 		equip_rejected.emit("Eso no va en este lugar")
+		return
+	var problem: String = _requirement_problem(held.item_data)
+	if not problem.is_empty():
+		equip_rejected.emit(problem)
 		return
 	if not _combo_allowed(held.item_data, equip_index):
 		equip_rejected.emit("Muy pesado para combinarlo con lo que llevás")
@@ -394,8 +551,10 @@ func get_equipped(equip_index: int) -> Itemdata:
 
 # Combina el item nuevo con lo ya equipado en el otro slot y valida la regla
 # de peso: un item pesado solo se combina con uno ligero (ej: espada larga +
-# escudo ligero, o escudo pesado + espada ligera).
+# escudo ligero, o escudo pesado + espada ligera). La armadura no cuenta.
 func _combo_allowed(item: Itemdata, equip_index: int) -> bool:
+	if equip_index != MELEE_EQUIP and equip_index != SPECIAL_EQUIP:
+		return true
 	var other_index: int = SPECIAL_EQUIP if equip_index == MELEE_EQUIP else MELEE_EQUIP
 	var other: Itemdata = get_equipped(other_index)
 	if other == null:

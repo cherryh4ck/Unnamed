@@ -17,7 +17,8 @@ const AUTOSAVE_INTERVAL: float = 60.0
 const NOTICE_FONT := preload("res://assets/fonts/ebgaramond/EBGaramond-Italic[wght].ttf")
 ## Campos que la generacion de botin cambia respecto del item base
 ## (ver Loot.generate_item e ItemSets.generate_piece).
-const ITEM_FIELDS := ["rarity", "min_damage", "max_damage", "defense", "suffix", "unique_name", "bonuses", "set_id", "value", "sockets", "gems"]
+const ITEM_FIELDS := ["rarity", "min_damage", "max_damage", "defense", "suffix", "unique_name", "bonuses", "set_id", "value", "sockets", "gems",
+		"required_level", "required_attributes", "special", "special_value", "lore"]
 
 ## Archivo de la partida (los tests usan otro para no pisar la del jugador).
 var save_path: String = SAVE_PATH
@@ -107,6 +108,7 @@ func _write() -> bool:
 		"inventory_overflow": inventory_data.overflow.map(_slot_to_dict),
 		"stash": _grid_to_array(inventory_data.stash, false),
 		"equipment": _slots_to_array(inventory_data.equipment),
+		"belt": Array(inventory_data.belt),
 		"combo": skill_book.combo,
 		"world": {"day": world_time.day, "hour": world_time.hour},
 		"weather": weather.to_save(),
@@ -141,6 +143,8 @@ func load_saved() -> bool:
 	_array_to_grid(data.get("inventory_overflow", []), inventory_data.backpack)
 	_array_to_grid(data.get("stash", []), inventory_data.stash)
 	_array_to_slots(data.get("equipment", []), inventory_data.equipment)
+	# Las partidas de antes del cinturon arrancan con el de siempre.
+	inventory_data.load_belt(data.get("belt", inventory_data.DEFAULT_BELT))
 
 	var player_data: Dictionary = data.get("player", {})
 	# Las partidas de antes de las clases eran de guerrero.

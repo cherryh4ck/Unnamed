@@ -35,6 +35,8 @@ var _pulse: float = 0.0
 var _buff_labels: Dictionary = {}
 var _potion_count: Label
 var _potion_icon: TextureRect
+## Ranuras del cinturon: [panel, icono, cantidad] por cada una.
+var _belt_slots: Array = []
 var _poison_style: StyleBoxTexture
 var _poisoned_look: bool = false
 
@@ -75,8 +77,12 @@ func _ready() -> void:
 			player.use_combo())
 	skill_book.combo_unlocked.connect(_on_combo_unlocked)
 	_build_potion_slot()
+	_build_belt()
 	inventory_data.inventory_changed.connect(_update_potion_count.unbind(1))
+	inventory_data.inventory_changed.connect(_update_belt.unbind(1))
+	inventory_data.belt_changed.connect(_update_belt)
 	_update_potion_count()
+	_update_belt()
 	player_stats.buffs_changed.connect(_rebuild_buffs)
 	_poison_style = health_bar.get_theme_stylebox("fill").duplicate()
 	_poison_style.texture = POISON_FILL
@@ -240,6 +246,65 @@ func _update_potion_count() -> void:
 	var count: int = player_stats.count_potions()
 	_potion_count.text = str(count)
 	_potion_icon.modulate = Color.WHITE if count > 0 else Color(0.3, 0.3, 0.3)
+
+
+# Cinturon: cuatro ranuras mas chicas despues de la Q, con los otros
+# consumibles (teclas W, E, R y T). Se cambian desde el inventario.
+func _build_belt() -> void:
+	const KEYS := ["W", "E", "R", "T"]
+	for i in inventory_data.BELT_SIZE:
+		var slot := PanelContainer.new()
+		slot.theme_type_variation = &"SlotPanel"
+		slot.custom_minimum_size = SkillSlot.SLOT_SIZE * 0.82
+		slot.size_flags_vertical = Control.SIZE_SHRINK_END
+		slot.gui_input.connect(func(event: InputEvent) -> void:
+			var mouse_event := event as InputEventMouseButton
+			if mouse_event and mouse_event.pressed and mouse_event.button_index == MOUSE_BUTTON_LEFT and player:
+				player.use_belt(i))
+		skill_bar.add_child(slot)
+		var holder := Control.new()
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(holder)
+		var icon := TextureRect.new()
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+		holder.add_child(icon)
+		var count := Label.new()
+		count.add_theme_font_size_override("font_size", 13)
+		count.add_theme_constant_override("outline_size", 5)
+		count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		count.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+		count.set_anchors_preset(Control.PRESET_FULL_RECT)
+		count.offset_right = -2.0
+		count.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(count)
+		var key := Label.new()
+		key.text = KEYS[i]
+		key.position = Vector2(2, -2)
+		key.add_theme_font_size_override("font_size", 12)
+		key.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
+		key.add_theme_constant_override("outline_size", 5)
+		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.add_child(key)
+		_belt_slots.append([slot, icon, count])
+
+
+func _update_belt() -> void:
+	const KEYS := ["W", "E", "R", "T"]
+	for i in _belt_slots.size():
+		var item: Itemdata = inventory_data.belt_item(i)
+		var parts: Array = _belt_slots[i]
+		parts[1].texture = item.texture if item else null
+		var amount: int = inventory_data.count_item(item) if item else 0
+		parts[2].text = str(amount) if item else ""
+		parts[1].modulate = Color.WHITE if amount > 0 else Color(0.3, 0.3, 0.3)
+		if item:
+			parts[0].tooltip_text = "%s (%s)\n%s" % [item.get_display_name(), KEYS[i], item.description]
+		else:
+			parts[0].tooltip_text = "Cinturón (%s): vacío. En el inventario, apretá %s con el mouse sobre un consumible." % [KEYS[i], KEYS[i]]
 
 
 func _on_portal_discovered(_id: String, display_name: String) -> void:

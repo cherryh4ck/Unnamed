@@ -19,5 +19,8 @@ weight_class = 2
 min_damage = 12
 max_damage = 26
 attack_speed = 0.75
+required_attributes = {
+"fuerza": 14
+}
 value = 85
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="Itemdata" format=3]
+
+[ext_resource type="Script" uid="uid://buopyt3nqybl3" path="res://item/item_data.gd" id="1_item"]
+[ext_resource type="Texture2D" uid="uid://dx70bciywdvfe" path="res://item/#1 - Transparent Icons.png" id="2_atlas"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/hood_white.glb" id="3_model"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_icon"]
+atlas = ExtResource("2_atlas")
+region = Rect2(0, 224, 32, 32)
+
+[resource]
+script = ExtResource("1_item")
+name = "Capucha de lino"
+item_type = 6
+texture = SubResource("AtlasTexture_icon")
+model_3d = ExtResource("3_model")
+grid_size = Vector2i(2, 2)
+defense = 2
+required_attributes = {
+"concentracion": 10
+}
+value = 22
+metadata/_custom_type_script = "uid://buopyt3nqybl3"

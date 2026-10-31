@@ -32,6 +32,10 @@ func _ready() -> void:
 		inventory_data.inventory_changed.connect(_on_inventory_changed)
 	inventory_data.held_changed.connect(queue_redraw)
 	item_icons.icon_ready.connect(_on_icon_ready)
+	# Al subir de nivel o de atributos cambia que se puede equipar (fondo rojo).
+	player_stats.stats_changed.connect(func() -> void:
+		for item in _items:
+			item.queue_redraw())
 	rebuild()
 
 
@@ -143,10 +147,8 @@ func _double_click(index: int) -> void:
 		_move_to_other_grid(index)
 		return
 	var item: Itemdata = grid.slots[index].item_data
-	if item.item_type == Itemdata.ItemType.POTION:
-		var player: Node = get_tree().get_first_node_in_group("player")
-		if player:
-			player.drink_potion()
+	if item.is_consumable():
+		player_stats.try_consume(item)
 	elif inventory_data.equip_from_slot(index):
 		sfx.play_item(item)
 

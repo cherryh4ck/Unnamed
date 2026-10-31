@@ -4,11 +4,38 @@ class_name Itemdata
 
 # Los valores nuevos van siempre al final para no romper los .tres existentes
 # (Godot guarda el enum como numero).
-enum ItemType { GENERIC, MELEE_WEAPON, SPECIAL, POTION, GOLD, GEM }
+enum ItemType { GENERIC, MELEE_WEAPON, SPECIAL, POTION, GOLD, GEM,
+	HELMET, CHEST, GLOVES, LEGS, BOOTS, BELT, RING, AMULET, SCROLL }
 enum WeightClass { LIGHT, MEDIUM, HEAVY }
 enum Rarity { NORMAL, MAGIC, RARE, UNIQUE, SET }
 
 const WEIGHT_NAMES := ["ligero", "medio", "pesado"]
+## Partes de la armadura (van en sus propios slots, ver inventory_data.gd).
+const ARMOR_TYPES := [ItemType.HELMET, ItemType.CHEST, ItemType.GLOVES, ItemType.LEGS,
+		ItemType.BOOTS, ItemType.BELT, ItemType.RING, ItemType.AMULET]
+## Nombre de cada parte y su genero/numero para el adjetivo de rareza
+## (m = masculino, f = femenino, mp / fp = plural).
+const ARMOR_NAMES := {
+	ItemType.HELMET: ["Casco", "m"], ItemType.CHEST: ["Armadura", "f"], ItemType.GLOVES: ["Guantes", "mp"],
+	ItemType.LEGS: ["Grebas", "fp"], ItemType.BOOTS: ["Botas", "fp"], ItemType.BELT: ["Cinturón", "m"],
+	ItemType.RING: ["Anillo", "m"], ItemType.AMULET: ["Amuleto", "m"],
+}
+const RARITY_ADJECTIVES := {
+	"m": ["", "mágico", "raro", "único", "de set"],
+	"f": ["", "mágica", "rara", "única", "de set"],
+	"mp": ["", "mágicos", "raros", "únicos", "de set"],
+	"fp": ["", "mágicas", "raras", "únicas", "de set"],
+}
+## Efectos especiales de los unicos: clave -> texto con %s para el valor.
+const SPECIAL_TEXT := {
+	"robo_vida": "Roba el %s%% del daño como vida",
+	"vida_golpe": "+%s de vida por cada golpe",
+	"cadena": "%s%% de soltar un rayo que salta a otro enemigo",
+	"espinas": "Devuelve el %s%% del daño cuerpo a cuerpo",
+	"aura_fuego": "Aura de fuego: %s de daño por segundo alrededor",
+}
+const SPECIAL_COLOR := Color(1.0, 0.62, 0.25)
+const ATTRIBUTE_NAMES := {"fuerza": "Fuerza", "destreza": "Destreza", "vitalidad": "Vitalidad", "concentracion": "Concentración"}
 const RARITY_NAMES := ["Normal", "Mágico", "Raro", "Único", "De set"]
 const RARITY_COLORS := [
 	Color(0.9, 0.88, 0.82),
@@ -44,6 +71,9 @@ const BONUS_COLOR := Color(0.5, 0.68, 1.0)
 @export var item_type: ItemType = ItemType.GENERIC
 @export var texture: Texture2D
 @export var model_3d: PackedScene
+## Armaduras del torso: textura que se le pone al cuerpo del personaje al
+## llevarla puesta (mismo mapa UV que todos los cuerpos de 0 A.D.).
+@export var body_texture: Texture2D
 ## Casillas que ocupa en el inventario (ancho x alto).
 @export var grid_size: Vector2i = Vector2i(1, 1)
 
@@ -79,6 +109,24 @@ const BONUS_COLOR := Color(0.5, 0.68, 1.0)
 ## Si el item es una gema: su tipo (clave de Gems.KINDS) y calidad (0 a 2).
 @export var gem_kind: String = ""
 @export var gem_tier: int = 0
+
+@export_group("Requisitos")
+## Nivel minimo para equiparlo (0 = sin requisito).
+@export var required_level: int = 0
+## Atributo -> valor minimo (ej: {"fuerza": 14}).
+@export var required_attributes: Dictionary = {}
+
+@export_group("Unicos")
+## Efecto especial (clave de SPECIAL_TEXT) y cuanto da.
+@export var special: String = ""
+@export var special_value: float = 0.0
+## Frase de historia que se ve en el tooltip.
+@export_multiline var lore: String = ""
+
+@export_group("Consumibles")
+## Que hace al usarlo: "" = cura vida (pocion comun), "antidoto",
+## "res_fuego", "regeneracion" o "retorno" (ver player_stats.use_consumable).
+@export var use_effect: String = ""
 
 @export_group("Comercio")
 ## Precio base en oro (para el comerciante, mas adelante).
@@ -140,6 +188,9 @@ static func bonus_color(key: String) -> Color:
 func get_type_line() -> String:
 	const FEMININE := ["", "mágica", "rara", "única", "de set"]
 	const MASCULINE := ["", "mágico", "raro", "único", "de set"]
+	if ARMOR_NAMES.has(item_type):
+		var entry: Array = ARMOR_NAMES[item_type]
+		return ("%s %s" % [entry[0], RARITY_ADJECTIVES[entry[1]][rarity]]).strip_edges()
 	match item_type:
 		ItemType.MELEE_WEAPON:
 			return ("Arma " + FEMININE[rarity]).strip_edges()
@@ -149,6 +200,8 @@ func get_type_line() -> String:
 			return ("Escudo " + MASCULINE[rarity]).strip_edges()
 		ItemType.POTION:
 			return "Poción"
+		ItemType.SCROLL:
+			return "Pergamino"
 		ItemType.GOLD:
 			return "Oro"
 		ItemType.GEM:
@@ -157,7 +210,80 @@ func get_type_line() -> String:
 
 
 func is_equipment() -> bool:
-	return item_type == ItemType.MELEE_WEAPON or item_type == ItemType.SPECIAL
+	return item_type == ItemType.MELEE_WEAPON or item_type == ItemType.SPECIAL or is_armor()
+
+
+## Tipo de pieza para los unicos: "arma", "escudo", "casco", "armadura",
+## "guantes", "grebas", "botas", "cinturon", "anillo" o "amuleto".
+func get_slot_kind() -> String:
+	match item_type:
+		ItemType.MELEE_WEAPON:
+			return "arma"
+		ItemType.SPECIAL:
+			return "arma" if has_damage() else "escudo"
+		ItemType.HELMET:
+			return "casco"
+		ItemType.CHEST:
+			return "armadura"
+		ItemType.GLOVES:
+			return "guantes"
+		ItemType.LEGS:
+			return "grebas"
+		ItemType.BOOTS:
+			return "botas"
+		ItemType.BELT:
+			return "cinturon"
+		ItemType.RING:
+			return "anillo"
+		ItemType.AMULET:
+			return "amuleto"
+	return ""
+
+
+## Casco, armadura, guantes, grebas, botas, cinturon, anillos y amuleto.
+func is_armor() -> bool:
+	return item_type in ARMOR_TYPES
+
+
+## Pociones y pergaminos (se usan desde el inventario o el cinturon).
+func is_consumable() -> bool:
+	return item_type == ItemType.POTION or item_type == ItemType.SCROLL
+
+
+## La pocion comun de vida (la de la tecla Q).
+func is_health_potion() -> bool:
+	return item_type == ItemType.POTION and use_effect.is_empty()
+
+
+## Texto del efecto especial de un unico ("" si no tiene).
+func get_special_text() -> String:
+	if special.is_empty() or not SPECIAL_TEXT.has(special):
+		return ""
+	var value: String = str(roundi(special_value)) if is_equal_approx(special_value, roundf(special_value)) else "%.1f" % special_value
+	return SPECIAL_TEXT[special] % value
+
+
+## Lineas de requisitos: [texto, se cumple]. El personaje se busca en el
+## arbol (y no por el nombre del autoload) para que los scripts de prueba
+## puedan usar esta clase antes de que existan los autoloads.
+func get_requirement_lines() -> Array:
+	var lines: Array = []
+	var tree := Engine.get_main_loop() as SceneTree
+	var stats: Node = tree.root.get_node_or_null("player_stats") if tree else null
+	if required_level > 0:
+		lines.append(["Requiere nivel %d" % required_level, stats == null or stats.level >= required_level])
+	for key in required_attributes:
+		var needed: int = int(required_attributes[key])
+		lines.append(["Requiere %s %d" % [ATTRIBUTE_NAMES.get(key, key), needed], stats == null or stats.get_attribute(key) >= needed])
+	return lines
+
+
+## Si el personaje cumple los requisitos para equiparlo.
+func meets_requirements() -> bool:
+	for line in get_requirement_lines():
+		if not line[1]:
+			return false
+	return true
 
 
 func has_damage() -> bool:
@@ -179,7 +305,8 @@ func get_stats_lines() -> PackedStringArray:
 		lines.append("Defensa: %d" % defense)
 	if block_chance > 0:
 		lines.append("Bloqueo: %d%%" % block_chance)
-	if is_equipment():
+	# El peso solo cuenta para combinar el arma con el escudo.
+	if item_type == ItemType.MELEE_WEAPON or item_type == ItemType.SPECIAL:
 		lines.append("Peso: %s" % WEIGHT_NAMES[weight_class])
 	return lines
 
@@ -192,5 +319,5 @@ func get_gem_lines() -> PackedStringArray:
 	var weapon: Array = Gems.bonus_of(gem_kind, gem_tier, true)
 	var shield: Array = Gems.bonus_of(gem_kind, gem_tier, false)
 	lines.append("En armas y ballestas: " + bonus_text(weapon[0], weapon[1]))
-	lines.append("En escudos: " + bonus_text(shield[0], shield[1]))
+	lines.append("En escudos y armaduras: " + bonus_text(shield[0], shield[1]))
 	return lines

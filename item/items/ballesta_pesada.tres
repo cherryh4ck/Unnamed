@@ -20,5 +20,8 @@ weight_class = 2
 min_damage = 10
 max_damage = 18
 attack_speed = 0.6
+required_attributes = {
+"destreza": 14
+}
 value = 85
 metadata/_custom_type_script = "uid://buopyt3nqybl3"

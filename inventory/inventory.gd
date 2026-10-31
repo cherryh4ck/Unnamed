@@ -1,16 +1,37 @@
 extends PanelContainer
 
-## Panel del inventario (tecla I). Arriba el equipo: arma y especial a los
-## costados del personaje; abajo la grilla. El item agarrado sigue al mouse;
-## soltarlo fuera del panel lo tira al piso y cerrar el panel lo devuelve.
+## Panel del inventario (tecla I). Arriba el equipo alrededor del personaje
+## (arma, escudo y las partes de la armadura); abajo la grilla. El item
+## agarrado sigue al mouse; soltarlo fuera del panel lo tira al piso y cerrar
+## el panel lo devuelve. Con el mouse sobre un consumible, W, E, R o T lo
+## ponen en esa ranura del cinturon.
 
 const InventoryGrid := preload("res://inventory/inventory_grid.gd")
 const EquipmentSlot := preload("res://inventory/equipment_slot.gd")
 const CELL: int = InventoryGrid.CELL
-const EQUIP_CELLS := Vector2i(3, 4)
-const HERO_CELLS := Vector2i(4, 4)
+## Lugar de cada slot de equipo, en casillas: [indice, posicion, tamaño,
+## nombre, dibujo del lugar vacio]. El personaje va al medio. Los slots no
+## tienen la forma del item (el icono se achica): asi el panel entra en la
+## pantalla de 648 de alto.
+const EQUIP_LAYOUT := [
+	[inventory_data.HELMET_EQUIP, Vector2(0.0, 0.0), Vector2(2.0, 1.6), "Casco", preload("res://assets/icons/game-icons/lorc/visored-helm.svg")],
+	[inventory_data.AMULET_EQUIP, Vector2(0.5, 1.8), Vector2(1.0, 1.0), "Amuleto", preload("res://assets/icons/game-icons/lorc/gem-pendant.svg")],
+	[inventory_data.CHEST_EQUIP, Vector2(0.0, 3.0), Vector2(2.0, 2.0), "Armadura", preload("res://assets/icons/game-icons/lorc/breastplate.svg")],
+	[inventory_data.MELEE_EQUIP, Vector2(2.2, 0.0), Vector2(2.6, 3.2), "Arma", preload("res://assets/icons/game-icons/lorc/broadsword.svg")],
+	[inventory_data.GLOVES_EQUIP, Vector2(2.7, 3.4), Vector2(1.6, 1.6), "Guantes", preload("res://assets/icons/game-icons/delapouite/gauntlet.svg")],
+	[inventory_data.SPECIAL_EQUIP, Vector2(9.2, 0.0), Vector2(2.6, 3.2), "Escudo o ballesta", preload("res://assets/icons/game-icons/lorc/checked-shield.svg")],
+	[inventory_data.BELT_EQUIP, Vector2(9.3, 3.6), Vector2(2.4, 1.2), "Cinturón", preload("res://assets/icons/game-icons/delapouite/belt-armor.svg")],
+	[inventory_data.RING_EQUIP, Vector2(12.0, 0.0), Vector2(1.0, 1.0), "Anillo", preload("res://assets/icons/game-icons/delapouite/ring.svg")],
+	[inventory_data.RING2_EQUIP, Vector2(13.2, 0.0), Vector2(1.0, 1.0), "Anillo", preload("res://assets/icons/game-icons/delapouite/ring.svg")],
+	[inventory_data.LEGS_EQUIP, Vector2(12.1, 1.2), Vector2(2.0, 1.8), "Grebas", preload("res://assets/icons/game-icons/delapouite/leg-armor.svg")],
+	[inventory_data.BOOTS_EQUIP, Vector2(12.1, 3.2), Vector2(2.0, 1.8), "Botas", preload("res://assets/icons/game-icons/lorc/boots.svg")],
+]
+const HERO_POS := Vector2(5.0, 0.0)
+const HERO_CELLS := Vector2(4.0, 5.0)
+const EQUIP_AREA := Vector2(14.2, 5.0)
 ## Capa de render que solo ve la camara del personaje del inventario.
 const HERO_LAYER: int = 1 << 10
+const BELT_KEYS := ["W", "E", "R", "T"]
 
 var item_grid: Control
 var _message: Label
@@ -51,26 +72,36 @@ func _build() -> void:
 	title.text = "INVENTARIO"
 	title.theme_type_variation = &"HeaderLabel"
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var sort := Button.new()
+	sort.text = "Ordenar"
+	sort.tooltip_text = "Junta lo repetido y acomoda la mochila: equipo, gemas y consumibles."
+	sort.focus_mode = Control.FOCUS_NONE
+	sort.pressed.connect(_on_sort_pressed)
 	var hint := Label.new()
-	hint.text = "I: cerrar"
+	hint.text = "   I: cerrar"
 	hint.theme_type_variation = &"DimLabel"
 	header.add_child(title)
+	header.add_child(sort)
 	header.add_child(hint)
 	box.add_child(header)
 
-	var equipment := HBoxContainer.new()
-	equipment.alignment = BoxContainer.ALIGNMENT_CENTER
-	equipment.add_theme_constant_override("separation", 12)
+	var equipment := Control.new()
+	equipment.custom_minimum_size = EQUIP_AREA * CELL
+	equipment.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	equipment.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(equipment)
-	var melee := EquipmentSlot.new()
-	equipment.add_child(melee)
-	melee.setup(inventory_data.MELEE_EQUIP, EQUIP_CELLS, "ARMA")
-	equipment.add_child(_build_hero_view())
-	var special := EquipmentSlot.new()
-	equipment.add_child(special)
-	special.setup(inventory_data.SPECIAL_EQUIP, EQUIP_CELLS, "ESCUDO O BALLESTA")
+	for entry in EQUIP_LAYOUT:
+		var slot := EquipmentSlot.new()
+		equipment.add_child(slot)
+		slot.setup(entry[0], entry[2], entry[3], entry[4])
+		slot.position = entry[1] * CELL
+	var hero: Control = _build_hero_view()
+	equipment.add_child(hero)
+	hero.position = HERO_POS * CELL
+	hero.size = HERO_CELLS * CELL
 
 	item_grid = InventoryGrid.new()
+	item_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(item_grid)
 
 	var footer := HBoxContainer.new()
@@ -98,7 +129,7 @@ func _build() -> void:
 	box.add_child(_overflow_label)
 
 	var help := Label.new()
-	help.text = "Clic: agarrar y soltar · Doble clic: equipar · Clic derecho: tirar · Fuera del panel: tirar al piso"
+	help.text = "Clic: agarrar · Doble clic: equipar o usar · Clic der.: tirar · F: juntar lo de alrededor · W E R T: al cinturón"
 	help.theme_type_variation = &"DimLabel"
 	help.add_theme_font_size_override("font_size", 12)
 	box.add_child(help)
@@ -123,7 +154,7 @@ func _build() -> void:
 func _build_hero_view() -> Control:
 	var frame := PanelContainer.new()
 	frame.theme_type_variation = &"SlotPanel"
-	frame.custom_minimum_size = Vector2(HERO_CELLS * CELL)
+	frame.custom_minimum_size = HERO_CELLS * CELL
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var container := SubViewportContainer.new()
 	container.stretch = true
@@ -215,8 +246,48 @@ func _on_gold_changed(amount: int) -> void:
 
 func _on_equip_rejected(message: String) -> void:
 	sfx.play("stuck")
+	_show_message(message)
+
+
+func _show_message(message: String, color: Color = Color(0.95, 0.3, 0.25)) -> void:
 	_message.text = message
+	_message.add_theme_color_override("font_color", color)
 	_message_timer = 2.5
+
+
+func _on_sort_pressed() -> void:
+	inventory_data.return_held()
+	if inventory_data.sort_backpack():
+		sfx.play("page")
+	else:
+		sfx.play("stuck")
+		_show_message("Ordenado no entra todo: hacé un poco de lugar primero")
+
+
+# W, E, R o T con el mouse sobre un consumible de la mochila: va a esa ranura
+# del cinturon. Devuelve false si el mouse no esta sobre un item.
+func _assign_belt(index: int) -> bool:
+	var local: Vector2 = item_grid.get_local_mouse_position()
+	if not Rect2(Vector2.ZERO, item_grid.size).has_point(local):
+		return false
+	var slot_index: int = inventory_data.backpack.slot_at(Vector2i((local / CELL).floor()))
+	if slot_index < 0:
+		return false
+	var item: Itemdata = inventory_data.backpack.slots[slot_index].item_data
+	if not inventory_data.set_belt(index, item):
+		sfx.play("stuck", -6.0)
+		_show_message("Eso no va en el cinturón")
+		return true
+	sfx.play_item(item)
+	_show_message("%s: tecla %s" % [item.get_display_name(), BELT_KEYS[index]], Color(0.6, 0.9, 1.0))
+	return true
+
+
+func _belt_action(event: InputEvent) -> int:
+	for i in inventory_data.BELT_SIZE:
+		if event.is_action_pressed("belt_%d" % (i + 1)):
+			return i
+	return -1
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -225,6 +296,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif visible and event.is_action_pressed("ui_cancel"):
 		close_inventory()
+		get_viewport().set_input_as_handled()
+	elif visible and _belt_action(event) >= 0 and _assign_belt(_belt_action(event)):
 		get_viewport().set_input_as_handled()
 	elif visible and inventory_data.held != null and event is InputEventMouseButton \
 			and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:

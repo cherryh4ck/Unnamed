@@ -1,8 +1,11 @@
 extends Control
 
 ## Un item dibujado en la grilla del inventario, del tamaño de su forma:
-## fondo con el color de la rareza, icono y cantidad. Los clics los maneja la
-## grilla (inventory_grid.gd); este control solo da el tooltip.
+## fondo con el color de la rareza (rojo si no se cumplen sus requisitos),
+## icono y cantidad. Los clics los maneja la grilla (inventory_grid.gd); este
+## control solo da el tooltip.
+
+const MISSING_COLOR := Color(0.9, 0.2, 0.15)
 
 var slot_index: int = -1
 var slot: Slotdata
@@ -57,7 +60,10 @@ func _draw() -> void:
 	var rect := Rect2(Vector2(2, 2), size - Vector2(4, 4))
 	var color: Color = slot.item_data.get_rarity_color()
 	var normal: bool = slot.item_data.rarity == Itemdata.Rarity.NORMAL
-	draw_rect(rect, Color(color, 0.06 if normal else 0.16))
+	if slot.item_data.is_equipment() and not slot.item_data.meets_requirements():
+		draw_rect(rect, Color(MISSING_COLOR, 0.3))
+	else:
+		draw_rect(rect, Color(color, 0.06 if normal else 0.16))
 	draw_rect(rect, Color(color, 0.18 if normal else 0.55), false, 1.0)
 
 
@@ -74,6 +80,10 @@ func _make_custom_tooltip(_for_text: String) -> Object:
 	var hint: String = "Clic: agarrar · Clic derecho: " + right_click
 	if slot.item_data.is_equipment():
 		hint = "Clic: agarrar · Doble clic: equipar · Clic derecho: " + right_click
-	elif slot.item_data.item_type == Itemdata.ItemType.POTION:
+	elif slot.item_data.is_health_potion():
 		hint = "Doble clic o Q: beber · Clic derecho: " + right_click
+	elif slot.item_data.is_consumable():
+		var key: int = inventory_data.belt.find(slot.item_data.resource_path)
+		var belt_hint: String = " o %s" % ["W", "E", "R", "T"][key] if key >= 0 else ""
+		hint = "Doble clic%s: usar · W E R T: al cinturón · Clic derecho: %s" % [belt_hint, right_click]
 	return ItemTooltip.build(slot.item_data, slot.quantity, hint)

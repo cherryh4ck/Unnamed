@@ -1,7 +1,8 @@
 extends PanelContainer
 
 ## Pantalla de personaje (tecla C): nivel, experiencia, atributos con puntos
-## para repartir y los stats de combate que resultan de ellos y del equipo.
+## para repartir, los stats de combate que resultan de ellos y del equipo, y
+## los efectos especiales y sets que estan activos.
 
 const ATTRIBUTES := {
 	"fuerza": ["Fuerza", "+2% de daño por punto."],
@@ -9,7 +10,7 @@ const ATTRIBUTES := {
 	"vitalidad": ["Vitalidad", "+4 de vida máxima, +0.5 de defensa y más regeneración."],
 	"concentracion": ["Concentración", "Las habilidades se recargan más rápido y el daño mágico, de veneno y de fuego sube un 1,5% por punto."],
 }
-const DERIVED := ["Vida", "Daño", "Daño mágico", "Daño de veneno", "Daño de fuego", "Velocidad de ataque", "Crítico",
+const DERIVED := ["Vida", "Daño", "Daño por segundo", "Daño mágico", "Daño de veneno", "Daño de fuego", "Velocidad de ataque", "Crítico",
 		"Defensa", "Res. a la magia", "Res. al veneno", "Res. al fuego", "Bloqueo", "Regeneración", "Recarga de habilidades"]
 ## Filas que van con el color de su tipo de daño.
 const DERIVED_TYPES := {
@@ -27,6 +28,8 @@ const DERIVED_TYPES := {
 var _value_labels: Dictionary = {}
 var _plus_buttons: Dictionary = {}
 var _derived_labels: Dictionary = {}
+var _derived_names: Dictionary = {}
+var _effects_label: Label
 
 
 func _ready() -> void:
@@ -69,8 +72,18 @@ func _ready() -> void:
 		derived_grid.add_child(name_label)
 		derived_grid.add_child(value_label)
 		_derived_labels[stat_name] = value_label
+		_derived_names[stat_name] = name_label
 
 	derived_grid.add_theme_constant_override("v_separation", 0)
+	_derived_labels["Daño por segundo"].tooltip_text = "Promedio del ataque básico, con los críticos y el daño elemental del equipo."
+	_derived_labels["Daño por segundo"].mouse_filter = Control.MOUSE_FILTER_PASS
+	_effects_label = Label.new()
+	_effects_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_effects_label.custom_minimum_size.x = 300.0
+	_effects_label.add_theme_font_size_override("font_size", 13)
+	_effects_label.add_theme_color_override("font_color", Itemdata.SPECIAL_COLOR)
+	derived_grid.add_sibling(_effects_label)
+	inventory_data.equipment_changed.connect(refresh.unbind(1))
 	player_stats.stats_changed.connect(refresh)
 	player_stats.xp_changed.connect(refresh.unbind(2))
 	player_stats.health_changed.connect(refresh.unbind(2))
@@ -132,19 +145,42 @@ func refresh() -> void:
 
 	_derived_labels["Vida"].text = "%d / %d" % [ceili(player_stats.health), roundi(player_stats.get_max_health())]
 	_derived_labels["Daño"].text = "%d - %d" % [player_stats.get_min_damage(), player_stats.get_max_damage()]
+	_derived_labels["Daño por segundo"].text = "%.1f" % player_stats.get_dps()
 	_derived_labels["Velocidad de ataque"].text = "%.2f /s" % player_stats.get_attack_speed()
 	_derived_labels["Crítico"].text = "%.1f%%" % player_stats.get_crit_chance()
 	_derived_labels["Defensa"].text = "%d (-%d%% físico)" % [player_stats.get_defense(), roundi(player_stats.get_resistance(Damage.Type.PHYSICAL))]
 	for stat_name in DERIVED_TYPES:
 		var type: int = DERIVED_TYPES[stat_name]
 		if stat_name.begins_with("Daño"):
+			# Solo se muestran si el equipo da ese daño (asi la hoja entra en
+			# la pantalla junto con los efectos del equipo).
 			var amount: float = player_stats.get_elemental_damage(type)
-			_derived_labels[stat_name].text = "+%d" % roundi(amount) if amount > 0.0 else "—"
+			_derived_labels[stat_name].text = "+%d" % roundi(amount)
+			_derived_labels[stat_name].visible = amount > 0.0
+			_derived_names[stat_name].visible = amount > 0.0
 		else:
 			_derived_labels[stat_name].text = "%d%%" % roundi(player_stats.get_resistance(type))
 	_derived_labels["Bloqueo"].text = "%d%%" % roundi(player_stats.get_block_chance())
 	_derived_labels["Regeneración"].text = "%.1f /s" % player_stats.get_health_regen()
 	_derived_labels["Recarga de habilidades"].text = "-%d%%" % roundi((1.0 - player_stats.get_cooldown_multiplier()) * 100.0)
+	_refresh_effects()
+
+
+# Efectos de los unicos puestos (sumados) y los sets con al menos dos piezas.
+func _refresh_effects() -> void:
+	var lines := PackedStringArray()
+	for key in Itemdata.SPECIAL_TEXT:
+		var value: float = player_stats.get_special(key)
+		if value > 0.0:
+			var text: String = str(roundi(value)) if is_equal_approx(value, roundf(value)) else "%.1f" % value
+			lines.append("• " + Itemdata.SPECIAL_TEXT[key] % text)
+	var equipped: Array[Itemdata] = inventory_data.get_equipped_items()
+	for set_id in ItemSets.SETS:
+		var have: int = ItemSets.count_equipped(set_id, equipped)
+		if have >= 2:
+			lines.append("• %s: %d de %d piezas" % [ItemSets.SETS[set_id].name, have, ItemSets.SETS[set_id].pieces.size()])
+	_effects_label.visible = not lines.is_empty()
+	_effects_label.text = "Efectos del equipo\n" + "\n".join(lines)
 
 
 func _on_plus_pressed(attribute: String) -> void:

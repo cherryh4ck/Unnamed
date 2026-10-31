@@ -6,7 +6,9 @@ extends "res://scripts/npc/npc.gd"
 ## Cantidad de items de equipo a la venta (ademas de las pociones).
 const STOCK_ITEMS: int = 10
 const STOCK_POTIONS: int = 5
-const MAX_STOCK: int = 16
+## Cuantos de los otros consumibles (Loot.CONSUMABLES) trae cada dia.
+const STOCK_CONSUMABLES: int = 2
+const MAX_STOCK: int = 18
 ## Los items que el jugador vende quedan a la venta por este multiplicador del valor.
 const BUYBACK_MARKUP: float = 1.0
 
@@ -26,7 +28,9 @@ func interact() -> void:
 	super()
 
 
-## El stock se renueva cada dia del juego o cuando el jugador sube de nivel.
+## El stock se renueva cada dia del juego o cuando el jugador sube de nivel:
+## pociones de vida, un par de los otros consumibles y equipo (armas,
+## escudos y armadura, con el nivel del jugador).
 func _refresh_stock_if_needed() -> void:
 	if _stock_day == world_time.day and _stock_level == player_stats.level:
 		return
@@ -34,6 +38,10 @@ func _refresh_stock_if_needed() -> void:
 	_stock_level = player_stats.level
 	stock.clear()
 	stock.append({"item": Loot.POTION, "quantity": STOCK_POTIONS})
+	var consumables: Array = Loot.CONSUMABLES.keys()
+	consumables.shuffle()
+	for path in consumables.slice(0, STOCK_CONSUMABLES):
+		stock.append({"item": load(path), "quantity": randi_range(2, 4)})
 	for i in STOCK_ITEMS:
 		# El comerciante no vende unicos ni piezas de set.
 		var rarity: int = [0, 0, 0, 1, 1, 2].pick_random()
@@ -74,7 +82,7 @@ func sell(slot_index: int) -> int:
 	var gained: int = sell_price(item) * slot.quantity
 	inventory_data.remove_slot(slot_index)
 	player_stats.add_gold(gained)
-	# Lo vendido queda a la venta (recompra), salvo el oro y las pociones repetidas.
-	if item.item_type != Itemdata.ItemType.POTION and stock.size() < MAX_STOCK:
+	# Lo vendido queda a la venta (recompra), salvo los consumibles repetidos.
+	if not item.is_consumable() and stock.size() < MAX_STOCK:
 		stock.append({"item": item, "quantity": slot.quantity})
 	return gained

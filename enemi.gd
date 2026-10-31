@@ -642,7 +642,7 @@ func _attack() -> void:
 	if data.shoots:
 		_shoot(to_player.normalized(), parts)
 	elif to_player.length() <= data.attack_range * 1.3 and player.has_method("take_hit"):
-		player.take_hit(parts)
+		player.take_hit(parts, self)
 
 
 # Flecha hacia donde esta el jugador ahora: si se mueve, la esquiva.
@@ -689,9 +689,10 @@ func _on_animation_finished(anim_name: StringName) -> void:
 
 # --- Daño, resaltado y muerte ---------------------------------------------
 
-## Recibe un golpe: {parts: {Damage.Type: cantidad}, crit}. La defensa y las
-## resistencias del tipo de enemigo reducen cada parte; el veneno y parte del
-## fuego quedan pegando por tiempo.
+## Recibe un golpe: {parts: {Damage.Type: cantidad}, crit, player}. La defensa
+## y las resistencias del tipo de enemigo reducen cada parte; el veneno y parte
+## del fuego quedan pegando por tiempo. Los golpes del jugador (player = true,
+## ver player_stats.roll_hit) disparan los efectos de sus unicos.
 func take_hit(hit: Dictionary) -> void:
 	if dead:
 		return
@@ -714,6 +715,8 @@ func take_hit(hit: Dictionary) -> void:
 		current_health = maxf(current_health - amount, 0.0)
 		_flash_time = 0.12
 		_react(hit, amount)
+		if hit.get("player", false):
+			player_stats.on_hit_dealt(self, amount)
 	elif result.poison > 0.0 and not was_poisoned:
 		floating_text.spawn(head, "Envenenado", Damage.COLORS[Damage.Type.POISON], 18)
 

@@ -89,7 +89,10 @@ func play(sound_name: String, volume_db: float = 0.0, pitch_variation: float = 0
 func play_item(item: Itemdata) -> void:
 	if item == null:
 		return
-	if item.is_equipment():
+	# Anillos y amuletos suenan como joyas; el resto del equipo, a metal.
+	if item.item_type == Itemdata.ItemType.RING or item.item_type == Itemdata.ItemType.AMULET:
+		play("drag_ring")
+	elif item.is_equipment():
 		play("drag_weapon")
 	elif item.item_type == Itemdata.ItemType.POTION:
 		play("drag_potion")

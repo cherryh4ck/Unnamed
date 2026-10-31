@@ -11,6 +11,8 @@ signal stats_changed
 signal buffs_changed
 signal gold_changed(amount: int)
 signal potion_used(amount: float)
+## Se uso un consumible que no es la pocion de vida (antidoto, pergamino...).
+signal consumable_used(item: Itemdata)
 signal died
 signal respawned
 ## Daño de veneno o quemadura que acaba de restar (para el texto flotante).
@@ -39,6 +41,15 @@ const SPELL_DAMAGE_PER_LEVEL := Vector2(1.0, 1.5)
 ## Ataque basico del mago sin arma: rayo arcano de este porcentaje del hechizo.
 const SPELL_ATTACK_MULTIPLIER: float = 0.6
 const SPELL_ATTACK_SPEED: float = 1.0
+## Consumibles (ver use_consumable).
+const ANTIDOTE_DURATION: float = 20.0
+const FIRE_POTION_RESIST: float = 40.0
+const FIRE_POTION_DURATION: float = 60.0
+const REGEN_POTION_SHARE: float = 0.4
+const REGEN_POTION_DURATION: float = 12.0
+## Efectos de los unicos: radio del aura de fuego y cada cuanto quema.
+const FIRE_AURA_RADIUS: float = 330.0
+const FIRE_AURA_TICK: float = 0.5
 
 ## Clase del personaje (ver scripts/player/player_classes.gd).
 var class_id: String = PlayerClasses.DEFAULT
@@ -60,6 +71,7 @@ var buffs: Dictionary = {}
 ## Veneno y quemadura que tiene encima el personaje.
 var status := StatusEffects.new()
 var _potion_timer: float = 0.0
+var _aura_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -90,6 +102,7 @@ func _process(delta: float) -> void:
 	if dead:
 		return
 	_tick_status(delta)
+	_tick_fire_aura(delta)
 	# Envenenado no se regenera vida.
 	if dead or health >= get_max_health() or status.is_poisoned():
 		return
@@ -110,32 +123,101 @@ func add_gold(amount: int) -> void:
 	gold_changed.emit(gold)
 
 
+## Pociones de vida en la mochila (las de la tecla Q).
 func count_potions() -> int:
 	var total: int = 0
 	for slot in inventory_data.slots:
-		if slot and slot.item_data and slot.item_data.item_type == Itemdata.ItemType.POTION:
+		if slot and slot.item_data and slot.item_data.is_health_potion():
 			total += slot.quantity
 	return total
 
 
-## Bebe una pocion del inventario. Devuelve un texto con el motivo si no pudo
-## (vacio si la bebio).
+## Bebe una pocion de vida del inventario. Devuelve un texto con el motivo si
+## no pudo (vacio si la bebio).
 func use_potion() -> String:
+	for slot in inventory_data.slots:
+		if slot and slot.item_data and slot.item_data.is_health_potion():
+			return use_consumable(slot.item_data)
+	return "Estás muerto" if dead else "No tenés pociones"
+
+
+## Usa un consumible de la mochila: pocion de vida, antidoto, resistencia al
+## fuego, regeneracion o el pergamino de retorno. Devuelve el motivo si no
+## pudo ("" si lo uso).
+func use_consumable(item: Itemdata) -> String:
 	if dead:
 		return "Estás muerto"
-	if _potion_timer > 0.0:
-		return ""
-	if health >= get_max_health():
-		return "Vida al máximo"
-	for slot in inventory_data.slots:
-		if slot and slot.item_data and slot.item_data.item_type == Itemdata.ItemType.POTION:
-			inventory_data.remove_item(slot.item_data, 1)
+	if item == null or inventory_data.count_item(item) <= 0:
+		return "No tenés"
+	match item.use_effect:
+		"":
+			if _potion_timer > 0.0:
+				return ""
+			if health >= get_max_health():
+				return "Vida al máximo"
 			var amount: float = minf(get_max_health() * POTION_HEAL_PERCENT + POTION_HEAL_FLAT, get_max_health() - health)
+			inventory_data.remove_item(item, 1)
 			heal(amount)
 			_potion_timer = POTION_COOLDOWN
 			potion_used.emit(amount)
 			return ""
-	return "No tenés pociones"
+		"antidoto":
+			status.poison_left = 0.0
+			status.poison_time = 0.0
+			add_buff("antidoto", {"name": item.name, "icon": item.texture, "duration": ANTIDOTE_DURATION, "poison_immune": 1.0})
+		"res_fuego":
+			add_buff("pocion_fuego", {"name": item.name, "icon": item.texture, "duration": FIRE_POTION_DURATION,
+				Damage.resist_key(Damage.Type.FIRE): FIRE_POTION_RESIST})
+		"regeneracion":
+			add_buff("pocion_regeneracion", {"name": item.name, "icon": item.texture, "duration": REGEN_POTION_DURATION,
+				"regen": get_max_health() * REGEN_POTION_SHARE / REGEN_POTION_DURATION})
+		"retorno":
+			var portal: Node3D = _last_portal()
+			var player: Node3D = get_tree().get_first_node_in_group("player")
+			if portal == null or player == null:
+				return "No descubriste ningún portal"
+			# Igual que viajar por el portal: con la pantalla de carga (y se
+			# cierra el inventario si se leyo desde ahi).
+			var inventory: Control = get_tree().get_first_node_in_group("inventory_panel")
+			if inventory and inventory.visible:
+				inventory.close_inventory()
+			loading_screen.travel(portal.display_name, player.teleport_to.bind(portal.arrival_point()))
+		_:
+			return "No se puede usar"
+	inventory_data.remove_item(item, 1)
+	consumable_used.emit(item)
+	return ""
+
+
+## Usa el consumible y muestra el resultado sobre el personaje (lo usan el
+## cinturon y el doble clic del inventario). La pocion de vida pasa por el
+## jugador, que ya muestra la curacion.
+func try_consume(item: Itemdata) -> void:
+	var player: Node3D = get_tree().get_first_node_in_group("player")
+	if item.is_health_potion() and player:
+		player.drink_potion()
+		return
+	var reason: String = use_consumable(item)
+	if player == null:
+		return
+	var head: Vector3 = player.global_position + Vector3.UP * 450.0
+	if not reason.is_empty():
+		floating_text.spawn(head, reason, Color(0.7, 0.7, 0.7), 16)
+		sfx.play("stuck", -6.0)
+	elif item.use_effect != "retorno":
+		floating_text.spawn(head, item.name, Color(0.6, 0.9, 1.0), 18)
+		sfx.play("lifeleech")
+
+
+# El ultimo portal descubierto (su nodo en el mundo).
+func _last_portal() -> Node3D:
+	if world_map.discovered_portals.is_empty():
+		return null
+	var id: String = world_map.discovered_portals.back()
+	for portal in get_tree().get_nodes_in_group("portals"):
+		if portal.portal_id == id:
+			return portal
+	return null
 
 
 # --- Mejoras temporales ----------------------------------------------------
@@ -221,13 +303,19 @@ func get_attribute(key: String) -> int:
 
 func get_equipment_bonus(key: String) -> float:
 	var total: float = 0.0
-	var equipped: Array = []
-	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
-		var item: Itemdata = inventory_data.get_equipped(equip_index)
-		if item:
-			total += item.get_bonus(key)
-			equipped.append(item)
+	var equipped: Array[Itemdata] = inventory_data.get_equipped_items()
+	for item in equipped:
+		total += item.get_bonus(key)
 	return total + ItemSets.active_bonus(key, equipped)
+
+
+## Suma de un efecto especial de los unicos equipados (ver Itemdata.SPECIAL_TEXT).
+func get_special(key: String) -> float:
+	var total: float = 0.0
+	for item in inventory_data.get_equipped_items():
+		if item.special == key:
+			total += item.special_value
+	return total
 
 
 func get_max_health() -> float:
@@ -235,7 +323,7 @@ func get_max_health() -> float:
 
 
 func get_health_regen() -> float:
-	return get_attribute("vitalidad") * REGEN_PER_VITALITY + get_equipment_bonus("regeneracion")
+	return get_attribute("vitalidad") * REGEN_PER_VITALITY + get_equipment_bonus("regeneracion") + _buff_sum("regen")
 
 
 ## Arma con la que se ataca: si hay una ballesta equipada tiene prioridad
@@ -279,7 +367,7 @@ func get_elemental_damage(type: int) -> float:
 func get_resistance(type: int) -> float:
 	if type == Damage.Type.PHYSICAL:
 		return (1.0 - Damage.armor_multiplier(get_defense())) * 100.0
-	return minf(get_equipment_bonus(Damage.resist_key(type)) + _buff_sum("resist"), Damage.RESIST_CAP)
+	return minf(get_equipment_bonus(Damage.resist_key(type)) + _buff_sum("resist") + _buff_sum(Damage.resist_key(type)), Damage.RESIST_CAP)
 
 
 ## Daño base de los hechizos (sin la Concentracion ni la habilidad).
@@ -316,16 +404,24 @@ func get_crit_chance() -> float:
 
 func get_defense() -> int:
 	var total: float = get_attribute("vitalidad") * 0.5 + _buff_sum("defense") + get_equipment_bonus("defensa")
-	for equip_index in [inventory_data.MELEE_EQUIP, inventory_data.SPECIAL_EQUIP]:
-		var item: Itemdata = inventory_data.get_equipped(equip_index)
-		if item:
-			total += item.defense
+	for item in inventory_data.get_equipped_items():
+		total += item.defense
 	return roundi(total)
 
 
 func get_block_chance() -> float:
 	var shield: Itemdata = inventory_data.get_equipped(inventory_data.SPECIAL_EQUIP)
 	return shield.block_chance if shield else 0.0
+
+
+## Daño por segundo promedio del ataque basico (con los criticos y el daño
+## elemental del equipo), para la hoja de personaje.
+func get_dps() -> float:
+	var hit: float = (get_min_damage() + get_max_damage()) / 2.0
+	for type in Damage.ELEMENTS:
+		hit += get_elemental_damage(type)
+	var crit: float = clampf(get_crit_chance(), 0.0, 100.0) / 100.0
+	return hit * (1.0 + crit * (CRIT_MULTIPLIER - 1.0)) * get_attack_speed()
 
 
 ## Multiplicador del tiempo de recarga de habilidades (menos es mejor).
@@ -337,7 +433,8 @@ func get_cooldown_multiplier() -> float:
 
 ## Tira el daño de un golpe: el fisico del arma mas el elemental del equipo,
 ## todo por multiplier (el de la habilidad). conversion pasa esa parte del
-## fisico a convert_to. Devuelve {parts: {Damage.Type: cantidad}, crit}.
+## fisico a convert_to. Devuelve {parts: {Damage.Type: cantidad}, crit,
+## player} (player: lo pego el personaje, para los efectos de los unicos).
 func roll_hit(multiplier: float = 1.0, convert_to: int = Damage.Type.PHYSICAL, conversion: float = 0.0) -> Dictionary:
 	var crit: bool = randf() * 100.0 < get_crit_chance()
 	var scale: float = multiplier * (CRIT_MULTIPLIER if crit else 1.0)
@@ -347,7 +444,7 @@ func roll_hit(multiplier: float = 1.0, convert_to: int = Damage.Type.PHYSICAL, c
 		var extra: float = get_elemental_damage(type)
 		if extra > 0.0:
 			parts[type] = parts.get(type, 0.0) + extra * randf_range(0.8, 1.2) * scale
-	return {"parts": parts, "crit": crit}
+	return {"parts": parts, "crit": crit, "player": true}
 
 
 ## Tirada de un hechizo: daño base del nivel por la Concentracion y la
@@ -361,7 +458,7 @@ func roll_spell(multiplier: float, type: int) -> Dictionary:
 		var extra: float = get_elemental_damage(element)
 		if extra > 0.0:
 			parts[element] = parts.get(element, 0.0) + extra * randf_range(0.8, 1.2) * scale
-	return {"parts": parts, "crit": crit}
+	return {"parts": parts, "crit": crit, "player": true}
 
 
 ## Tirada de una habilidad: hechizo o golpe con el arma, segun la habilidad.
@@ -387,17 +484,48 @@ func get_resistances() -> Dictionary:
 
 ## Aplica un golpe recibido ({Damage.Type: cantidad}). Devuelve {blocked,
 ## amount, type} con el daño que entro de una (el veneno se resta despues).
-func take_hit(parts: Dictionary) -> Dictionary:
+## attacker: el enemigo que pego cuerpo a cuerpo (null con flechas), al que
+## las espinas le devuelven parte del daño.
+func take_hit(parts: Dictionary, attacker: Node3D = null) -> Dictionary:
 	if dead:
 		return {"blocked": false, "amount": 0.0, "type": Damage.Type.PHYSICAL}
 	if randf() * 100.0 < get_block_chance():
 		return {"blocked": true, "amount": 0.0, "type": Damage.Type.PHYSICAL}
 
 	var result: Dictionary = Damage.mitigate(parts, get_defense(), get_resistances())
-	status.add_poison(result.poison)
+	if _buff_sum("poison_immune") <= 0.0:
+		status.add_poison(result.poison)
 	status.add_burn(result.burn)
 	_lose_health(result.direct)
+	var thorns: float = get_special("espinas")
+	if thorns > 0.0 and result.direct > 0.0 and not dead and is_instance_valid(attacker):
+		ItemEffects.thorns(attacker, result.direct * thorns / 100.0)
 	return {"blocked": false, "amount": result.direct, "type": result.type}
+
+
+## Lo llama el combate al pegarle a un enemigo, con el daño que le saco:
+## robo de vida, vida por golpe y el rayo en cadena de los unicos.
+func on_hit_dealt(target: Node3D, damage: float) -> void:
+	if dead or damage <= 0.0:
+		return
+	var leech: float = damage * get_special("robo_vida") / 100.0 + get_special("vida_golpe")
+	if leech > 0.0:
+		heal(leech)
+	var chain: float = get_special("cadena")
+	if chain > 0.0 and randf() * 100.0 < chain:
+		ItemEffects.chain_lightning(get_tree(), target, damage * ItemEffects.CHAIN_SHARE)
+
+
+# Aura de fuego de los unicos: quema a los enemigos cerca del personaje.
+func _tick_fire_aura(delta: float) -> void:
+	var dps: float = get_special("aura_fuego")
+	if dps <= 0.0:
+		return
+	_aura_timer += delta
+	if _aura_timer < FIRE_AURA_TICK:
+		return
+	_aura_timer = 0.0
+	ItemEffects.fire_aura(get_tree(), FIRE_AURA_RADIUS, dps * FIRE_AURA_TICK)
 
 
 func _lose_health(amount: float) -> void:
