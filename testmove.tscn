@@ -48,6 +48,7 @@ albedo_color = Color(0.6541547, 0.9851536, 0.4236848, 1)
 script = ExtResource("33_fader")
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." unique_id=707424062 groups=["player"]]
+collision_mask = 17
 script = ExtResource("1_3b3oy")
 
 [node name="Player" type="Node3D" parent="CharacterBody3D" unique_id=616383495]
@@ -61,7 +62,7 @@ transform = Transform3D(200, 0, 0, 0, 200, 0, 0, 0, 200, 0, 236.3157, 0)
 shape = SubResource("CapsuleShape3D_g4v7s")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="CharacterBody3D" unique_id=1106145502]
-path_desired_distance = 20.0
+path_desired_distance = 40.0
 target_desired_distance = 20.0
 path_max_distance = 300.0
 

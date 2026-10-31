@@ -6,12 +6,16 @@ extends Node3D
 ##   piezas del fuerte),
 ## - ajusta los materiales segun style para que todo combine,
 ## - la suma a la capa del mapa (la "foto" desde arriba del mapa grande),
-## - si es alta, se anota para desvanecerse cuando tapa al jugador,
+## - si es alta (o viene marcada), se anota para desvanecerse cuando tapa al
+##   jugador,
 ## - si es un fuego (fogata, brasero), le agrega llamas y luz.
 
 enum Style { NONE, STONE, IRON, TINT }
 
 const MAP_LAYER: int = 1 << 15
+## Las piezas mas altas que esto (un poco mas de la mitad del jugador) se
+## desvanecen al taparlo aunque no vengan marcadas: rocas grandes, estatuas...
+const AUTO_FADE_HEIGHT: float = 230.0
 # Bloques de piedra del fuerte: lapidas y criptas parecen de piedra tallada.
 const STONE_ALBEDO := preload("res://assets/props/modular_fort_01/textures/modular_fort_01_wall_diff_1k.jpg")
 const STONE_NORMAL := preload("res://assets/props/modular_fort_01/textures/modular_fort_01_wall_nor_gl_1k.jpg")
@@ -43,7 +47,7 @@ func _ready() -> void:
 		_restyle(mesh)
 		meshes.append(mesh)
 	world_bounds = _compute_bounds()
-	if fade_when_occluding:
+	if fade_when_occluding or world_bounds.size.y > AUTO_FADE_HEIGHT:
 		add_to_group("occluders")
 	if is_fire:
 		_add_fire()

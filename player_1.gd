@@ -26,7 +26,7 @@ var attack_index: int = 0
 ## Animacion de ataque o habilidad en curso (para saber cuando termina).
 var action_animation: String = ""
 var attacking: bool = false
-var rotation_speed: float = 8.0
+var rotation_speed: float = 14.0
 
 
 func _ready() -> void:
@@ -96,7 +96,8 @@ func _play_base() -> void:
 		anim_name = anims.ride_move if moving else anims.ride_idle
 	elif moving:
 		anim_name = anims.run
-		speed = character.speed / (anims.run_speed * MODEL_SCALE)
+		# Al arrancar y frenar las piernas van al ritmo de la velocidad real.
+		speed = maxf(character.ground_speed(), character.speed * 0.5) / (anims.run_speed * MODEL_SCALE)
 	if anim_player.current_animation != anim_name:
 		anim_player.play(anim_name, BLEND)
 	anim_player.speed_scale = speed

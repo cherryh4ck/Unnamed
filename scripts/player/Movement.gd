@@ -29,6 +29,11 @@ const PICKUP_REACH: float = 170.0
 const NPC_REACH: float = 300.0
 ## Capa de fisica de los items en el piso (ver item/pickup.gd).
 const PICKUP_MASK: int = 4
+## Arranque y frenada (unidades por segundo al cuadrado): llega a correr del
+## todo en un decimo de segundo, sin saltos bruscos.
+const ACCELERATION: float = 7000.0
+## Al acercarse al destino frena de a poco en esta distancia.
+const ARRIVE_DISTANCE: float = 110.0
 
 var target_enemy: Node3D = null
 var hovered_enemy: Node3D = null
@@ -81,10 +86,16 @@ func _ready() -> void:
 	inventory_data.item_dropped.connect(_on_item_dropped)
 	player_stats.potion_used.connect(_on_potion_used)
 	player_stats.dot_damaged.connect(_on_dot_damaged)
+	nav_agent.path_changed.connect(_on_path_changed)
 
 
 func is_moving() -> bool:
 	return _moving
+
+
+## Velocidad en el plano (la usa la animacion de correr para no patinar).
+func ground_speed() -> float:
+	return Vector2(velocity.x, velocity.z).length()
 
 
 func _physics_process(delta: float) -> void:
@@ -105,9 +116,10 @@ func _physics_process(delta: float) -> void:
 		if click_reference:
 			click_reference.hide()
 		tiempo_paso = intervalo_pasos
+		_brake(delta)
 		return
 
-	move_to_point(speed)
+	move_to_point(speed, delta)
 	_moving = true
 
 	tiempo_paso += delta
@@ -129,11 +141,29 @@ func reproducir_paso() -> void:
 	reproductor_pasos.play()
 
 
-func move_to_point(move_speed: float) -> void:
-	var target_pos = nav_agent.get_next_path_position()
-	var direction = global_position.direction_to(target_pos)
+# Sigue el camino acelerando y girando de a poco (la velocidad se va
+# acomodando hacia la direccion nueva en vez de cambiar de golpe), y frena al
+# llegar si es un destino en el piso.
+func move_to_point(move_speed: float, delta: float) -> void:
+	var direction: Vector3 = global_position.direction_to(nav_agent.get_next_path_position())
+	var goal_speed: float = move_speed
+	if target_enemy == null and target_npc == null and target_pickup == null and not _holding_move:
+		var final: Vector3 = nav_agent.get_final_position()
+		var remaining: float = Vector2(final.x - global_position.x, final.z - global_position.z).length()
+		goal_speed *= clampf(remaining / ARRIVE_DISTANCE, 0.35, 1.0)
+	var flat := Vector3(velocity.x, 0.0, velocity.z).move_toward(Vector3(direction.x, 0.0, direction.z) * goal_speed, ACCELERATION * delta)
+	velocity = Vector3(flat.x, direction.y * goal_speed, flat.z)
+	move_and_slide()
 
-	velocity = direction * move_speed
+
+# Sin destino: termina de frenar en vez de pararse en seco.
+func _brake(delta: float) -> void:
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	if flat.length() < 1.0:
+		velocity = Vector3.ZERO
+		return
+	flat = flat.move_toward(Vector3.ZERO, ACCELERATION * delta)
+	velocity = Vector3(flat.x, 0.0, flat.z)
 	move_and_slide()
 
 
@@ -275,7 +305,7 @@ func _handle_click() -> void:
 	target_enemy = null
 	_holding_move = true
 	_hold_timer = 0.0
-	_move_to(result.position)
+	_move_to_ground(result.position)
 
 
 # Mantener el clic apretado sigue moviendo al personaje hacia el mouse.
@@ -291,7 +321,7 @@ func _update_hold(delta: float) -> void:
 	_hold_timer = 0.0
 	var result: Dictionary = _raycast_mouse()
 	if not result.is_empty() and _enemy_from_collider(result.collider) == null:
-		_move_to(result.position)
+		_move_to_ground(result.position)
 
 
 ## Intenta usar la habilidad del slot (teclas 1-5 o clic en la barra).
@@ -380,6 +410,18 @@ func _move_to(point: Vector3) -> void:
 		click_reference.global_position = point
 		click_reference.show()
 	nav_agent.target_position = point
+
+
+# Clic en el piso (o en una roca, un arbol, el agua): va al punto caminable
+# mas cercano. Si ni asi se puede llegar (otra isla), la marca se corre a
+# donde de verdad termina el camino (ver _on_path_changed).
+func _move_to_ground(point: Vector3) -> void:
+	_move_to(NavigationServer3D.map_get_closest_point(get_world_3d().navigation_map, point))
+
+
+func _on_path_changed() -> void:
+	if click_reference and click_reference.visible and target_enemy == null:
+		click_reference.global_position = nav_agent.get_final_position()
 
 
 func _update_hover() -> void:

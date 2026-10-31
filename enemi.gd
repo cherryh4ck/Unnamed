@@ -5,18 +5,37 @@ extends CharacterBody3D
 ## SPAWNING: animacion de aparicion (salir del suelo); no se mueve ni ataca.
 ## IDLE/WANDER: da vueltas cerca de donde aparecio.
 ## CHASE/ATTACK: persigue y pega al jugador cuando lo ve o cuando recibe un golpe.
-## RETURN: si se aleja demasiado de su zona vuelve y se cura (no se lo puede "arrastrar").
+## Lo sigue mientras no se le escape lejos; si lo pierde, se queda por ahi
+## (no vuelve corriendo a curarse). Fuera de combate se cura de a poco.
+## Se mueve por la navegacion y esquiva a los otros enemigos (avoidance);
+## cerca del jugador va derecho hacia su lado, asi entre varios lo rodean.
 ## Los que crea una zona (zona_spawn.gd) desaparecen cuando el jugador se aleja.
 
 signal died
 
-enum State { SPAWNING, IDLE, WANDER, CHASE, ATTACK, RETURN, DEAD }
+enum State { SPAWNING, IDLE, WANDER, CHASE, ATTACK, DEAD }
 
 const DEFAULT_DATA: EnemyData = preload("res://enemies/types/esqueleto.tres")
 const BOLT := preload("res://scripts/skills/bolt.gd")
 const GRAVITY: float = 2000.0
 const WANDER_RADIUS: float = 350.0
-const LEASH_RANGE: float = 2400.0
+## Si el jugador se le escapa mas lejos que esto durante LOSE_TIME segundos,
+## deja de perseguirlo.
+const LOSE_RANGE: float = 2600.0
+const LOSE_TIME: float = 3.0
+## Fuera de combate, despues de REGEN_DELAY segundos, recupera esta parte de
+## la vida por segundo.
+const REGEN_DELAY: float = 10.0
+const REGEN_RATE: float = 0.02
+## Mas cerca que esto del jugador va derecho en vez de seguir el camino.
+const DIRECT_RANGE: float = 550.0
+## Cuantas veces su velocidad gana o pierde por segundo (arranque y frenada).
+const ACCELERATION: float = 8.0
+## Si en este tiempo casi no avanzo queriendo moverse, esta trabado.
+const STUCK_CHECK: float = 0.6
+## Capa de fisica de los enemigos: chocan con el mundo y el jugador, pero no
+## entre ellos (se esquivan con la navegacion en vez de empujarse).
+const ENEMY_LAYER: int = 1 << 4
 ## Radio en el que un enemigo golpeado alerta a sus compañeros.
 const PACK_ALERT_RANGE: float = 700.0
 const REPATH_DISTANCE: float = 40.0
@@ -61,6 +80,20 @@ var _status_pulse: float = 0.0
 ## Daño por tiempo acumulado que todavia no llego a 1 (para el numero flotante).
 var _dot_shown: Dictionary = {}
 var _despawn_timer: float = DESPAWN_CHECK
+## Segundos que lleva el jugador fuera de LOSE_RANGE mientras lo persigue.
+var _lose_timer: float = 0.0
+## Segundos desde la ultima vez que peleo (para curarse).
+var _calm_time: float = REGEN_DELAY
+## Destrabarse: paso al costado y un rato siguiendo solo el camino.
+var _stuck_timer: float = 0.0
+var _stuck_from: Vector3
+var _sidestep_timer: float = 0.0
+var _sidestep_dir := Vector3.ZERO
+var _path_only_timer: float = 0.0
+## Lugar alrededor del jugador al que va antes de ponerse a pegar, y cuanto
+## lleva buscandolo ya en rango (no da vueltas para siempre).
+var _slot := Vector3.INF
+var _slot_time: float = 0.0
 
 
 func _ready() -> void:
@@ -75,6 +108,7 @@ func _ready() -> void:
 	max_health = data.max_health * _level_scale(0.3) * difficulty.get_value("enemy_health")
 	current_health = max_health
 	_setup_collision()
+	_setup_navigation()
 	_setup_model()
 	if not _start_spawn_animation():
 		_enter_idle()
@@ -99,6 +133,20 @@ func _setup_collision() -> void:
 	capsule.height = 360.0 * data.model_scale
 	collision_shape.shape = capsule
 	collision_shape.position.y = capsule.height / 2.0
+
+
+# Avoidance: cada enemigo es un circulo que los demas esquivan.
+func _setup_navigation() -> void:
+	collision_layer = ENEMY_LAYER
+	collision_mask = 1
+	nav_agent.radius = data.collision_radius * data.model_scale
+	nav_agent.max_speed = data.speed * 1.3
+	nav_agent.neighbor_distance = 1000.0
+	nav_agent.max_neighbors = 10
+	nav_agent.time_horizon_agents = 1.0
+	nav_agent.avoidance_enabled = true
+	nav_agent.velocity_computed.connect(_on_velocity_computed)
+	_stuck_from = global_position
 
 
 func _setup_model() -> void:
@@ -181,6 +229,7 @@ func _physics_process(delta: float) -> void:
 
 	_attack_timer = maxf(_attack_timer - delta, 0.0)
 	_state_timer -= delta
+	_calm_time += delta
 
 	var player_alive: bool = is_instance_valid(player) and not player_stats.dead
 	var to_player: Vector3 = (player.global_position - global_position) if player_alive else Vector3.ZERO
@@ -207,40 +256,147 @@ func _physics_process(delta: float) -> void:
 				move_dir = _nav_direction()
 				move_speed = data.speed * 0.4
 		State.CHASE:
-			if not player_alive:
-				_enter_return()
-			elif global_position.distance_to(home_position) > LEASH_RANGE:
-				_enter_return()
-			elif dist <= data.attack_range:
+			_calm_time = 0.0
+			if not player_alive or _lost_player(dist, delta):
+				_give_up()
+			elif dist <= data.attack_range and _at_slot(delta):
 				state = State.ATTACK
+				_slot_time = 0.0
 			else:
-				_set_nav_target(player.global_position)
-				move_dir = _nav_direction()
+				move_dir = _chase_direction(to_player, dist, delta)
 		State.ATTACK:
+			_calm_time = 0.0
 			if not player_alive:
-				_enter_return()
-			elif dist > data.attack_range * 1.15 and not _attacking:
+				_give_up()
+			elif dist > LOSE_RANGE or (dist > data.attack_range * 1.15 and not _attacking):
+				_attacking = false
 				state = State.CHASE
 			else:
 				_face(to_player, delta)
 				if _attack_timer <= 0.0:
 					_attack()
-		State.RETURN:
-			heal(max_health * 0.25 * delta)
-			_set_nav_target(home_position)
-			if nav_agent.is_navigation_finished():
-				current_health = max_health
-				_enter_idle()
-			else:
-				move_dir = _nav_direction()
-				move_speed = data.speed * 1.3
 
-	velocity.x = move_dir.x * move_speed
-	velocity.z = move_dir.z * move_speed
-	if move_dir != Vector3.ZERO:
-		_face(move_dir, delta)
-	move_and_slide()
+	if _calm_time >= REGEN_DELAY and current_health < max_health and state != State.SPAWNING:
+		heal(max_health * REGEN_RATE * delta)
+	_check_stuck(move_dir != Vector3.ZERO, delta)
+	_move(move_dir * move_speed, delta)
 	_update_walk_animation(move_dir != Vector3.ZERO)
+
+
+# La velocidad deseada pasa por el avoidance; el resultado llega en
+# _on_velocity_computed, que es el que mueve el cuerpo.
+func _move(desired: Vector3, delta: float) -> void:
+	var flat := Vector3(velocity.x, 0.0, velocity.z)
+	if flat.length() > data.speed * 0.3:
+		_face(flat, delta)
+	elif desired != Vector3.ZERO:
+		_face(desired, delta)
+	nav_agent.velocity = Vector3(desired.x, 0.0, desired.z)
+
+
+func _on_velocity_computed(safe_velocity: Vector3) -> void:
+	if dead:
+		return
+	var goal := Vector3(safe_velocity.x, 0.0, safe_velocity.z)
+	var flat := Vector3(velocity.x, 0.0, velocity.z).move_toward(goal, data.speed * ACCELERATION * get_physics_process_delta_time())
+	velocity.x = flat.x
+	velocity.z = flat.z
+	move_and_slide()
+
+
+# Lejos sigue el camino de la navegacion; cerca va derecho a su lugar
+# alrededor del jugador (ver _surround_goal).
+func _chase_direction(to_player: Vector3, dist: float, delta: float) -> Vector3:
+	var goal: Vector3 = _surround_goal(to_player)
+	_slot = goal
+	if _sidestep_timer > 0.0:
+		_sidestep_timer -= delta
+		return _sidestep_dir
+	_path_only_timer -= delta
+	if dist < DIRECT_RANGE and _path_only_timer <= 0.0:
+		var direct: Vector3 = goal - global_position
+		direct.y = 0.0
+		return direct.normalized() if direct.length() > 1.0 else Vector3.ZERO
+	_set_nav_target(goal)
+	return _nav_direction()
+
+
+# Ya en rango: pega si llego a su lugar o si hace rato que lo busca.
+func _at_slot(delta: float) -> bool:
+	_slot_time += delta
+	if _slot == Vector3.INF or _slot_time > 1.2:
+		return true
+	return Vector2(_slot.x - global_position.x, _slot.z - global_position.z).length() < 90.0
+
+
+# Lugar alrededor del jugador donde ponerse a pegar: arranca por el lado del
+# que viene y se corre si ahi ya esta pegando otro. Asi entre varios lo
+# rodean en vez de hacer fila.
+func _surround_goal(to_player: Vector3) -> Vector3:
+	var ring: float = data.attack_range * 0.75
+	var base_angle: float = atan2(-to_player.x, -to_player.z)
+	var spacing: float = 2.0 * asin(clampf(nav_agent.radius * 1.2 / ring, 0.05, 0.95))
+	var taken: Array[float] = []
+	for other in get_tree().get_nodes_in_group("enemies"):
+		if other == self or other.state != State.ATTACK:
+			continue
+		var offset: Vector3 = other.global_position - player.global_position
+		if offset.length() < data.attack_range * 2.0:
+			taken.append(atan2(offset.x, offset.z))
+	# El hueco libre mas cercano: prueba alternando a un lado y al otro.
+	var angle: float = base_angle
+	var step: float = spacing * 0.5
+	for k in ceili(TAU / step):
+		var candidate: float = base_angle + step * ceili(k / 2.0) * (1.0 if k % 2 == 1 else -1.0)
+		var free: bool = true
+		for other_angle in taken:
+			if absf(wrapf(candidate - other_angle, -PI, PI)) < spacing:
+				free = false
+				break
+		if free:
+			angle = candidate
+			break
+	return player.global_position + Vector3(sin(angle), 0.0, cos(angle)) * ring
+
+
+# Si casi no avanzo queriendo moverse: un paso al costado y un rato siguiendo
+# solo el camino (por si iba derecho contra una roca o una cerca).
+func _check_stuck(wants_move: bool, delta: float) -> void:
+	if not wants_move or _sidestep_timer > 0.0:
+		_stuck_timer = 0.0
+		_stuck_from = global_position
+		return
+	_stuck_timer += delta
+	if _stuck_timer < STUCK_CHECK:
+		return
+	var moved: float = Vector2(global_position.x - _stuck_from.x, global_position.z - _stuck_from.z).length()
+	if moved < data.speed * STUCK_CHECK * 0.2:
+		var forward := Vector3(velocity.x, 0.0, velocity.z)
+		if forward.length() < 1.0:
+			forward = global_transform.basis.z
+		_sidestep_dir = forward.normalized().rotated(Vector3.UP, PI / 2.0 * (1.0 if randf() < 0.5 else -1.0))
+		_sidestep_timer = 0.45
+		_path_only_timer = 2.0
+		_last_nav_target = Vector3.INF
+	_stuck_timer = 0.0
+	_stuck_from = global_position
+
+
+func _lost_player(dist: float, delta: float) -> bool:
+	if dist <= LOSE_RANGE:
+		_lose_timer = 0.0
+		return false
+	_lose_timer += delta
+	return _lose_timer >= LOSE_TIME
+
+
+# Lo perdio: se queda dando vueltas por donde esta.
+func _give_up() -> void:
+	home_position = global_position
+	_attacking = false
+	_lose_timer = 0.0
+	_last_nav_target = Vector3.INF
+	_enter_idle()
 
 
 # Lejos del jugador, sin pelear y fuera de camara: ya no hace falta.
@@ -263,21 +419,17 @@ func _enter_wander() -> void:
 	_state_timer = 6.0
 	var angle: float = randf() * TAU
 	var offset := Vector3(cos(angle), 0.0, sin(angle)) * randf_range(100.0, WANDER_RADIUS)
-	_set_nav_target(home_position + offset)
+	# Sobre el piso caminable, asi no se queda empujando contra algo.
+	_set_nav_target(NavigationServer3D.map_get_closest_point(get_world_3d().navigation_map, home_position + offset))
 
 
 func _enter_chase() -> void:
 	if state == State.CHASE or state == State.ATTACK or state == State.DEAD:
 		return
+	_lose_timer = 0.0
 	if not data.aggro_sound.is_empty():
 		sfx.play_at(data.aggro_sound, global_position, -4.0)
 	state = State.CHASE
-	_last_nav_target = Vector3.INF
-
-
-func _enter_return() -> void:
-	state = State.RETURN
-	_attacking = false
 	_last_nav_target = Vector3.INF
 
 
@@ -402,9 +554,9 @@ func take_hit(hit: Dictionary) -> void:
 	if current_health <= 0.0:
 		_die()
 		return
-	if state != State.RETURN:
-		_enter_chase()
-		_alert_pack()
+	_calm_time = 0.0
+	_enter_chase()
+	_alert_pack()
 
 
 ## Golpe fisico simple (compatibilidad con codigo que todavia pasa un numero).
@@ -492,6 +644,7 @@ func _die() -> void:
 	if not data.death_sound.is_empty():
 		sfx.play_at(data.death_sound, global_position)
 	velocity = Vector3.ZERO
+	nav_agent.avoidance_enabled = false
 	collision_layer = 0
 	collision_mask = 0
 	remove_from_group("enemies")
