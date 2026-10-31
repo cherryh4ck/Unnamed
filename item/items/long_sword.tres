@@ -10,7 +10,7 @@ region = Rect2(64, 160, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "espada larga"
+name = "Espada larga"
 description = "Espada pesada: golpes lentos pero con gran daño."
 grid_size = Vector2i(1, 4)
 item_type = 1

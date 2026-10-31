@@ -10,7 +10,7 @@ region = Rect2(128, 320, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "martillo grande"
+name = "Martillo grande"
 description = "Lento y brutal: cada golpe hace temblar el escudo del enemigo."
 grid_size = Vector2i(2, 3)
 item_type = 1

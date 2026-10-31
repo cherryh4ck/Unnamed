@@ -15,6 +15,8 @@ class_name EnemyData
 ## Color que multiplica la textura (blanco = sin cambio). Sirve para variantes.
 @export var tint: Color = Color.WHITE
 @export var collision_radius: float = 60.0
+## Cuantos aparecen juntos (minimo, maximo) cuando una zona crea un grupo.
+@export var pack_size: Vector2i = Vector2i(1, 3)
 
 @export_group("Animaciones")
 @export var idle_animation: String = ""

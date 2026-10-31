@@ -1,7 +1,26 @@
 extends Node3D
 
+## Region de enemigos, como en Sacred: mientras el jugador anda por la zona,
+## los enemigos aparecen en grupos alrededor suyo, fuera de lo que ve la
+## camara, y desaparecen cuando el jugador se aleja (ver enemi.gd). Asi solo
+## existen los que estan cerca y el resto del mapa no cuesta nada.
+
+## Distancia al jugador a la que aparecen los grupos (afuera de la pantalla).
+const SPAWN_MIN_DISTANCE := 1900.0
+const SPAWN_MAX_DISTANCE := 3000.0
+## Intentos por tanda para encontrar un lugar valido.
+const SPAWN_TRIES := 10
+## Separacion entre los integrantes de un grupo.
+const PACK_SPREAD := 170.0
+## Un punto vale si el piso caminable mas cercano esta a menos de esto.
+const NAVMESH_TOLERANCE := 60.0
+## Radio en el que se cuentan los enemigos que ya hay cerca del jugador
+## (de cualquier zona, asi en los bordes entre zonas no se suman).
+const NEARBY_RANGE := 4500.0
+
 @export var enemy_scene: PackedScene
 @export var spawn_interval := 3.0
+## Cuantos enemigos puede haber a la vez cerca del jugador en esta zona.
 @export var max_enemies := 10
 ## Nivel de los enemigos de esta zona (escala vida, daño y experiencia).
 @export var level := 1
@@ -17,6 +36,7 @@ extends Node3D
 @onready var timer: Timer = $Timer
 
 var enemies_alive := 0
+var _player: Node3D
 
 func _ready():
 	# El mapa grande marca las zonas peligrosas ya exploradas.
@@ -41,25 +61,83 @@ func _spawn_enemy():
 	var night: bool = world_time.is_night()
 	timer.wait_time = spawn_interval * (0.6 if night else 1.0)
 	var limit: int = roundi(max_enemies * (1.5 if night else 1.0))
-	if enemies_alive >= limit:
+	if not is_instance_valid(_player):
+		_player = get_tree().get_first_node_in_group("player")
+		if _player == null:
+			return
+	# Lejos de la zona no se hace nada.
+	if not _contains(_player.global_position, SPAWN_MAX_DISTANCE):
+		return
+	var nearby: int = _enemies_near_player()
+	if nearby >= limit:
 		return
 
-	var size: Vector3 = zone_shape.shape.size
-	var local_point = Vector3(
-		randf_range(-size.x / 2.0, size.x / 2.0),
-		0.0,
-		randf_range(-size.z / 2.0, size.z / 2.0)
-	)
+	var spot = _find_spot()
+	if spot == null:
+		return
+	var data: EnemyData = _pick_type()
+	var count: int = mini(randi_range(data.pack_size.x, data.pack_size.y), limit - nearby)
+	for i in count:
+		var offset := Vector3.ZERO
+		if i > 0:
+			var angle: float = TAU * i / count + randf_range(-0.4, 0.4)
+			offset = Vector3(cos(angle), 0.0, sin(angle)) * PACK_SPREAD * randf_range(0.8, 1.3)
+		var point = _on_navmesh(spot + offset)
+		if point == null:
+			point = spot
+		_spawn_one(data, point, night)
 
+func _spawn_one(data: EnemyData, point: Vector3, night: bool) -> void:
 	var enemy = enemy_scene.instantiate()
-	enemy.data = _pick_type()
+	enemy.data = data
 	enemy.level = level + (1 if night else 0)
-	# Convierte el punto local de la caja a posición global (respeta escala y rotación)
-	enemy.position = zone_shape.global_transform * local_point
+	enemy.despawns = true
+	enemy.position = point
+	enemy.rotation.y = randf() * TAU
 	get_parent().add_child(enemy)
 
 	enemies_alive += 1
 	enemy.tree_exited.connect(func(): enemies_alive -= 1)
+
+func _enemies_near_player() -> int:
+	var count := 0
+	for enemy in get_tree().get_nodes_in_group("enemies"):
+		if enemy.global_position.distance_to(_player.global_position) < NEARBY_RANGE:
+			count += 1
+	return count
+
+## Un punto alrededor del jugador, dentro de la zona, sobre piso caminable y
+## que la camara no este viendo. null si no encontro ninguno.
+func _find_spot():
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	for i in SPAWN_TRIES:
+		var angle: float = randf() * TAU
+		var distance: float = randf_range(SPAWN_MIN_DISTANCE, SPAWN_MAX_DISTANCE)
+		var candidate: Vector3 = _player.global_position + Vector3(cos(angle), 0.0, sin(angle)) * distance
+		if not _contains(candidate, 0.0):
+			continue
+		var point = _on_navmesh(candidate)
+		if point == null:
+			continue
+		if camera and (camera.is_position_in_frustum(point) or camera.is_position_in_frustum(point + Vector3.UP * 400.0)):
+			continue
+		return point
+	return null
+
+## Si el punto esta dentro de la caja de la zona (agrandada en margin).
+func _contains(point: Vector3, margin: float) -> bool:
+	var local: Vector3 = zone_shape.global_transform.affine_inverse() * point
+	var half: Vector3 = zone_shape.shape.size / 2.0
+	return absf(local.x) <= half.x + margin and absf(local.z) <= half.z + margin
+
+## El punto apoyado en el piso caminable, o null si cae fuera (agua, rocas...).
+func _on_navmesh(point: Vector3):
+	var map: RID = get_world_3d().navigation_map
+	var closest: Vector3 = NavigationServer3D.map_get_closest_point(map, point)
+	var flat := Vector2(closest.x - point.x, closest.z - point.z)
+	if flat.length() > NAVMESH_TOLERANCE:
+		return null
+	return closest
 
 func _pick_type() -> EnemyData:
 	if type_weights.size() != enemy_types.size():

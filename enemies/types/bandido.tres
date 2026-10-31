@@ -9,6 +9,7 @@ name = "Bandido"
 model = ExtResource("2_model")
 model_offset_y = 0.0
 collision_radius = 65.0
+pack_size = Vector2i(2, 3)
 idle_animation = "idle_combat"
 walk_animations = Array[String](["run_combat"])
 attack_animations = Array[String](["attack_1h_a", "attack_1h_b", "attack_1h_c"])

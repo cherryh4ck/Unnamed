@@ -8,6 +8,7 @@ script = ExtResource("1_data")
 name = "Esqueleto"
 model = ExtResource("2_model")
 model_offset_y = 0.0
+pack_size = Vector2i(2, 4)
 idle_animation = "idle_combat"
 walk_animations = Array[String](["walk_combat"])
 walk_animation_speed = 1.3

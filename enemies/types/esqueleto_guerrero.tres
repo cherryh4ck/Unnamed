@@ -11,6 +11,7 @@ model_scale = 1.1
 model_offset_y = 0.0
 tint = Color(0.82, 0.74, 0.64, 1)
 collision_radius = 72.0
+pack_size = Vector2i(1, 2)
 idle_animation = "idle_combat"
 walk_animations = Array[String](["walk_combat"])
 walk_animation_speed = 1.25

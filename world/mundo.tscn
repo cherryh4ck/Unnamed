@@ -14213,33 +14213,33 @@ tint = Color(0.663, 0.697, 0.629, 0.85)
 [node name="ZonasEnemigos" type="Node3D" parent="." unique_id=1347478455]
 
 [node name="Bosque1" type="Node3D" parent="ZonasEnemigos" unique_id=2059898822 instance=ExtResource("62_4b1tn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5300, 0, -2100)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4600, 0, -1700)
 script = ExtResource("63_vj5l6")
 enemy_scene = ExtResource("64_elrnt")
 max_enemies = 8
 level = 2
 enemy_types = Array[ExtResource("65_v86gq")]([ExtResource("66_kv88b"), ExtResource("67_0kwmy"), ExtResource("68_46v42"), ExtResource("69_f5pm3")])
 type_weights = Array[float]([5.0, 2.0, 2.0, 1.0])
-zone_size = Vector3(1500, 1, 1500)
+zone_size = Vector3(3000, 1, 3000)
 
 [node name="Bosque2" type="Node3D" parent="ZonasEnemigos" unique_id=1553067726 instance=ExtResource("62_4b1tn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7300, 0, -3700)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7700, 0, -3600)
 script = ExtResource("63_vj5l6")
 enemy_scene = ExtResource("64_elrnt")
 max_enemies = 9
 level = 3
 enemy_types = Array[ExtResource("65_v86gq")]([ExtResource("67_0kwmy"), ExtResource("66_kv88b"), ExtResource("69_f5pm3"), ExtResource("70_6r4k0")])
 type_weights = Array[float]([4.0, 3.0, 2.0, 1.0])
-zone_size = Vector3(1600, 1, 1600)
+zone_size = Vector3(3200, 1, 4400)
 
 [node name="Pradera" type="Node3D" parent="ZonasEnemigos" unique_id=1622631013 instance=ExtResource("62_4b1tn")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3200, 0, 3600)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3600, 0, 3400)
 script = ExtResource("63_vj5l6")
 enemy_scene = ExtResource("64_elrnt")
-max_enemies = 5
+max_enemies = 6
 enemy_types = Array[ExtResource("65_v86gq")]([ExtResource("68_46v42"), ExtResource("66_kv88b")])
 type_weights = Array[float]([2.0, 1.0])
-zone_size = Vector3(2200, 1, 1800)
+zone_size = Vector3(4400, 1, 4400)
 
 [node name="Cementerio" type="Node3D" parent="ZonasEnemigos" unique_id=1695907332 instance=ExtResource("62_4b1tn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5600, 0, -4800)
@@ -14248,7 +14248,7 @@ enemy_scene = ExtResource("64_elrnt")
 level = 4
 enemy_types = Array[ExtResource("65_v86gq")]([ExtResource("69_f5pm3"), ExtResource("68_46v42"), ExtResource("70_6r4k0")])
 type_weights = Array[float]([4.0, 3.0, 1.5])
-zone_size = Vector3(2200, 1, 2200)
+zone_size = Vector3(4200, 1, 4200)
 
 [node name="Ruinas" type="Node3D" parent="ZonasEnemigos" unique_id=1479180454 instance=ExtResource("62_4b1tn")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -7800)
@@ -14257,7 +14257,7 @@ enemy_scene = ExtResource("64_elrnt")
 level = 6
 enemy_types = Array[ExtResource("65_v86gq")]([ExtResource("71_hw2m7"), ExtResource("72_jedvd"), ExtResource("70_6r4k0"), ExtResource("68_46v42")])
 type_weights = Array[float]([4.0, 3.0, 2.0, 1.0])
-zone_size = Vector3(2200, 1, 2000)
+zone_size = Vector3(4000, 1, 3600)
 
 [node name="Portales" type="Node3D" parent="." unique_id=1074444842]
 

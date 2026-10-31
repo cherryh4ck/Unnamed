@@ -9,6 +9,7 @@ name = "Araña gigante"
 model = ExtResource("2_model")
 model_offset_y = 0.0
 collision_radius = 120.0
+pack_size = Vector2i(1, 2)
 idle_animation = "SpiderArmature|Spider_Idle"
 walk_animations = Array[String](["SpiderArmature|Spider_Walk"])
 attack_animations = Array[String](["SpiderArmature|Spider_Attack"])

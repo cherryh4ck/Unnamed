@@ -9,6 +9,7 @@ name = "Bandido arquero"
 model = ExtResource("2_model")
 model_offset_y = 0.0
 collision_radius = 60.0
+pack_size = Vector2i(1, 2)
 idle_animation = "idle_bow"
 walk_animations = Array[String](["run_bow"])
 attack_animations = Array[String](["shoot_bow"])

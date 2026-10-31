@@ -10,7 +10,7 @@ region = Rect2(160, 160, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "espada ligera"
+name = "Espada ligera"
 grid_size = Vector2i(1, 3)
 item_type = 1
 texture = SubResource("AtlasTexture_q8i4l")

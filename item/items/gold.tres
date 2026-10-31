@@ -9,7 +9,7 @@ region = Rect2(320, 384, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "monedas de oro"
+name = "Monedas de oro"
 description = "Va directo a tu bolsa."
 stackable = true
 item_type = 4

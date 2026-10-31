@@ -6,6 +6,7 @@ extends CharacterBody3D
 ## IDLE/WANDER: da vueltas cerca de donde aparecio.
 ## CHASE/ATTACK: persigue y pega al jugador cuando lo ve o cuando recibe un golpe.
 ## RETURN: si se aleja demasiado de su zona vuelve y se cura (no se lo puede "arrastrar").
+## Los que crea una zona (zona_spawn.gd) desaparecen cuando el jugador se aleja.
 
 signal died
 
@@ -20,9 +21,15 @@ const LEASH_RANGE: float = 2400.0
 const PACK_ALERT_RANGE: float = 700.0
 const REPATH_DISTANCE: float = 40.0
 const CORPSE_TIME: float = 5.0
+## Distancia al jugador a partir de la cual desaparece (si no esta peleando
+## y la camara no lo ve). Cada cuanto se revisa, en segundos.
+const DESPAWN_RANGE: float = 4500.0
+const DESPAWN_CHECK: float = 1.0
 
 @export var data: EnemyData
 @export var level: int = 1
+## Lo pone la zona que lo crea: se va solo cuando el jugador se aleja.
+var despawns: bool = false
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var model_root: Node3D = $Model
@@ -53,6 +60,7 @@ var _poison_fx: CPUParticles3D
 var _status_pulse: float = 0.0
 ## Daño por tiempo acumulado que todavia no llego a 1 (para el numero flotante).
 var _dot_shown: Dictionary = {}
+var _despawn_timer: float = DESPAWN_CHECK
 
 
 func _ready() -> void:
@@ -154,6 +162,13 @@ func _play(anim_name: String, speed_scale: float = 1.0) -> void:
 func _physics_process(delta: float) -> void:
 	if dead:
 		return
+	if despawns:
+		_despawn_timer -= delta
+		if _despawn_timer <= 0.0:
+			_despawn_timer = DESPAWN_CHECK
+			if _far_from_player():
+				queue_free()
+				return
 	_update_flash(delta)
 	_update_status(delta)
 	if dead:
@@ -226,6 +241,16 @@ func _physics_process(delta: float) -> void:
 		_face(move_dir, delta)
 	move_and_slide()
 	_update_walk_animation(move_dir != Vector3.ZERO)
+
+
+# Lejos del jugador, sin pelear y fuera de camara: ya no hace falta.
+func _far_from_player() -> bool:
+	if state == State.CHASE or state == State.ATTACK or not is_instance_valid(player):
+		return false
+	if global_position.distance_to(player.global_position) < DESPAWN_RANGE:
+		return false
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	return camera == null or not camera.is_position_in_frustum(global_position + Vector3.UP * 200.0)
 
 
 func _enter_idle() -> void:

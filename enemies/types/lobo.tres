@@ -9,6 +9,7 @@ name = "Lobo"
 model = ExtResource("2_model")
 model_offset_y = 0.0
 collision_radius = 85.0
+pack_size = Vector2i(2, 4)
 idle_animation = "Idle"
 walk_animations = Array[String](["Gallop"])
 attack_animations = Array[String](["Attack"])

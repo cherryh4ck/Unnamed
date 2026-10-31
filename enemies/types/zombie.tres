@@ -9,6 +9,7 @@ name = "Zombi"
 model = ExtResource("2_model")
 model_offset_y = 0.0
 collision_radius = 70.0
+pack_size = Vector2i(2, 3)
 idle_animation = "no_muerto/zombi_quieto"
 walk_animations = Array[String](["no_muerto/zombi_caminar"])
 walk_animation_speed = 1.0

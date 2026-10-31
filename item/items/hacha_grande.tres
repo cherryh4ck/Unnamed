@@ -10,7 +10,7 @@ region = Rect2(352, 160, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "hacha grande"
+name = "Hacha grande"
 grid_size = Vector2i(2, 4)
 item_type = 1
 texture = SubResource("AtlasTexture_4kxr6")

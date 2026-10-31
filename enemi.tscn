@@ -16,5 +16,6 @@ shape = SubResource("CapsuleShape3D_byyiu")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=1460982214]
 path_desired_distance = 40.0
 target_desired_distance = 40.0
+path_max_distance = 400.0
 
 [node name="Model" type="Node3D" parent="." unique_id=1022731544]

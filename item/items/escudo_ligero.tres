@@ -10,7 +10,7 @@ region = Rect2(0, 192, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "escudo ligero"
+name = "Escudo ligero"
 grid_size = Vector2i(2, 2)
 item_type = 2
 texture = SubResource("AtlasTexture_dtglc")

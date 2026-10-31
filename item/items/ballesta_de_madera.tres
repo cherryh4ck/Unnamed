@@ -10,7 +10,7 @@ region = Rect2(128, 192, 32, 32)
 
 [resource]
 script = ExtResource("1_w2qoy")
-name = "ballesta de madera"
+name = "Ballesta de madera"
 description = "Una ballesta ligera de madera. Equipada, tus ataques básicos disparan virotes a distancia."
 grid_size = Vector2i(3, 2)
 item_type = 2

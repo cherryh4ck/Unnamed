@@ -89,10 +89,12 @@ func get_display_name() -> String:
 	if not unique_name.is_empty():
 		return unique_name
 	if name.is_empty():
-		return "objeto desconocido"
+		return "Objeto desconocido"
+	# Siempre con mayuscula inicial (tambien los items de partidas viejas).
+	var base: String = name.left(1).to_upper() + name.substr(1)
 	if not suffix.is_empty():
-		return "%s %s" % [name, suffix]
-	return name
+		return "%s %s" % [base, suffix]
+	return base
 
 
 ## Casillas que ocupa en la grilla (al menos 1x1).
