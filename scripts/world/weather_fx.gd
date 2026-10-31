@@ -3,7 +3,8 @@ extends Node3D
 ## Lo que se ve y se escucha del clima (autoload weather): lluvia que sigue al
 ## jugador, niebla en el Environment, relampagos con trueno en las tormentas,
 ## y los sonidos de lluvia y viento. El cielo y el sol los oscurece
-## day_night.gd con weather.overcast.
+## day_night.gd con weather.overcast. Ademas, con cualquier clima, neblina
+## baja al amanecer (y de noche en el cementerio) que se levanta de a poco.
 
 @export var environment_path: NodePath
 
@@ -23,6 +24,14 @@ const RAIN_AMOUNT: int = 3500
 ## Niebla mas densa (en el mundo se mide en unidades grandes: ~400 = una persona).
 const MAX_FOG_DENSITY: float = 0.00026
 const FOG_COLOR := Color(0.62, 0.66, 0.7)
+## Neblina del amanecer: cuanto suma a la niebla, color (tibio, con el sol
+## bajo), y la parte pegada al piso (fog_height del Environment).
+const MIST_DENSITY: float = 0.00003
+const MIST_COLOR := Color(0.8, 0.8, 0.84)
+const MIST_HEIGHT: float = 200.0
+const MIST_HEIGHT_DENSITY: float = 0.0003
+## Cuanto tarda la neblina en llegar o irse del todo (segundos reales).
+const MIST_FADE: float = 12.0
 
 @onready var world_environment: WorldEnvironment = get_node_or_null(environment_path)
 
@@ -33,6 +42,8 @@ var _wind_player: AudioStreamPlayer
 var _flash: DirectionalLight3D
 var _thunder: Array[AudioStream] = []
 var _next_lightning: float = 8.0
+## Neblina baja actual (0 a 1).
+var mist: float = 0.0
 
 
 func _ready() -> void:
@@ -60,13 +71,19 @@ func _process(delta: float) -> void:
 	_rain.amount_ratio = weather.rain
 	_rain.emitting = weather.rain > 0.01
 
+	mist = move_toward(mist, mist_target(player.global_position if player else Vector3.ZERO), delta / MIST_FADE)
 	if world_environment and world_environment.environment:
 		var environment: Environment = world_environment.environment
-		var density: float = MAX_FOG_DENSITY * (weather.fog + weather.rain * 0.25)
+		var density: float = MAX_FOG_DENSITY * (weather.fog + weather.rain * 0.25) + MIST_DENSITY * mist
 		environment.fog_enabled = density > 0.000005
 		environment.fog_density = density
+		environment.fog_height = MIST_HEIGHT
+		environment.fog_height_density = MIST_HEIGHT_DENSITY * mist
 		var light: float = lerpf(0.25, 1.0, world_time.get_daylight())
-		environment.fog_light_color = FOG_COLOR * light
+		var weather_share: float = weather.fog + weather.rain * 0.25
+		var mist_share: float = mist / maxf(mist + weather_share, 0.001)
+		# La neblina del amanecer es clara aunque todavia haya poco sol.
+		environment.fog_light_color = FOG_COLOR.lerp(MIST_COLOR, mist_share) * lerpf(light, maxf(light, 0.6), mist_share)
 		environment.fog_sky_affect = 0.5
 
 	# Llovizna con la lluvia suave; en la tormenta entra la fuerte.
@@ -80,6 +97,16 @@ func _process(delta: float) -> void:
 		if _next_lightning <= 0.0:
 			_next_lightning = randf_range(7.0, 18.0)
 			_lightning()
+
+
+## Cuanta neblina baja corresponde ahora: sube antes del amanecer, se levanta
+## a media mañana; de noche siempre hay algo en el cementerio. La lluvia la
+## disipa.
+func mist_target(position: Vector3) -> float:
+	var hour: float = world_time.hour
+	var dawn: float = smoothstep(4.0, 5.8, hour) * (1.0 - smoothstep(7.8, 10.0, hour))
+	var yard: float = 0.55 if world_time.is_night() and music.zone_at(position) == "cementerio" else 0.0
+	return maxf(dawn, yard) * (1.0 - weather.rain)
 
 
 func _make_rain() -> GPUParticles3D:

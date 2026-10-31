@@ -268,7 +268,8 @@ func xp_for_next_level() -> int:
 func add_xp(amount: int) -> void:
 	if dead or amount <= 0:
 		return
-	xp += amount
+	# Bendicion de sabiduria (santuarios): mas experiencia.
+	xp += roundi(amount * _buff_product("xp_mult"))
 	while xp >= xp_for_next_level():
 		xp -= xp_for_next_level()
 		level += 1

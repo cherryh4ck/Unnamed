@@ -135,6 +135,14 @@ func _physics_process(delta: float) -> void:
 
 
 func reproducir_paso() -> void:
+	# El paso suena segun el piso: pasto, tierra o piedra (ver ground_surface.gd).
+	var paso: Array = GroundSurface.footstep(global_position)
+	if paso[0] != null:
+		reproductor_pasos.stream = paso[0]
+		reproductor_pasos.volume_db = paso[1]
+		reproductor_pasos.pitch_scale = randf_range(0.92, 1.08)
+		reproductor_pasos.play()
+		return
 	if sonidos_pasos.is_empty():
 		return
 

@@ -163,7 +163,11 @@ modelos de Poly Haven o Kenney.
 | Herrería de la aldea ("Forge") | Don Carson | https://poly.pizza/m/2ZnLsJJL4Pe ([CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/)) |
 
 Cambios en el juego: escalas, tintes y materiales de piedra o hierro (ver
-`scripts/world/prop.gd`). El mundo se arma con `world/build_world.gd`.
+`scripts/world/prop.gd`). El mundo se arma con `world/build_world.gd`. El
+pasto que se mueve no usa modelos de afuera: las matas las arma
+`scripts/world/grass_field.gd` y toman el color de la textura de pasto del
+piso (Grass 004 de ambientCG). Las antorchas son un palo hecho en el juego con
+el brasero del Graveyard Kit arriba, y los santuarios usan su obelisco.
 
 ## Música (`sounds/music/`)
 
@@ -202,3 +206,10 @@ CC0 o dominio público. Los de antes (golpes, interfaz, pasos y hechizos de
 | Mordidas (`bite1.ogg` de RPG Sound Pack, `bite2.ogg` "Crunchy bite") | artisticdude, fvcalderan | https://opengameart.org/content/rpg-sound-pack · https://opengameart.org/content/crunchy-bite (CC0) |
 | Araña (`sounds/creatures/spider/chitter*.ogg`, "bug" de 80 CC0 creature SFX) | rubberduck | https://opengameart.org/content/80-cc0-creature-sfx · https://opengameart.org/content/80-cc0-creture-sfx-2 (CC0) |
 | Siseo de la araña (`hiss.ogg`, `chirp.ogg`, "Alien Sounds") | EZduzziteh | https://opengameart.org/content/alien-sounds-0 (CC0) |
+| Pasos en pasto, tierra y piedra (`sounds/ambient/footsteps/pasto_*`, `tierra_*`, `piedra_*`: footstep_grass, footstep_carpet y footstep_concrete) | Kenney | https://kenney.nl/assets/impact-sounds (CC0) |
+| Barriles y cajones que se rompen (`sounds/interact/break/`, impactWood_heavy e impactPlank_medium) | Kenney | https://kenney.nl/assets/impact-sounds (CC0) |
+| Santuarios (`sounds/interact/shrine/`, bong_001 y confirmation_002) | Kenney | https://kenney.nl/assets/interface-sounds (CC0) |
+| Pájaros de día (`sounds/ambient/nature/birds_day.ogg`, "Ambient Bird Sounds", con el final fundido con el principio para el loop) | isaiah658 | https://opengameart.org/content/ambient-bird-sounds (CC0) |
+| Cuervos (`crows.ogg`, "Crows singing", en mono) | IgnasD | https://opengameart.org/content/crows-singing (CC0) |
+| Graznido suelto (`crow_caw.ogg`, "Crow caw", en mono) | zeroisnotnull | https://opengameart.org/content/crow-caw (CC0) |
+| Búho (`owl.ogg`, "Barred Owl, Yellowstone National Park", en mono) | National Park Service | https://commons.wikimedia.org/wiki/File:Barred_Owl,_Yellowstone_National_Park.oga (dominio público) |

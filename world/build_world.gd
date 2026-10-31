@@ -3,7 +3,9 @@ extends SceneTree
 ## Arma el mundo (world/mundo.tscn) con los assets libres de assets/:
 ## piso con mapas de mezcla (caminos, adoquines, bosque, musgo, piedra), las
 ## piezas de cada zona con su colision, las zonas de enemigos, los portales,
-## los cofres, los nombres de cada lugar para el mapa y la navegacion horneada.
+## los cofres, barriles y cajones rompibles, santuarios, luces de noche, el
+## mapa del pasto, los nombres de cada lugar para el mapa y la navegacion
+## horneada.
 ## Es deterministico (semilla fija): correrlo de nuevo da el mismo mundo.
 ##
 ##   godot --headless --path . --script res://world/build_world.gd
@@ -12,6 +14,10 @@ const OUT_SCENE := "res://world/mundo.tscn"
 const OUT_NAV := "res://world/mundo_nav.res"
 const SPLAT_A := "res://world/terrain/splat_a.png"
 const SPLAT_B := "res://world/terrain/splat_b.png"
+## Pasto (r densidad, g sequedad) y tipo de suelo para los pasos (b: 0 pasto,
+## 0.5 tierra, 1 piedra). Lo leen scripts/world/grass_field.gd y
+## scripts/world/ground_surface.gd.
+const GRASS_MASK := "res://world/terrain/grass_mask.png"
 const SEED: int = 20261029
 
 const SIZE: float = 20000.0
@@ -27,6 +33,10 @@ const PORTAL_SCENE := "res://world/portal.tscn"
 const ENEMY_SCENE := "res://enemi.tscn"
 const CHEST_SCENE := "res://world/chest.tscn"
 const SMITH_SCENE := "res://npc/blacksmith.tscn"
+const BREAKABLE_SCRIPT := "res://scripts/world/breakable.gd"
+const SHRINE_SCRIPT := "res://scripts/world/shrine.gd"
+const NIGHT_LIGHT_SCRIPT := "res://scripts/world/night_light.gd"
+const GRASS_SCRIPT := "res://scripts/world/grass_field.gd"
 
 const N := "res://assets/nature/"
 const P := "res://assets/props/"
@@ -54,6 +64,14 @@ const FORGE_SCALE: float = 220.0
 ## hacia el camino (x, z, angulo). El herrero se para adelante.
 const FORGE_SPOT := Vector3(-450, -1400, PI / 2.0)
 const SMITH_DISTANCE: float = 420.0
+const BARREL := P + "wine_barrel_01/wine_barrel_01_1k.gltf"
+const CRATE := P + "wooden_crate_01/wooden_crate_01_1k.gltf"
+const LANTERN := P + "wooden_lantern_01/wooden_lantern_01_1k.gltf"
+const LANTERN_SCALE: float = 300.0
+## Donde esta la lampara de los faroles del Graveyard Kit (en unidades del
+## modelo, que se escala por 420); los dobles tienen otra en -z.
+const LAMP_OFFSET := Vector3(0.0, 1.0, 0.26)
+const TORCH_HEIGHT: float = 300.0
 const GRAVESTONES := ["gravestone-bevel", "gravestone-broken", "gravestone-cross", "gravestone-cross-large", "gravestone-decorative", "gravestone-round", "gravestone-wide", "gravestone-roof"]
 
 const FOLIAGE_TINT := Color(0.78, 0.82, 0.74)
@@ -66,6 +84,8 @@ var _props: Node3D
 ## Puntos ocupados (x, z, radio) para no encimar piezas.
 var _occupied: Array[Vector3] = []
 var _scene_cache: Dictionary = {}
+var _splat_a: Image
+var _splat_b: Image
 
 ## Caminos de tierra: listas de puntos (x, z).
 var _paths: Array = [
@@ -109,6 +129,15 @@ func _initialize() -> void:
 	# Al final: asi no cambia nada de lo que se reparte antes con la misma semilla.
 	_build_chests()
 	_build_forge()
+	_build_camps()
+	_build_shrines()
+	_build_lights()
+	# Ultimo: necesita todo lo que ocupa lugar.
+	_paint_grass_mask()
+	var grass := Node3D.new()
+	grass.name = "Pasto"
+	grass.set_script(load(GRASS_SCRIPT))
+	_root.add_child(grass)
 	# Los duenos se ponen ahora, antes de que corran los _ready: lo que las
 	# piezas crean al cargar (llamas, piedras del portal) no se guarda.
 	_set_owner(_root, _root)
@@ -187,14 +216,15 @@ func _build_village() -> void:
 		for i in _rng.randi_range(2, 4):
 			var pos: Vector3 = center + Vector3(_rng.randf_range(-170, 170), 0, _rng.randf_range(-170, 170))
 			if _rng.randf() < 0.55:
-				_prop(village, P + "wine_barrel_01/wine_barrel_01_1k.gltf", pos, _rng.randf() * TAU, 260.0, 0.5)
+				_breakable(_prop(village, BARREL, pos, _rng.randf() * TAU, 260.0, 0.5), 1, "Barril")
 			else:
-				_prop(village, P + "wooden_crate_01/wooden_crate_01_1k.gltf", pos, _rng.randf() * TAU, 280.0, 0.45)
+				_breakable(_prop(village, CRATE, pos, _rng.randf() * TAU, 280.0, 0.45), 1, "Cajón")
 	_prop(village, P + "wooden_bucket_01/wooden_bucket_01_1k.gltf", Vector3(-120, 0, 600), 0.0, 270.0, 0.0)
 	# Faroles alrededor de la plaza.
 	for angle in [0.4, 1.9, 3.4, 4.9]:
 		var pos := Vector3(cos(angle) * 850.0, 0, -200 + sin(angle) * 850.0)
 		_prop(village, G + "lightpost-single.glb", pos, angle, 420.0, 0.25, {"style": PROP_SCRIPT.Style.IRON})
+		_night_light(village, pos + Basis(Vector3.UP, angle) * LAMP_OFFSET * 420.0, {"energy": 1.3})
 	# Muralla con portón hacia las ruinas (norte).
 	_fort_piece(village, "modular_fort_01_wall_thin_gate_01", Vector3(-130, 0, -1900), PI * 0.5, 100.0)
 	_fort_piece(village, "modular_fort_01_wall_thin_straight_04", Vector3(-871, 0, -1900), PI * 0.5, 100.0)
@@ -257,6 +287,10 @@ func _build_graveyard() -> void:
 		_prop(yard, G + "fire-basket.glb", center + offset, 0.0, 420.0, 0.4, {"style": PROP_SCRIPT.Style.IRON, "is_fire": true, "fire_height": 40.0})
 	for offset in [Vector3(-1350, 0, 0), Vector3(1350, 0, 400)]:
 		_prop(yard, G + "lightpost-double.glb", center + offset, PI * 0.5, 420.0, 0.2, {"style": PROP_SCRIPT.Style.IRON})
+		# Faroles del cementerio: luz fria.
+		for side in [1.0, -1.0]:
+			var lamp: Vector3 = Basis(Vector3.UP, PI * 0.5) * Vector3(LAMP_OFFSET.x, LAMP_OFFSET.y, LAMP_OFFSET.z * side) * 420.0
+			_night_light(yard, center + offset + lamp, {"energy": 0.9, "color": Color(0.62, 0.78, 1.0), "light_range": 900.0})
 	_scatter(_node("CementerioArboles", yard), Vector3(GRAVEYARD.x, GRAVEYARD.y, 1500.0), 1500.0, 2300.0, 22, _dead_tree)
 	_scatter(yard, Vector3(GRAVEYARD.x, GRAVEYARD.y, 1300.0), 300.0, 1250.0, 10, _dead_tree)
 
@@ -422,6 +456,151 @@ func _build_forge() -> void:
 		smith.name = "Herrero"
 		smith.transform = Transform3D(basis, pos + basis * Vector3.BACK * SMITH_DISTANCE)
 		_root.add_child(smith, true)
+
+
+# Campamentos con barriles y cajones rompibles (botin del nivel de la zona).
+func _build_camps() -> void:
+	var camps := _node("Rompibles", _root)
+	# Las zonas estan llenas de piezas: poco margen y muchos intentos.
+	_scatter(camps, RUINS, 300.0, RUINS.z * 0.9, 3, _camp.bind(6), false, 70.0, 900)
+	_scatter(camps, FOREST, 500.0, FOREST.z * 0.85, 2, _camp.bind(3), false, 70.0, 900)
+	_scatter(camps, Vector3(2600, 2400, 1800), 0.0, 1800.0, 2, _camp.bind(1), false, 150.0, 300)
+	_scatter(camps, Vector3(GRAVEYARD.x, GRAVEYARD.y, 1300.0), 400.0, 1250.0, 1, _camp.bind(4), false, 40.0, 900)
+
+
+func _camp(parent: Node3D, pos: Vector3, level: int) -> void:
+	_scatter(parent, Vector3(pos.x, pos.z, 260.0), 0.0, 260.0, _rng.randi_range(3, 5), _crate_or_barrel.bind(level), false, 5.0, 60)
+
+
+func _crate_or_barrel(parent: Node3D, pos: Vector3, level: int) -> void:
+	if _rng.randf() < 0.55:
+		_breakable(_prop(parent, BARREL, pos, _rng.randf() * TAU, 260.0, 0.5), level, "Barril")
+	else:
+		_breakable(_prop(parent, CRATE, pos, _rng.randf() * TAU, 280.0, 0.45), level, "Cajón")
+
+
+## La colision de la pieza pasa a ser el barril o cajon que se rompe.
+func _breakable(prop: Node3D, level: int, display_name: String) -> void:
+	var body: StaticBody3D = prop.get_node("Colision")
+	body.set_script(load(BREAKABLE_SCRIPT))
+	body.level = level
+	body.display_name = display_name
+
+
+# Un santuario por region, cada uno con su bendicion (shrine.gd: 0 fuerza,
+# 1 sabiduria, 2 celeridad, 3 vida, 4 proteccion).
+func _build_shrines() -> void:
+	var shrines := _node("Santuarios", _root)
+	for spot in [[Vector3(-5300, -3400, 1200), 3], [Vector3(2700, 1900, 800), 2], [Vector3(GRAVEYARD.x - 1900, GRAVEYARD.y + 1400, 600), 1],
+			[Vector3(RUINS.x + 1300, RUINS.y + 1400, 900), 0], [Vector3(-2600, 900, 700), 4]]:
+		_scatter(shrines, spot[0], 0.0, spot[0].z, 1, _shrine.bind(spot[1]), false, 90.0, 1500)
+
+
+func _shrine(parent: Node3D, pos: Vector3, blessing: int) -> void:
+	var angle: float = _rng.randf() * TAU
+	_prop(parent, G + "pillar-obelisk.glb", pos, angle, 460.0, 0.0, {"style": PROP_SCRIPT.Style.STONE, "tint": Color(0.86, 0.84, 0.9)})
+	var shrine := StaticBody3D.new()
+	shrine.name = "Santuario"
+	shrine.set_script(load(SHRINE_SCRIPT))
+	shrine.blessing = blessing
+	shrine.transform = Transform3D(Basis(Vector3.UP, angle), pos)
+	parent.add_child(shrine, true)
+	var shape := CollisionShape3D.new()
+	var cylinder := CylinderShape3D.new()
+	cylinder.radius = 80.0
+	cylinder.height = 480.0
+	shape.shape = cylinder
+	shape.position.y = 240.0
+	shrine.add_child(shape)
+	# Que no tape el sigilo del piso con pasto ni otras piezas.
+	_occupied.append(Vector3(pos.x, pos.z, 320.0))
+
+
+# Antorchas y faroles que se prenden de noche (los faroles de hierro de la
+# plaza y del cementerio ya tienen la suya).
+func _build_lights() -> void:
+	var village: Node3D = _props.get_node("Aldea")
+	var plaza := Vector2(0, -200)
+	var torches: Array = [Vector2(520, -1700), Vector2(-250, -1150)]
+	for house in [Vector2(-1350, -1150), Vector2(1000, -1250), Vector2(1500, 350), Vector2(-1600, 950), Vector2(1150, 1150)]:
+		torches.append(house + (plaza - house).normalized() * 560.0)
+	for spot in torches:
+		var free: Vector2 = _find_free(spot, 60.0)
+		if free.is_finite():
+			_torch(village, Vector3(free.x, 0, free.y))
+	for spot in [Vector2(-850, -150), Vector2(-250, -830), Vector2(-400, 400)]:
+		var free: Vector2 = _find_free(spot, 50.0)
+		if free.is_finite():
+			_lantern(village, Vector3(free.x, 0, free.y))
+	var ruins: Node3D = _props.get_node("Ruinas")
+	for spot in [Vector2(-450, -7050), Vector2(250, -7050), Vector2(-350, -7850), Vector2(350, -7850)]:
+		var free: Vector2 = _find_free(spot, 60.0)
+		if free.is_finite():
+			_torch(ruins, Vector3(free.x, 0, free.y))
+
+
+## Lugar libre lo mas cerca posible de point y fuera de los caminos (busca en
+## anillos cada vez mas grandes). Vector2.INF si no hay.
+func _find_free(point: Vector2, clearance: float) -> Vector2:
+	for ring in 9:
+		var steps: int = maxi(1, ring * 6)
+		for i in steps:
+			var angle: float = TAU * i / steps
+			var candidate: Vector2 = point + Vector2(cos(angle), sin(angle)) * ring * 50.0
+			if _distance_to_paths(candidate) > PATH_WIDTH * 0.8 and _is_free(candidate, clearance):
+				return candidate
+	return Vector2.INF
+
+
+# Palo con un brasero chico arriba y la luz con llamas. Sin colision: es
+# finito y el jugador (mas ancho que el margen de la navegacion) se trababa.
+func _torch(parent: Node3D, pos: Vector3) -> void:
+	var torch := Node3D.new()
+	torch.name = "Antorcha"
+	torch.position = pos
+	parent.add_child(torch, true)
+	var pole := MeshInstance3D.new()
+	pole.name = "Palo"
+	var cylinder := CylinderMesh.new()
+	cylinder.top_radius = 6.0
+	cylinder.bottom_radius = 10.0
+	cylinder.height = TORCH_HEIGHT
+	cylinder.radial_segments = 7
+	cylinder.rings = 1
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.24, 0.16, 0.1)
+	wood.roughness = 0.95
+	cylinder.material = wood
+	pole.mesh = cylinder
+	pole.position.y = TORCH_HEIGHT / 2.0
+	torch.add_child(pole)
+	var basket := Node3D.new()
+	basket.name = "Brasero"
+	basket.set_script(PROP_SCRIPT)
+	basket.style = PROP_SCRIPT.Style.IRON
+	basket.transform = Transform3D(Basis.IDENTITY.scaled(Vector3.ONE * 150.0), Vector3.UP * TORCH_HEIGHT)
+	torch.add_child(basket)
+	basket.add_child(_scene(G + "fire-basket.glb").instantiate())
+	_night_light(torch, Vector3.UP * (TORCH_HEIGHT + 30.0), {"flames": true, "energy": 1.2, "light_range": 900.0, "glow_size": 120.0})
+	_occupied.append(Vector3(pos.x, pos.z, 60.0))
+
+
+# Farol de madera en el piso con una luz chica (sin colision, como las antorchas).
+func _lantern(parent: Node3D, pos: Vector3) -> void:
+	_prop(parent, LANTERN, pos, _rng.randf() * TAU, LANTERN_SCALE, 0.0)
+	_night_light(parent, pos + Vector3.UP * 0.2 * LANTERN_SCALE, {"energy": 0.8, "light_range": 650.0, "glow_size": 80.0})
+
+
+## Luz que se prende de noche (night_light.gd). pos es relativa a parent (los
+## nodos de cada zona estan en el origen del mundo).
+func _night_light(parent: Node3D, pos: Vector3, options: Dictionary) -> void:
+	var light := Node3D.new()
+	light.name = "LuzDeNoche"
+	light.set_script(load(NIGHT_LIGHT_SCRIPT))
+	for key in options:
+		light.set(key, options[key])
+	light.position = pos
+	parent.add_child(light, true)
 
 
 func _chest(parent: Node3D, pos: Vector3, level: int, quality: int) -> void:
@@ -627,6 +806,48 @@ func _paint_splats() -> void:
 	# El piso los carga al abrir (world/terrain/ground.gd).
 	a.save_png(ProjectSettings.globalize_path(SPLAT_A))
 	b.save_png(ProjectSettings.globalize_path(SPLAT_B))
+	_splat_a = a
+	_splat_b = b
+
+
+## Donde crece el pasto y que suelo hay para los pasos (ver GRASS_MASK): nada
+## en caminos, adoquines ni piedra, poco en el bosque y algo en el musgo del
+## cementerio (mas seco, como en las ruinas); nada debajo de lo que ocupa
+## lugar (casas, rocas, arboles, cofres, santuarios).
+func _paint_grass_mask() -> void:
+	var mask := Image.create(SPLAT_RES, SPLAT_RES, false, Image.FORMAT_RGBA8)
+	var patches := FastNoiseLite.new()
+	patches.seed = SEED + 3
+	patches.frequency = 0.0012
+	var px: float = SIZE / SPLAT_RES
+	for y in SPLAT_RES:
+		for x in SPLAT_RES:
+			var p := Vector2((x + 0.5) * px - HALF, (y + 0.5) * px - HALF)
+			var a: Color = _splat_a.get_pixel(x, y)
+			var b: Color = _splat_b.get_pixel(x, y)
+			var kind: float = 0.0
+			if a.g > 0.5 or b.r > 0.5:
+				kind = 1.0
+			elif a.r > 0.45 or a.b > 0.55:
+				kind = 0.5
+			var density: float = clampf(1.0 - maxf(maxf(a.r * 1.6, a.g * 2.0), b.r * 1.4), 0.0, 1.0)
+			density *= (1.0 - a.b * 0.75) * (1.0 - a.a * 0.35)
+			# Manchas mas y menos tupidas.
+			density *= clampf(0.55 + patches.get_noise_2dv(p) * 0.9, 0.15, 1.0)
+			if absf(p.x) > WALK_LIMIT + 300.0 or absf(p.y) > WALK_LIMIT + 300.0:
+				density = 0.0
+			var dry: float = clampf(a.a * 0.9 + _area(p, Vector2(RUINS.x, RUINS.y), RUINS.z * 1.2, 0.0) * 0.7, 0.0, 1.0)
+			mask.set_pixel(x, y, Color(density, dry, kind, 1.0))
+	for other in _occupied:
+		var radius: float = other.z * 0.7 / px
+		var center := Vector2((other.x + HALF) / px, (other.y + HALF) / px)
+		for y in range(maxi(floori(center.y - radius), 0), mini(ceili(center.y + radius) + 1, SPLAT_RES)):
+			for x in range(maxi(floori(center.x - radius), 0), mini(ceili(center.x + radius) + 1, SPLAT_RES)):
+				if Vector2(x + 0.5, y + 0.5).distance_to(center) <= radius:
+					var color: Color = mask.get_pixel(x, y)
+					color.r = 0.0
+					mask.set_pixel(x, y, color)
+	mask.save_png(ProjectSettings.globalize_path(GRASS_MASK))
 
 
 func _area(p: Vector2, center: Vector2, radius: float, wobble: float) -> float:

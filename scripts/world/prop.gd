@@ -117,9 +117,10 @@ func _add_fire() -> void:
 	flames.amount = 40
 	var light := OmniLight3D.new()
 	light.light_color = Color(1.0, 0.62, 0.3)
-	light.light_energy = 3.5
-	light.omni_range = 1400.0
-	light.omni_attenuation = 1.2
+	light.light_energy = 0.9
+	light.omni_range = 950.0
+	# Sin caida por distancia (ver night_light.gd): si no, no llegaba al piso.
+	light.omni_attenuation = 0.0
 	light.shadow_enabled = false
 	Effects.add_at(self, light, top + Vector3.UP * 120.0)
 	light.set_script(preload("res://scripts/world/flicker_light.gd"))

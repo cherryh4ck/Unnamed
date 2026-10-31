@@ -23,6 +23,7 @@
 [ext_resource type="Script" path="res://ui/stash_panel.gd" id="36_stashpanel"]
 [ext_resource type="Script" path="res://ui/smith_panel.gd" id="37_smithpanel"]
 [ext_resource type="Script" path="res://scripts/world/weather_fx.gd" id="38_weather"]
+[ext_resource type="Script" path="res://scripts/world/ambience.gd" id="39_ambience"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g4v7s"]
 
@@ -90,6 +91,9 @@ ambience_path = NodePath("../Ambiente")
 [node name="Clima" type="Node3D" parent="."]
 script = ExtResource("38_weather")
 environment_path = NodePath("../WorldEnvironment")
+
+[node name="AmbienteZona" type="Node3D" parent="."]
+script = ExtResource("39_ambience")
 
 [node name="CameraRig" type="Node3D" parent="." unique_id=1372666457]
 script = ExtResource("4_fdmbg")
