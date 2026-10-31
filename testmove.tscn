@@ -26,6 +26,7 @@
 [ext_resource type="Script" path="res://scripts/world/ambience.gd" id="39_ambience"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_g4v7s"]
+radius = 0.3
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_57qmd"]
 

@@ -81,6 +81,8 @@ func _ready() -> void:
 	_light = OmniLight3D.new()
 	_light.light_color = COLOR
 	_light.omni_range = 900.0
+	# Sin caida por distancia: con la escala del mundo no llegaba al piso.
+	_light.omni_attenuation = 0.0
 	_light.position.y = 160.0
 	add_child(_light)
 
@@ -115,7 +117,7 @@ func _refresh() -> void:
 	var active: bool = is_discovered()
 	_sigil_material.albedo_color = COLOR if active else DORMANT_COLOR
 	_wisps.emitting = active
-	_light.light_energy = 2.2 if active else 0.0
+	_light.light_energy = 1.0 if active else 0.0
 	_label.visible = active
 
 

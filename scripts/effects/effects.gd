@@ -62,7 +62,7 @@ static func level_up(parent: Node, position: Vector3) -> void:
 	stars.damping_max = 180.0
 	stars.color_ramp = ramp([Color(1, 1, 0.85), gold, Color(gold, 0.0)])
 	emit_once(parent, stars, position + Vector3.UP * 30.0, 0.6)
-	flash(parent, position + Vector3.UP * 250.0, gold, 5.0, 900.0, 0.8)
+	flash(parent, position + Vector3.UP * 250.0, gold, 1.6, 900.0, 0.8)
 
 
 ## Mejora o curacion: chispas magicas que suben en anillo y un sigilo que gira
@@ -111,7 +111,7 @@ static func burst(parent: Node, position: Vector3, color: Color, amount: int = 4
 	core.angle_max = 180.0
 	core.color_ramp = ramp([Color(1, 1, 1), Color(color, 0.0)])
 	emit_once(parent, core, position, 1.0)
-	flash(parent, position, color, 4.0, 700.0, 0.25)
+	flash(parent, position, color, 1.2, 700.0, 0.25)
 
 
 ## Onda que se expande a ras del piso hasta el radio indicado (area de efecto),
@@ -224,7 +224,7 @@ static func fire_explosion(parent: Node, position: Vector3, radius: float) -> vo
 	embers.color_ramp = ramp([Color(1, 0.95, 0.7), Color(1, 0.55, 0.15), Color(0.8, 0.2, 0.05, 0.0)])
 	emit_once(parent, embers, position, 1.0)
 
-	flash(parent, position + Vector3.UP * 80.0, Color(1.0, 0.6, 0.25), 9.0, radius * 3.0, 0.45)
+	flash(parent, position + Vector3.UP * 80.0, Color(1.0, 0.6, 0.25), 2.6, radius * 3.0, 0.45)
 	shockwave(parent, ground, Color(1.0, 0.5, 0.18, 0.6), radius, 0.35)
 	scorch(parent, ground, radius * 0.75)
 
@@ -275,13 +275,15 @@ static func whirl(parent: Node3D, color: Color, radius: float) -> void:
 
 # --- Piezas ----------------------------------------------------------------
 
-## Luz que se prende fuerte y se apaga sola.
+## Luz que se prende fuerte y se apaga sola. Sin caida por distancia (el
+## mundo esta en unidades grandes, ~225 por metro, y con caida no llegaba a
+## iluminar nada): se apaga suave hasta light_range, asi que energy va baja.
 static func flash(parent: Node, position: Vector3, color: Color, energy: float, light_range: float, duration: float) -> void:
 	var light := OmniLight3D.new()
 	light.light_color = color
 	light.light_energy = energy
 	light.omni_range = light_range
-	light.omni_attenuation = 1.4
+	light.omni_attenuation = 0.0
 	add_at(parent, light, position)
 	var tween := light.create_tween()
 	tween.tween_property(light, "light_energy", 0.0, duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)

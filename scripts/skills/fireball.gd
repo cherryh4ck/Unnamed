@@ -94,9 +94,10 @@ func _ready() -> void:
 
 	_light = OmniLight3D.new()
 	_light.light_color = Color(1.0, 0.6, 0.25)
-	_light.light_energy = 5.0
+	_light.light_energy = 1.6
 	_light.omni_range = 700.0
-	_light.omni_attenuation = 1.3
+	# Sin caida por distancia: con la escala del mundo no llegaba al piso.
+	_light.omni_attenuation = 0.0
 	add_child(_light)
 
 

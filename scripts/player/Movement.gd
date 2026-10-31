@@ -468,7 +468,12 @@ func _move_to_ground(point: Vector3) -> void:
 
 func _on_path_changed() -> void:
 	if click_reference and click_reference.visible and target_enemy == null:
-		click_reference.global_position = nav_agent.get_final_position()
+		# El camino ya calculado: get_final_position() puede recalcularlo y
+		# volver a emitir path_changed (recursion sin fin si la navegacion
+		# todavia no sincronizo).
+		var path: PackedVector3Array = nav_agent.get_current_navigation_path()
+		if not path.is_empty():
+			click_reference.global_position = path[path.size() - 1]
 
 
 func _update_hover() -> void:
