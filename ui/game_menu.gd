@@ -14,6 +14,10 @@ var _difficulty_label: Label
 var _load_button: Button
 var _back_button: Button
 var _warning: Label
+var _advance_button: Button
+var _extreme_check: CheckButton
+var _difficulty_buttons: Array[Button] = []
+var _difficulty_descriptions: Array[Label] = []
 var _class_buttons: Dictionary = {}
 var _class_description: Label
 var _chosen_class: String = PlayerClasses.DEFAULT
@@ -65,7 +69,12 @@ func _build_main() -> VBoxContainer:
 	_load_button = _add_button(box, "Cargar última partida (F9)", func() -> void:
 		close()
 		save_game.reload_last_save())
-	_add_button(box, "Partida nueva", open_difficulty)
+	# Con la dificultad completada (un campeon en cada region) se puede pasar
+	# a la siguiente con el mismo personaje.
+	_advance_button = _add_button(box, "", func() -> void:
+		close()
+		save_game.advance_difficulty())
+	_add_button(box, "Personaje nuevo", open_difficulty)
 	_add_button(box, "Opciones", _show_options)
 	_add_button(box, "Menú principal", func() -> void:
 		save_game.save()
@@ -77,7 +86,8 @@ func _build_main() -> VBoxContainer:
 		get_tree().quit())
 
 	var keys := Label.new()
-	keys.text = "I inventario · C personaje · Tab mapa · K combo · M montura · Q poción"
+	keys.text = "I inventario · C personaje · B bestiario · Tab mapa · N mapa encima
+K combo · M montura · Q poción · W E R T cinturón · F juntar"
 	keys.theme_type_variation = &"DimLabel"
 	keys.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(keys)
@@ -95,7 +105,7 @@ func _build_main() -> VBoxContainer:
 func _build_difficulty() -> VBoxContainer:
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	box.add_child(_header("PARTIDA NUEVA", ""))
+	box.add_child(_header("PERSONAJE NUEVO", ""))
 
 	var class_info := Label.new()
 	class_info.text = "Elegí la clase del personaje:"
@@ -125,14 +135,20 @@ func _build_difficulty() -> VBoxContainer:
 	_choose_class(_chosen_class)
 
 	var info := Label.new()
-	info.text = "Elegí la dificultad. Queda fija para toda la partida."
+	info.text = "Elegí la dificultad. Las siguientes se desbloquean completando la anterior."
 	info.theme_type_variation = &"DimLabel"
 	box.add_child(info)
 
 	_warning = Label.new()
-	_warning.text = "Se reemplaza la partida guardada."
 	_warning.add_theme_color_override("font_color", Color(0.95, 0.35, 0.3))
+	_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_warning.custom_minimum_size.x = 420
 	box.add_child(_warning)
+
+	_extreme_check = CheckButton.new()
+	_extreme_check.text = "Modo extremo: una sola vida (al morir se pierde el personaje)"
+	_extreme_check.add_theme_color_override("font_color", Color(0.9, 0.5, 0.4))
+	box.add_child(_extreme_check)
 
 	for i in difficulty.LEVELS.size():
 		var row := HBoxContainer.new()
@@ -141,7 +157,9 @@ func _build_difficulty() -> VBoxContainer:
 		button.custom_minimum_size = Vector2(120, 40)
 		button.add_theme_color_override("font_color", difficulty.get_color(i))
 		button.add_theme_color_override("font_hover_color", difficulty.get_color(i).lightened(0.3))
+		_difficulty_buttons.append(button)
 		var description := Label.new()
+		_difficulty_descriptions.append(description)
 		description.text = difficulty.LEVELS[i].description
 		description.theme_type_variation = &"DimLabel"
 		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -220,7 +238,15 @@ func open_difficulty() -> void:
 	_main_box.visible = false
 	_options_box.visible = false
 	_difficulty_box.visible = true
-	_warning.visible = save_game.has_save()
+	var full: bool = save_game.free_slot() == -1
+	_warning.text = "No hay lugar para otro personaje: borrá uno desde el menú principal (Personajes)." if full \
+			else "Se guarda el personaje actual y se crea uno nuevo."
+	_warning.visible = full or save_game.has_save()
+	for i in _difficulty_buttons.size():
+		var locked: bool = i > save_game.unlocked_difficulty
+		_difficulty_buttons[i].disabled = locked or full
+		_difficulty_descriptions[i].text = difficulty.LEVELS[i].description if not locked \
+				else "Bloqueada: completá %s (un campeón en cada región)." % difficulty.get_level_name(i - 1)
 	_back_button.visible = not _choosing_first
 	if not visible:
 		visible = true
@@ -240,7 +266,12 @@ func _show_main() -> void:
 	_options_box.visible = false
 	_difficulty_label.text = "Dificultad: %s" % difficulty.get_level_name()
 	_difficulty_label.add_theme_color_override("font_color", difficulty.get_color())
-	_load_button.disabled = not save_game.has_save()
+	_load_button.disabled = not save_game.has_save() or save_game.hardcore
+	var next: int = difficulty.current + 1
+	_advance_button.visible = next < difficulty.LEVELS.size() and next <= save_game.unlocked_difficulty \
+			and bestiary.regions_cleared.size() >= bestiary.REGIONS.size()
+	if _advance_button.visible:
+		_advance_button.text = "Pasar a %s (mismo personaje)" % difficulty.get_level_name(next)
 	_recenter.call_deferred()
 
 
@@ -263,7 +294,7 @@ func _choose_class(class_id: String) -> void:
 func _on_difficulty_chosen(index: int) -> void:
 	_choosing_first = false
 	close()
-	save_game.new_game(index, _chosen_class)
+	save_game.new_game(index, _chosen_class, _extreme_check.button_pressed)
 
 
 func _any_panel_open() -> bool:

@@ -609,6 +609,9 @@ func _on_died() -> void:
 	stop_moving()
 	if click_reference:
 		click_reference.hide()
+	# En modo extremo no se reaparece (save_game vuelve al titulo).
+	if save_game.hardcore:
+		return
 	await get_tree().create_timer(respawn_delay, false).timeout
 	# Reaparece en el portal descubierto mas cercano (o en el inicio).
 	var portal: Node3D = world_map.nearest_portal(global_position)

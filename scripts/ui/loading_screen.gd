@@ -38,7 +38,14 @@ const TIPS := [
 	"Cada cofre del mapa se abre una sola vez: buscalos en las ruinas y en el cementerio.",
 	"Con C abrís la hoja del personaje, donde se reparten los puntos de atributo al subir de nivel.",
 	"Las piezas de un mismo set dan bonos extra cuantas más tengas puestas.",
-	"Las opciones de Pantalla tienen sombras, distancia de dibujo y límite de FPS para que el juego ande mejor en tu PC.",
+	"Las opciones de Pantalla y Gráficos tienen sombras, distancia de dibujo y límite de FPS para que el juego ande mejor en tu PC.",
+	"Con B abrís el bestiario: ahí ves las debilidades de cada criatura que ya enfrentaste.",
+	"Con N aparece un mapa translúcido encima del juego, sin pausar la pelea.",
+	"Derrotá a un campeón en cada región para completar la dificultad y desbloquear la siguiente.",
+	"Podés tener hasta cinco personajes. El baúl de la aldea es compartido entre todos.",
+	"En modo extremo hay una sola vida: si caés, el personaje se pierde para siempre.",
+	"W, E, R y T usan lo que tengas en el cinturón: pociones, antídotos o el pergamino de retorno.",
+	"Con F juntás todo lo que quedó tirado cerca tuyo.",
 ]
 
 ## true mientras se ve la pantalla (para no encimar dos viajes).

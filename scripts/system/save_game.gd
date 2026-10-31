@@ -1,27 +1,45 @@
 extends Node
 
-## Autoload que guarda y carga la partida (user://partida.json).
+## Autoload que guarda y carga la partida. Hay SLOT_COUNT ranuras, una por
+## personaje: la primera es user://partida.json y las demas van al lado
+## (partida_2.json...). Al lado tambien quedan el perfil (perfil.cfg: ultima
+## ranura usada y dificultades desbloqueadas) y el baul compartido por todos
+## los personajes (baul.json; los de modo extremo usan baul_extremo.json).
 ## Al abrir el juego se carga sola la ultima partida, antes de que se arme la
 ## escena: asi la UI y el jugador arrancan leyendo el estado ya cargado.
 ## F5 guarda y F9 vuelve a la ultima partida guardada. Ademas se guarda sola
 ## cada AUTOSAVE_INTERVAL segundos, al viajar por un portal (loading_screen) y
-## al cerrar la ventana; el guardado automatico se avisa con un icono chico. La partida nueva
-## (con su clase y su dificultad) se arma desde la pantalla de titulo o el
-## menu del juego (ui/game_menu.gd).
+## al cerrar la ventana. Los personajes nuevos se arman desde la pantalla de
+## titulo o el menu del juego (ui/game_menu.gd).
+## Modo extremo: una sola vida. Al morir la partida queda marcada como caida
+## ("fallen"), ya no se puede cargar y se vuelve al titulo.
 
 signal saved
+## Murio el personaje de modo extremo (el HUD lo muestra).
+signal fell
 
 const SAVE_PATH := "user://partida.json"
 const SAVE_VERSION: int = 1
 const AUTOSAVE_INTERVAL: float = 60.0
+const SLOT_COUNT: int = 5
+## Segundos entre la muerte en modo extremo y la vuelta al titulo.
+const FALL_DELAY: float = 5.0
 const NOTICE_FONT := preload("res://assets/fonts/ebgaramond/EBGaramond-Italic[wght].ttf")
 ## Campos que la generacion de botin cambia respecto del item base
 ## (ver Loot.generate_item e ItemSets.generate_piece).
 const ITEM_FIELDS := ["rarity", "min_damage", "max_damage", "defense", "suffix", "unique_name", "bonuses", "set_id", "value", "sockets", "gems",
 		"required_level", "required_attributes", "special", "special_value", "lore"]
 
-## Archivo de la partida (los tests usan otro para no pisar la del jugador).
+## Archivo de la partida activa. Los tests ponen otro antes de _ready para no
+## pisar la del jugador; las demas ranuras, el perfil y el baul salen de ahi
+## (con el nombre de ese archivo adelante: ver _side_path).
 var save_path: String = SAVE_PATH
+## Ranura de la partida activa (0 = la primera).
+var slot: int = 0
+## Modo extremo (una sola vida). Se elige al crear el personaje.
+var hardcore: bool = false
+## Dificultad mas alta que se puede elegir para un personaje nuevo (perfil).
+var unlocked_difficulty: int = 0
 ## Donde estaba el jugador al guardar (Movement lo usa al arrancar). INF = sin dato.
 var player_position: Vector3 = Vector3.INF
 ## Items puestos a mano en el mapa que ya se juntaron (no vuelven a aparecer).
@@ -29,11 +47,28 @@ var collected_pickups: Array[String] = []
 var _autosave_timer: float = 0.0
 var _notice: Label
 var _notice_tween: Tween
+var _primary_path: String = ""
+## true cuando lo que hay en memoria ya no se debe guardar (se borro la
+## ranura activa o el personaje de modo extremo cayo).
+var _discarded: bool = false
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	load_saved()
+	_primary_path = save_path
+	_load_profile()
+	# Con otro archivo (pruebas) se arranca siempre por el primero.
+	if _primary_path != SAVE_PATH:
+		slot = 0
+	if not _is_alive(slot):
+		var alive: Array = range(SLOT_COUNT).filter(_is_alive)
+		if not alive.is_empty():
+			slot = alive[0]
+	save_path = slot_path(slot)
+	if not load_saved() and FileAccess.file_exists(save_path):
+		# Partida caida o dañada: no se pisa.
+		_discarded = true
+	player_stats.died.connect(_on_player_died)
 
 
 func _process(delta: float) -> void:
@@ -59,8 +94,150 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## Hay una partida que se puede seguir en la ranura activa.
 func has_save() -> bool:
-	return FileAccess.file_exists(save_path)
+	return FileAccess.file_exists(save_path) and not _discarded
+
+
+# --- Ranuras y perfil --------------------------------------------------------
+
+func slot_path(index: int) -> String:
+	if index == 0:
+		return _primary_path
+	return "%s_%d.json" % [_primary_path.get_basename(), index + 1]
+
+
+## Resumen de una ranura para los menus: {} si esta vacia; si no, clase,
+## nivel, dificultad, dia, si es de modo extremo y si cayo.
+func slot_summary(index: int) -> Dictionary:
+	var path: String = slot_path(index)
+	if not FileAccess.file_exists(path):
+		return {}
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if not data is Dictionary:
+		return {"broken": true}
+	var player_data: Dictionary = data.get("player", {})
+	return {
+		"class": str(player_data.get("class", PlayerClasses.DEFAULT)),
+		"level": int(player_data.get("level", 1)),
+		"difficulty": clampi(int(data.get("difficulty", 0)), 0, difficulty.LEVELS.size() - 1),
+		"day": int(data.get("world", {}).get("day", 1)),
+		"hardcore": bool(data.get("hardcore", false)),
+		"fallen": bool(data.get("fallen", false)),
+	}
+
+
+## Texto de una linea para mostrar una ranura ("Mago nivel 7 · Veterano · Día 3").
+func describe_slot(summary: Dictionary) -> String:
+	if summary.is_empty():
+		return "Vacío"
+	if summary.has("broken"):
+		return "Partida dañada"
+	var text: String = "%s nivel %d · %s · Día %d" % [PlayerClasses.name_of(summary["class"]), summary.level,
+			difficulty.get_level_name(summary.difficulty), summary.day]
+	if summary.hardcore:
+		text += " · Extremo"
+	if summary.fallen:
+		text += " · Caído"
+	return text
+
+
+func _is_alive(index: int) -> bool:
+	var summary: Dictionary = slot_summary(index)
+	return not summary.is_empty() and not summary.has("broken") and not summary.fallen
+
+
+func free_slot() -> int:
+	for i in SLOT_COUNT:
+		if not FileAccess.file_exists(slot_path(i)):
+			return i
+	return -1
+
+
+func _use_slot(index: int) -> void:
+	slot = index
+	save_path = slot_path(index)
+	_save_profile()
+
+
+## Juega con otro personaje (desde el titulo): rearma la escena con su partida.
+func load_slot(index: int) -> void:
+	if index != slot and has_save():
+		save()
+	_use_slot(index)
+	get_tree().paused = false
+	var summary: Dictionary = slot_summary(index)
+	if await loading_screen.reload_scene("CARGANDO", PlayerClasses.name_of(summary.get("class", "")), load_saved):
+		_announce("%s nivel %d" % [PlayerClasses.name_of(player_stats.class_id), player_stats.level])
+
+
+## Borra el personaje de una ranura (si es el activo, lo que queda en memoria
+## ya no se guarda hasta cargar o crear otro).
+func delete_slot(index: int) -> void:
+	var path: String = slot_path(index)
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	if index == slot:
+		_discarded = true
+
+
+## Marca una dificultad como desbloqueada (y las de antes) en el perfil.
+func unlock_difficulty(index: int) -> void:
+	index = clampi(index, 0, difficulty.LEVELS.size() - 1)
+	if index > unlocked_difficulty:
+		unlocked_difficulty = index
+		_save_profile()
+
+
+func _profile_path() -> String:
+	return _side_path("perfil.cfg")
+
+
+# Archivo al lado de la partida. Con otro archivo que el de siempre (pruebas)
+# lleva su nombre adelante, asi nunca toca el perfil ni el baul del jugador.
+func _side_path(file_name: String) -> String:
+	if _primary_path == SAVE_PATH:
+		return SAVE_PATH.get_base_dir().path_join(file_name)
+	return "%s_%s" % [_primary_path.get_basename(), file_name]
+
+
+func _load_profile() -> void:
+	var config := ConfigFile.new()
+	if config.load(_profile_path()) != OK:
+		return
+	slot = clampi(int(config.get_value("perfil", "ultima_ranura", 0)), 0, SLOT_COUNT - 1)
+	unlocked_difficulty = clampi(int(config.get_value("perfil", "dificultad_maxima", 0)), 0, difficulty.LEVELS.size() - 1)
+
+
+func _save_profile() -> void:
+	if _primary_path.is_empty():
+		return
+	var config := ConfigFile.new()
+	config.set_value("perfil", "ultima_ranura", slot)
+	config.set_value("perfil", "dificultad_maxima", unlocked_difficulty)
+	config.save(_profile_path())
+
+
+# --- Baul compartido ---------------------------------------------------------
+
+func _stash_path() -> String:
+	return _side_path("baul_extremo.json" if hardcore else "baul.json")
+
+
+# Lo que hay en el baul compartido. Si todavia no existe (partidas de antes),
+# se usa el baul que traia la partida.
+func _read_stash(data: Dictionary) -> Array:
+	if FileAccess.file_exists(_stash_path()):
+		var stash: Variant = JSON.parse_string(FileAccess.get_file_as_string(_stash_path()))
+		if stash is Array:
+			return stash
+	return data.get("stash", [])
+
+
+func _write_stash() -> void:
+	var file := FileAccess.open(_stash_path(), FileAccess.WRITE)
+	if file:
+		file.store_string(JSON.stringify(_grid_to_array(inventory_data.stash, false), "\t", false))
 
 
 ## F5: guarda y lo avisa en pantalla.
@@ -87,8 +264,11 @@ func save() -> bool:
 	return _write()
 
 
-func _write() -> bool:
+func _write(fallen: bool = false) -> bool:
 	_autosave_timer = 0.0
+	# Antes de _ready no se sabe donde van la partida ni el baul.
+	if _discarded or _primary_path.is_empty():
+		return false
 	var player_data := {
 		"class": player_stats.class_id,
 		"level": player_stats.level,
@@ -103,10 +283,12 @@ func _write() -> bool:
 	var data := {
 		"version": SAVE_VERSION,
 		"difficulty": difficulty.current,
+		"hardcore": hardcore,
+		"fallen": fallen,
+		"bestiary": bestiary.to_save(),
 		"player": player_data,
 		"inventory": _grid_to_array(inventory_data.backpack, true),
 		"inventory_overflow": inventory_data.overflow.map(_slot_to_dict),
-		"stash": _grid_to_array(inventory_data.stash, false),
 		"equipment": _slots_to_array(inventory_data.equipment),
 		"belt": Array(inventory_data.belt),
 		"combo": skill_book.combo,
@@ -121,6 +303,8 @@ func _write() -> bool:
 		return false
 	# Sin ordenar las claves: las bonificaciones conservan su orden en el tooltip.
 	file.store_string(JSON.stringify(data, "\t", false))
+	file.close()
+	_write_stash()
 	saved.emit()
 	return true
 
@@ -128,20 +312,27 @@ func _write() -> bool:
 ## Lee la partida guardada y la aplica a los autoloads. Devuelve false si no
 ## habia partida o no se pudo leer (en ese caso no cambia nada).
 func load_saved() -> bool:
-	if not has_save():
+	if not FileAccess.file_exists(save_path):
 		return false
 	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(save_path))
 	if not data is Dictionary or int(data.get("version", 0)) != SAVE_VERSION:
 		push_warning("La partida guardada no se pudo leer: %s" % save_path)
 		return false
+	if data.get("fallen", false):
+		return false
 
+	_discarded = false
+	hardcore = bool(data.get("hardcore", false))
 	difficulty.set_level(int(data.get("difficulty", 0)))
+	# Lo que ya se jugo queda desbloqueado (partidas de antes del perfil).
+	unlock_difficulty(difficulty.current)
+	bestiary.from_save(data.get("bestiary", {}))
 	# Primero el equipo: cambia la vida maxima.
 	inventory_data.reset()
 	inventory_data.shop_mode = false
 	_array_to_grid(data.get("inventory", []), inventory_data.backpack)
 	_array_to_grid(data.get("inventory_overflow", []), inventory_data.backpack)
-	_array_to_grid(data.get("stash", []), inventory_data.stash)
+	_array_to_grid(_read_stash(data), inventory_data.stash)
 	_array_to_slots(data.get("equipment", []), inventory_data.equipment)
 	# Las partidas de antes del cinturon arrancan con el de siempre.
 	inventory_data.load_belt(data.get("belt", inventory_data.DEFAULT_BELT))
@@ -188,6 +379,9 @@ func load_saved() -> bool:
 
 ## F9: vuelve a la ultima partida guardada (rearma la escena con ese estado).
 func reload_last_save() -> void:
+	if hardcore:
+		_announce("En modo extremo no hay vuelta atrás")
+		return
 	if not has_save():
 		_announce("No hay partida guardada")
 		return
@@ -199,20 +393,34 @@ func reload_last_save() -> void:
 		_announce("No se pudo leer la partida")
 
 
-## Partida nueva con la clase y la dificultad elegidas: personaje de nivel 1
-## con el equipo de su clase, y el mapa como al principio. Reemplaza la
-## partida guardada.
-func new_game(difficulty_level: int, class_id: String = PlayerClasses.DEFAULT) -> void:
+## Personaje nuevo con la clase y la dificultad elegidas, en la primera
+## ranura libre: nivel 1 con el equipo de su clase y el mapa como al
+## principio. Antes se guarda el personaje actual. Devuelve false si no hay
+## ranura libre (los menus lo avisan antes).
+func new_game(difficulty_level: int, class_id: String = PlayerClasses.DEFAULT, extreme: bool = false) -> bool:
+	var target: int = free_slot()
+	if target == -1:
+		_announce("No hay lugar para otro personaje")
+		return false
+	if has_save():
+		save()
+	_use_slot(target)
 	get_tree().paused = false
-	await loading_screen.reload_scene("PARTIDA NUEVA", PlayerClasses.name_of(class_id),
-			_start_new_game.bind(difficulty_level, class_id))
-	_announce("%s · %s" % [PlayerClasses.name_of(player_stats.class_id), difficulty.get_level_name()])
+	await loading_screen.reload_scene("PERSONAJE NUEVO", PlayerClasses.name_of(class_id),
+			_start_new_game.bind(difficulty_level, class_id, extreme))
+	_announce("%s · %s%s" % [PlayerClasses.name_of(player_stats.class_id), difficulty.get_level_name(), " · Extremo" if hardcore else ""])
+	return true
 
 
 # Arma el estado de la partida nueva (con la pantalla de carga ya tapando).
-func _start_new_game(difficulty_level: int, class_id: String) -> bool:
+func _start_new_game(difficulty_level: int, class_id: String, extreme: bool) -> bool:
+	_discarded = false
+	hardcore = extreme
 	difficulty.set_level(difficulty_level)
 	inventory_data.reset()
+	# El baul es de todos los personajes (el de modo extremo, aparte).
+	_array_to_grid(_read_stash({}), inventory_data.stash)
+	bestiary.reset()
 	player_stats.reset(class_id)
 	skill_book.set_class(player_stats.class_id)
 	skill_book.reset()
@@ -348,6 +556,43 @@ static func _item_from_dict(data: Dictionary) -> Itemdata:
 		if data.has(field):
 			item.set(field, type_convert(data[field], typeof(item.get(field))))
 	return item
+
+
+## Pasa el personaje a la dificultad siguiente (ya desbloqueada): conserva
+## todo y los enemigos se vuelven mas fuertes.
+func advance_difficulty() -> void:
+	var next: int = difficulty.current + 1
+	if next >= difficulty.LEVELS.size() or next > unlocked_difficulty:
+		return
+	get_tree().paused = false
+	var prepare := func() -> bool:
+		difficulty.set_level(next)
+		bestiary.regions_cleared.clear()
+		return save()
+	if await loading_screen.reload_scene("NUEVA DIFICULTAD", difficulty.get_level_name(next), prepare):
+		_announce("Dificultad %s" % difficulty.get_level_name())
+
+
+# Modo extremo: la partida queda marcada como caida y despues de un rato se
+# vuelve al titulo con el ultimo personaje vivo (o ninguno).
+func _on_player_died() -> void:
+	if not hardcore or _discarded:
+		return
+	var player: Node3D = get_tree().get_first_node_in_group("player")
+	if player:
+		player_position = player.global_position
+	_write(true)
+	_discarded = true
+	fell.emit()
+	await get_tree().create_timer(FALL_DELAY, false).timeout
+	var prepare := func() -> bool:
+		var alive: Array = range(SLOT_COUNT).filter(_is_alive)
+		if not alive.is_empty():
+			_use_slot(alive[0])
+			load_saved()
+		TitleScreen.show_on_next_load = true
+		return true
+	loading_screen.reload_scene("MODO EXTREMO", "Caíste en combate", prepare)
 
 
 func _show_saving_notice() -> void:

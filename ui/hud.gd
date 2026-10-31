@@ -6,6 +6,8 @@ extends CanvasLayer
 const SkillSlot := preload("res://ui/skill_slot.gd")
 const Nameplates := preload("res://ui/nameplates.gd")
 const ComboSlot := preload("res://ui/combo_slot.gd")
+const MapOverlay := preload("res://ui/map_overlay.gd")
+const BestiaryPanel := preload("res://ui/bestiary_panel.gd")
 const POTION := preload("res://item/items/potion_of_health.tres")
 
 ## La camara del retrato mira a este punto sobre el hueso de la cabeza.
@@ -31,6 +33,8 @@ const POISON_FILL := preload("res://ui/theme/textures/fill_poison.png")
 var player: CharacterBody3D
 var _message_time: float = 0.0
 var _respawn_countdown: float = -1.0
+## Murio en modo extremo: el cartel queda hasta volver al titulo.
+var _fallen: bool = false
 var _pulse: float = 0.0
 var _buff_labels: Dictionary = {}
 var _potion_count: Label
@@ -53,6 +57,15 @@ func _ready() -> void:
 	world_time.day_started.connect(func() -> void:
 		show_message("Amanece", Color(1.0, 0.85, 0.5), 2.5))
 	world_map.portal_discovered.connect(_on_portal_discovered)
+	bestiary.region_cleared.connect(_on_region_cleared)
+	bestiary.difficulty_completed.connect(_on_difficulty_completed)
+	save_game.fell.connect(func() -> void: _fallen = true)
+	# Mapa translucido (debajo de todo el HUD) y bestiario (con los paneles).
+	var overlay := MapOverlay.new()
+	$Root.add_child(overlay)
+	$Root.move_child(overlay, 0)
+	var panels: Node = get_parent().get_node_or_null("UI")
+	(panels if panels else self).add_child.call_deferred(BestiaryPanel.new())
 	_on_health_changed(player_stats.health, player_stats.get_max_health())
 	_on_xp_changed(player_stats.xp, player_stats.xp_for_next_level())
 	level_label.text = str(player_stats.level)
@@ -359,7 +372,27 @@ func _on_leveled_up(new_level: int) -> void:
 
 
 func _on_died() -> void:
+	if save_game.hardcore:
+		return
 	_respawn_countdown = player.respawn_delay if player else 4.0
+
+
+func _on_region_cleared(region: String) -> void:
+	sfx.play("levelup")
+	show_message("¡Liberaste %s! (%d de %d)" % [bestiary.REGIONS[region], bestiary.regions_cleared.size(), bestiary.REGIONS.size()],
+			Color(1.0, 0.85, 0.4), 3.5)
+
+
+func _on_difficulty_completed(index: int) -> void:
+	# Despues del aviso de la region, para no pisarlo.
+	await get_tree().create_timer(3.8, false).timeout
+	var text: String = "¡Completaste %s!" % difficulty.get_level_name(index)
+	var color: Color = difficulty.get_color(index)
+	if index + 1 < difficulty.LEVELS.size():
+		text += "\nSe desbloqueó %s (menú Esc)" % difficulty.get_level_name(index + 1)
+		color = difficulty.get_color(index + 1)
+	sfx.play("levelup")
+	show_message(text, color, 5.0)
 
 
 func _on_respawned() -> void:
@@ -368,6 +401,12 @@ func _on_respawned() -> void:
 
 
 func _update_message(delta: float) -> void:
+	if _fallen:
+		message_label.text = "Caíste para siempre\nModo extremo: una sola vida"
+		message_label.add_theme_color_override("font_color", Color(0.85, 0.15, 0.1))
+		message_label.visible = true
+		message_label.modulate.a = 1.0
+		return
 	if _respawn_countdown >= 0.0:
 		_respawn_countdown = maxf(_respawn_countdown - delta, 0.0)
 		message_label.text = "Has muerto\nReaparecés en %d..." % ceili(_respawn_countdown)

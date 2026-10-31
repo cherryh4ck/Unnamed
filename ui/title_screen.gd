@@ -37,6 +37,8 @@ var _title_font: FontVariation
 var _item_font: FontVariation
 var _chosen_class: String = PlayerClasses.DEFAULT
 var _class_label: Label
+var _extreme: bool = false
+var _pages_root: Control
 
 
 func _ready() -> void:
@@ -142,17 +144,18 @@ func _build() -> void:
 	rule_box.add_child(rule)
 	column.add_child(rule_box)
 
-	var pages := Control.new()
-	pages.custom_minimum_size = Vector2(520, 420)
-	column.add_child(pages)
+	_pages_root = Control.new()
+	_pages_root.custom_minimum_size = Vector2(520, 420)
+	column.add_child(_pages_root)
 	_pages.main = _build_main()
+	_pages.characters = _build_characters()
 	_pages.classes = _build_classes()
 	_pages.new = _build_new_game()
 	_pages.options = _build_options()
 	_pages.credits = _build_credits()
 	for page in _pages.values():
 		page.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-		pages.add_child(page)
+		_pages_root.add_child(page)
 
 	var hint := Label.new()
 	hint.text = "Mouse o flechas para elegir · Enter: aceptar · Esc: volver"
@@ -180,16 +183,99 @@ func _build_main() -> VBoxContainer:
 		detail_box.add_child(detail)
 		page.add_child(detail_box)
 		item.set_meta("first", true)
-	_item(page, "Partida nueva", _show_page.bind("classes"))
+	if range(save_game.SLOT_COUNT).any(func(i: int) -> bool: return not save_game.slot_summary(i).is_empty()):
+		_item(page, "Personajes", _show_page.bind("characters"))
+	_item(page, "Personaje nuevo", _show_page.bind("classes"))
 	_item(page, "Opciones", _show_page.bind("options"))
 	_item(page, "Créditos", _show_page.bind("credits"))
 	_item(page, "Salir", func() -> void: get_tree().quit())
 	return page
 
 
+## Los personajes guardados: clic para jugar con uno; "Borrar" pide un
+## segundo clic para confirmar.
+func _build_characters() -> VBoxContainer:
+	var page := _page()
+	page.add_child(_header("Personajes"))
+	for i in save_game.SLOT_COUNT:
+		var summary: Dictionary = save_game.slot_summary(i)
+		if summary.is_empty():
+			var free := _text("— Lugar libre —", 15, Color(DIM, 0.6))
+			free.custom_minimum_size.y = 40
+			free.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			var free_box := MarginContainer.new()
+			free_box.add_theme_constant_override("margin_left", 34)
+			free_box.add_child(free)
+			page.add_child(free_box)
+			continue
+		var fallen: bool = summary.get("fallen", false) or summary.has("broken")
+		var info: Dictionary = PlayerClasses.get_info(summary.get("class", ""))
+		var title: String = "%s nivel %d" % [info.name, summary.get("level", 1)] if not summary.has("broken") else "Partida dañada"
+		var item := _item(page, title, _play_slot.bind(i), DIM if fallen else info.color, 40.0)
+		item.disabled = fallen
+		if i == save_game.slot and save_game.has_save():
+			item.set_meta("first", true)
+		var holder: Control = item.get_parent()
+		var delete := Button.new()
+		delete.text = "Borrar"
+		delete.flat = true
+		delete.focus_mode = Control.FOCUS_ALL
+		delete.position = Vector2(452, 6)
+		delete.size = Vector2(80, 28)
+		delete.add_theme_font_size_override("font_size", 15)
+		delete.add_theme_color_override("font_color", Color(0.75, 0.38, 0.3))
+		delete.add_theme_color_override("font_hover_color", Color(1.0, 0.45, 0.35))
+		delete.add_theme_color_override("font_focus_color", Color(1.0, 0.45, 0.35))
+		delete.pressed.connect(_delete_slot.bind(i, delete))
+		holder.add_child(delete)
+		var detail := _text(save_game.describe_slot(summary).split(" · ", true, 1)[-1], 13,
+				Color(0.85, 0.3, 0.25) if fallen else difficulty.get_color(summary.get("difficulty", 0)).lerp(DIM, 0.35))
+		var detail_box := MarginContainer.new()
+		detail_box.add_theme_constant_override("margin_left", 34)
+		detail_box.add_theme_constant_override("margin_bottom", 4)
+		detail_box.add_child(detail)
+		page.add_child(detail_box)
+	_item(page, "Volver", _show_page.bind("main"))
+	return page
+
+
+func _play_slot(index: int) -> void:
+	# El que ya esta cargado entra directo; otro rearma la escena con su partida.
+	if index == save_game.slot and save_game.has_save():
+		_enter_game()
+		return
+	_leaving = true
+	get_tree().paused = false
+	save_game.load_slot(index)
+
+
+func _delete_slot(index: int, button: Button) -> void:
+	if not button.has_meta("armed"):
+		button.set_meta("armed", true)
+		button.text = "¿Seguro?"
+		sfx.play("click")
+		return
+	save_game.delete_slot(index)
+	sfx.play("page")
+	_rebuild_pages()
+	_show_page("characters")
+
+
+# Los menus muestran las partidas guardadas: se rearman al borrar una.
+func _rebuild_pages() -> void:
+	for key in ["main", "characters", "new"]:
+		_pages[key].queue_free()
+	_pages.main = _build_main()
+	_pages.characters = _build_characters()
+	_pages.new = _build_new_game()
+	for key in ["main", "characters", "new"]:
+		_pages[key].set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+		_pages_root.add_child(_pages[key])
+
+
 func _build_classes() -> VBoxContainer:
 	var page := _page()
-	page.add_child(_header("Partida nueva"))
+	page.add_child(_header("Personaje nuevo"))
 	page.add_child(_text("Elegí la clase de tu personaje.", 15, DIM))
 	for i in PlayerClasses.ORDER.size():
 		var class_id: String = PlayerClasses.ORDER[i]
@@ -218,18 +304,27 @@ func _pick_class(class_id: String) -> void:
 
 func _build_new_game() -> VBoxContainer:
 	var page := _page()
-	page.add_child(_header("Partida nueva"))
-	_class_label = _text("", 20, GOLD)
+	page.add_child(_header("Personaje nuevo"))
+	var class_name_text: String = _class_label.text if _class_label else ""
+	_class_label = _text(class_name_text, 20, GOLD)
+	_class_label.add_theme_color_override("font_color", PlayerClasses.get_info(_chosen_class).color)
 	page.add_child(_class_label)
-	var info := _text("Elegí la dificultad. Queda fija para toda la partida.", 15, DIM)
-	page.add_child(info)
-	if save_game.has_save():
-		page.add_child(_text("Se reemplaza la partida guardada.", 15, Color(0.95, 0.42, 0.32)))
+	var full: bool = save_game.free_slot() == -1
+	if full:
+		page.add_child(_text("No hay lugar: borrá un personaje en «Personajes».", 15, Color(0.95, 0.42, 0.32)))
+	var extreme := _item(page, _extreme_text(), func() -> void: pass, Color(0.9, 0.45, 0.35), 36.0)
+	extreme.pressed.connect(func() -> void:
+		_extreme = not _extreme
+		extreme.text = _extreme_text())
 	for i in difficulty.LEVELS.size():
-		var item := _item(page, difficulty.get_level_name(i), _start_new_game.bind(i), difficulty.get_color(i), 40.0)
+		var locked: bool = i > save_game.unlocked_difficulty
+		var item := _item(page, difficulty.get_level_name(i) + (" (bloqueada)" if locked else ""), _start_new_game.bind(i),
+				DIM if locked else difficulty.get_color(i), 36.0)
+		item.disabled = locked or full
 		if i == 0:
 			item.set_meta("first", true)
-		var description := _text(difficulty.LEVELS[i].description, 13, DIM)
+		var description := _text(difficulty.LEVELS[i].description if not locked
+				else "Completá %s (un campeón en cada región) para desbloquearla." % difficulty.get_level_name(i - 1), 13, DIM)
 		description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		var box := MarginContainer.new()
 		box.add_theme_constant_override("margin_left", 34)
@@ -490,9 +585,14 @@ func _finish() -> void:
 
 
 func _start_new_game(level: int) -> void:
+	_leaving = true
 	get_tree().paused = false
 	# La escena se vuelve a armar con la partida nueva (sin titulo).
-	save_game.new_game(level, _chosen_class)
+	save_game.new_game(level, _chosen_class, _extreme)
+
+
+func _extreme_text() -> String:
+	return "Modo extremo: sí, una sola vida" if _extreme else "Modo extremo: no"
 
 
 func _game_camera() -> Camera3D:
