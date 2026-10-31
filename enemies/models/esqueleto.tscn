@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/models/no_muertos/no_muerto.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/oad_anim_library.glb" id="2_rig"]
+[ext_resource type="ArrayMesh" path="res://enemies/models/no_muertos/huesos.res" id="3_bones"]
+[ext_resource type="Skin" path="res://enemies/models/no_muertos/huesos_skin.tres" id="4_skin"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/axe.glb" id="5_axe"]
+
+[node name="Esqueleto" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Modelo" parent="." instance=ExtResource("2_rig")]
+transform = Transform3D(225, 0, 0, 0, 225, 0, 0, 0, 225, 0, 0, 0)
+
+[node name="Body" parent="Modelo/Armature/Skeleton3D" index="0"]
+visible = false
+
+[node name="Huesos" type="MeshInstance3D" parent="Modelo/Armature/Skeleton3D"]
+mesh = ExtResource("3_bones")
+skin = ExtResource("4_skin")
+skeleton = NodePath("..")
+
+[node name="Arma" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D"]
+bone_name = "prop-weapon_R"
+bone_idx = 44
+
+[node name="Hacha" parent="Modelo/Armature/Skeleton3D/Arma" instance=ExtResource("5_axe")]
+
+[editable path="Modelo"]

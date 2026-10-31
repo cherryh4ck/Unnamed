@@ -1,0 +1,51 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://enemies/models/no_muertos/no_muerto.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/oad_anim_library.glb" id="2_rig"]
+[ext_resource type="ArrayMesh" path="res://enemies/models/no_muertos/huesos.res" id="3_bones"]
+[ext_resource type="Skin" path="res://enemies/models/no_muertos/huesos_skin.tres" id="4_skin"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/helmet_celt_berru.glb" id="5_helmet"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/shield_round_small.glb" id="6_shield"]
+[ext_resource type="PackedScene" path="res://assets/characters/oad/props/sword_celtic_long.glb" id="7_sword"]
+
+[sub_resource type="StandardMaterial3D" id="ojos_rojos"]
+shading_mode = 0
+albedo_color = Color(1, 0.25, 0.1, 1)
+emission_enabled = true
+emission = Color(1, 0.25, 0.1, 1)
+emission_energy_multiplier = 2.0
+
+[node name="EsqueletoGuerrero" type="Node3D"]
+script = ExtResource("1_script")
+
+[node name="Modelo" parent="." instance=ExtResource("2_rig")]
+transform = Transform3D(225, 0, 0, 0, 225, 0, 0, 0, 225, 0, 0, 0)
+
+[node name="Body" parent="Modelo/Armature/Skeleton3D" index="0"]
+visible = false
+
+[node name="Huesos" type="MeshInstance3D" parent="Modelo/Armature/Skeleton3D"]
+mesh = ExtResource("3_bones")
+skin = ExtResource("4_skin")
+skeleton = NodePath("..")
+surface_material_override/1 = SubResource("ojos_rojos")
+
+[node name="Casco" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D"]
+bone_name = "prop-helmet"
+bone_idx = 31
+
+[node name="Casco" parent="Modelo/Armature/Skeleton3D/Casco" instance=ExtResource("5_helmet")]
+
+[node name="Escudo" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D"]
+bone_name = "prop-shield"
+bone_idx = 12
+
+[node name="Escudo" parent="Modelo/Armature/Skeleton3D/Escudo" instance=ExtResource("6_shield")]
+
+[node name="Arma" type="BoneAttachment3D" parent="Modelo/Armature/Skeleton3D"]
+bone_name = "prop-weapon_R"
+bone_idx = 44
+
+[node name="Espada" parent="Modelo/Armature/Skeleton3D/Arma" instance=ExtResource("7_sword")]
+
+[editable path="Modelo"]

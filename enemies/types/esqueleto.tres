@@ -1,18 +1,19 @@
 [gd_resource type="Resource" script_class="EnemyData" format=3]
 
 [ext_resource type="Script" path="res://scripts/enemies/enemy_data.gd" id="1_data"]
-[ext_resource type="PackedScene" uid="uid://cxkc0oft7cc56" path="res://modelos/enemigo/esqueleto.glb" id="2_model"]
+[ext_resource type="PackedScene" path="res://enemies/models/esqueleto.tscn" id="2_model"]
 
 [resource]
 script = ExtResource("1_data")
 name = "Esqueleto"
 model = ExtResource("2_model")
-model_offset_y = 296.0
-idle_animation = "18_BT1_0"
-walk_animations = Array[String](["18_BT1_1", "18_BT1_2"])
-attack_animations = Array[String](["18_BT1_11", "18_BT1_12"])
-death_animation = "18_BT1_13"
-spawn_animation = "18_BT1_23"
+model_offset_y = 0.0
+idle_animation = "idle_combat"
+walk_animations = Array[String](["walk_combat"])
+walk_animation_speed = 1.3
+attack_animations = Array[String](["attack_1h_a", "attack_1h_b", "attack_1h_c"])
+death_animation = "death"
+spawn_animation = "no_muerto/levantarse"
 max_health = 55.0
 min_damage = 5
 max_damage = 9

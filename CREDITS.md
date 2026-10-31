@@ -57,9 +57,9 @@ genera `item/gems/build_gems.gd`.
 
 ## Personajes y armas (CC BY-SA 3.0)
 
-Los personajes (las tres clases del jugador, el comerciante, el herrero y los
-bandidos), sus animaciones y los modelos de las armas y escudos equipables son
-de **0 A.D.**, de **Wildfire Games** (https://www.wildfiregames.com/), con
+Los personajes (las tres clases del jugador, el comerciante, el herrero, los
+bandidos y el zombi), sus animaciones y los modelos de las armas y escudos
+equipables son de **0 A.D.**, de **Wildfire Games** (https://www.wildfiregames.com/), con
 licencia [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/).
 Están en `assets/characters/oad/` junto con la licencia original
 (`LICENSE.txt`).
@@ -72,6 +72,14 @@ Están en `assets/characters/oad/` junto con la licencia original
   pelo fijados en las texturas; un clip corto de "golpe recibido" sacado del
   de muerte. Las armas y escudos de `item/models/` usan esos accesorios
   (espada celta, hacha, martillo, ballesta, escudo redondo y escudo oval).
+- No-muertos: el zombi (`characters/zombie.glb`) es un cuerpo de 0 A.D. con la
+  textura repintada (piel podrida, moretones, heridas, costillas a la vista y
+  pantalón roto). `enemies/models/no_muertos/animaciones.res` tiene clips
+  sacados de los de 0 A.D.: levantarse (la muerte al revés) y quieto y caminar
+  de zombi (brazos hacia adelante, espalda encorvada); también son CC BY-SA 3.0.
+  Los huesos de los esqueletos no son de 0 A.D.: los arma
+  `enemies/models/no_muertos/build_no_muertos.gd` con figuras simples y van
+  pegados al esqueleto de animación de 0 A.D. para usar sus animaciones.
 - **Comparte igual:** estos archivos y cualquier cambio que se les haga siguen
   bajo CC BY-SA 3.0. El resto del juego (código y demás arte) no cambia de
   licencia por incluirlos.
