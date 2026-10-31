@@ -126,7 +126,7 @@ func _whirlwind(skill: SkillData) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var offset: Vector3 = enemy.global_position - character.global_position
 		offset.y = 0.0
-		if offset.length() <= skill.radius + enemy.data.collision_radius:
+		if offset.length() <= skill.radius + enemy.body_radius():
 			enemy.take_hit(_roll_skill_hit(skill))
 			hit_any = true
 	if hit_any:
@@ -203,7 +203,7 @@ func _rain(skill: SkillData, aim_point: Vector3) -> void:
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		var offset: Vector3 = enemy.global_position - center
 		offset.y = 0.0
-		if not enemy.dead and offset.length() <= skill.radius + enemy.data.collision_radius:
+		if not enemy.dead and offset.length() <= skill.radius + enemy.body_radius():
 			enemy.take_hit(_roll_skill_hit(skill))
 			hit_any = true
 	if hit_any:
@@ -248,7 +248,7 @@ func _deliver_hit(target: Node3D, delay: float) -> void:
 	if player_stats.is_ranged():
 		_shoot_bolt(to_target.normalized(), hit)
 		return
-	if to_target.length() > character.attack_range * REACH_TOLERANCE:
+	if to_target.length() > character.attack_range * REACH_TOLERANCE + character.extra_reach(target):
 		return
 	target.take_hit(hit)
 	sfx.play_at("hit", target.global_position)

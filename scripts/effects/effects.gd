@@ -263,7 +263,7 @@ static func whirl(parent: Node3D, color: Color, radius: float) -> void:
 		mesh.rotation.y = randf() * TAU
 		var tween := mesh.create_tween().set_parallel(true)
 		tween.tween_property(mesh, "rotation:y", mesh.rotation.y - TAU * (1.3 + i * 0.4), 0.38)
-		tween.tween_property(mesh, "transparency", 1.0, 0.38).set_ease(Tween.EASE_IN)
+		tween.tween_property(plane.material, "albedo_color:a", 0.0, 0.38).set_ease(Tween.EASE_IN)
 		tween.chain().tween_callback(mesh.queue_free)
 
 
@@ -294,7 +294,7 @@ static func shockwave(parent: Node, position: Vector3, color: Color, radius: flo
 	add_at(parent, mesh, position + Vector3.UP * 12.0)
 	var tween := mesh.create_tween().set_parallel(true)
 	tween.tween_property(mesh, "scale", Vector3.ONE * radius * 1.1, duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(mesh, "transparency", 1.0, duration).set_ease(Tween.EASE_IN)
+	tween.tween_property(plane.material, "albedo_color:a", 0.0, duration).set_ease(Tween.EASE_IN)
 	tween.chain().tween_callback(mesh.queue_free)
 
 
@@ -306,11 +306,14 @@ static func ground_glow(parent: Node, position: Vector3, texture: Texture2D, col
 	plane.material = _flat_material(texture, color, true)
 	mesh.mesh = plane
 	mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	mesh.transparency = 1.0
+	# Se desvanece con el alfa del material: GeometryInstance3D.transparency
+	# no hace nada con el renderizador Mobile.
+	var alpha: float = color.a
+	plane.material.albedo_color.a = 0.0
 	add_at(parent, mesh, position + Vector3.UP * 10.0)
 	var tween := mesh.create_tween()
-	tween.tween_property(mesh, "transparency", 0.0, duration * 0.2)
-	tween.tween_property(mesh, "transparency", 1.0, duration * 0.8).set_ease(Tween.EASE_IN)
+	tween.tween_property(plane.material, "albedo_color:a", alpha, duration * 0.2)
+	tween.tween_property(plane.material, "albedo_color:a", 0.0, duration * 0.8).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(mesh, "rotation:y", TAU * turns, duration * 0.8)
 	tween.tween_callback(mesh.queue_free)
 

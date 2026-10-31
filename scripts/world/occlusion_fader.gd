@@ -1,9 +1,9 @@
 extends Node
 
 ## Desvanece las piezas altas (arboles, casas, muros, rocas) que quedan entre
-## la camara y el jugador, como en Sacred. Tambien las que tapan a los
-## enemigos que lo estan peleando cerca y a un cofre sin abrir cercano. Las
-## piezas se anotan solas en el grupo "occluders" (ver scripts/world/prop.gd).
+## la camara y el jugador, como en Sacred: solo las que estan delante de el
+## (lo que esta al lado o detras queda como esta). Las piezas se anotan solas
+## en el grupo "occluders" (ver scripts/world/prop.gd).
 ## Con el renderizador Mobile GeometryInstance3D.transparency no hace nada,
 ## asi que mientras una pieza esta desvanecida usa copias transparentes de sus
 ## materiales, y una copia que solo tira la sombra (la sombra no se borra).
@@ -17,16 +17,13 @@ const SPEED: float = 6.0
 ## el centro y a los costados segun la camara (asi cuenta todo el cuerpo).
 const BODY_HEIGHTS := [60.0, 220.0, 380.0]
 const BODY_HALF_WIDTH: float = 80.0
-## Enemigos peleando a esta distancia del jugador tambien se dejan ver.
-const FIGHT_RADIUS: float = 1000.0
-const FIGHT_HEIGHT: float = 200.0
 ## Lo que queda casi pegado a la camara tambien se desvanece (tapa media pantalla).
 const NEAR_CAMERA: float = 350.0
-## Los cofres sin abrir a esta distancia del jugador tambien se dejan ver.
-const CHEST_RADIUS: float = 1300.0
-const CHEST_HEIGHT: float = 70.0
 ## Tamaño de las celdas de la grilla con la que se buscan las piezas cercanas.
 const CELL: float = 1000.0
+## Una pieza solo tapa si su base esta al menos esto mas cerca de la camara
+## que el jugador.
+const DEPTH_MARGIN: float = 30.0
 
 
 ## Una pieza desvanecida: cuanto, sus materiales transparentes y como dejarla
@@ -55,20 +52,23 @@ func _process(delta: float) -> void:
 		return
 	var eye: Vector3 = camera.global_position
 	var side: Vector3 = camera.global_transform.basis.x * BODY_HALF_WIDTH
+	# Profundidad: distancia hacia adelante de la camara, en el plano.
+	var forward: Vector3 = -camera.global_transform.basis.z
+	forward = Vector3(forward.x, 0.0, forward.z).normalized()
+	var player_depth: float = forward.dot(player.global_position - eye)
 	var points: Array[Vector3] = []
 	for height in BODY_HEIGHTS:
 		var point: Vector3 = player.global_position + Vector3.UP * height
 		points.append_array([point, point + side, point - side])
-	for enemy in get_tree().get_nodes_in_group("enemies"):
-		if enemy.state >= enemy.State.CHASE and enemy.global_position.distance_to(player.global_position) < FIGHT_RADIUS:
-			points.append(enemy.global_position + Vector3.UP * FIGHT_HEIGHT)
-	for chest in get_tree().get_nodes_in_group("chests"):
-		if not chest.opened and chest.global_position.distance_to(player.global_position) < CHEST_RADIUS:
-			points.append(chest.global_position + Vector3.UP * CHEST_HEIGHT)
 
 	var targets: Dictionary = {}
 	for prop in _nearby(player.global_position):
 		var bounds: AABB = prop.world_bounds
+		# La base de la pieza (centro de su caja, en el piso).
+		var center: Vector3 = bounds.get_center()
+		var depth: float = forward.dot(Vector3(center.x, 0.0, center.z) - Vector3(eye.x, 0.0, eye.z))
+		if depth >= player_depth - DEPTH_MARGIN:
+			continue
 		if bounds.grow(NEAR_CAMERA).has_point(eye):
 			targets[prop] = true
 			continue

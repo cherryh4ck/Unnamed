@@ -14,6 +14,8 @@ const SPAWN_TRIES := 10
 const PACK_SPREAD := 170.0
 ## Un punto vale si el piso caminable mas cercano esta a menos de esto.
 const NAVMESH_TOLERANCE := 60.0
+## Probabilidad de que un grupo venga con un campeon al frente (de noche, el doble).
+const CHAMPION_CHANCE := 0.1
 ## Radio en el que se cuentan los enemigos que ya hay cerca del jugador
 ## (de cualquier zona, asi en los bordes entre zonas no se suman).
 const NEARBY_RANGE := 4500.0
@@ -76,7 +78,8 @@ func _spawn_enemy():
 	if spot == null:
 		return
 	var data: EnemyData = _pick_type()
-	var count: int = mini(randi_range(data.pack_size.x, data.pack_size.y), limit - nearby)
+	var with_champion: bool = randf() < CHAMPION_CHANCE * (2.0 if night else 1.0)
+	var count: int = mini(randi_range(data.pack_size.x, data.pack_size.y) + (1 if with_champion else 0), limit - nearby)
 	for i in count:
 		var offset := Vector3.ZERO
 		if i > 0:
@@ -85,11 +88,12 @@ func _spawn_enemy():
 		var point = _on_navmesh(spot + offset)
 		if point == null:
 			point = spot
-		_spawn_one(data, point, night)
+		_spawn_one(data, point, night, with_champion and i == 0)
 
-func _spawn_one(data: EnemyData, point: Vector3, night: bool) -> void:
+func _spawn_one(data: EnemyData, point: Vector3, night: bool, champion: bool = false) -> void:
 	var enemy = enemy_scene.instantiate()
 	enemy.data = data
+	enemy.champion = champion
 	enemy.level = level + (1 if night else 0)
 	enemy.despawns = true
 	enemy.position = point

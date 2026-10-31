@@ -145,10 +145,12 @@ func _draw_content() -> void:
 		var pos: Vector2 = _to_map(Vector2(enemy.global_position.x, enemy.global_position.z), origin, axes)
 		if pos.distance_to(size / 2.0) > max_dist:
 			continue
-		# Los elite (mas experiencia) se ven mas grandes.
+		# Los elite (mas experiencia) se ven mas grandes; los campeones, dorados.
 		var dot_radius: float = 4.5 if enemy.data.xp_reward >= 50 else 3.0
+		if enemy.champion:
+			dot_radius = 5.5
 		_content.draw_circle(pos, dot_radius + 1.0, Color(0, 0, 0, 0.6))
-		_content.draw_circle(pos, dot_radius, ENEMY)
+		_content.draw_circle(pos, dot_radius, enemy.CHAMPION_COLOR if enemy.champion else ENEMY)
 
 	_draw_player_arrow(axes)
 

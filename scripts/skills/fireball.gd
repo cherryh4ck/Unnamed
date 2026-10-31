@@ -130,7 +130,7 @@ func _physics_process(delta: float) -> void:
 		for enemy in get_tree().get_nodes_in_group("enemies"):
 			var offset: Vector3 = enemy.global_position - global_position
 			offset.y = 0.0
-			if offset.length() <= HIT_RADIUS + enemy.data.collision_radius:
+			if offset.length() <= HIT_RADIUS + enemy.body_radius():
 				_explode()
 				return
 	if _traveled >= (travel if travel > 0.0 else skill.max_range):

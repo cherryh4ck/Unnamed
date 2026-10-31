@@ -241,7 +241,8 @@ func _build_graveyard() -> void:
 			if pos.distance_to(center) < 260.0:
 				continue
 			var stone: String = GRAVESTONES[_rng.randi() % GRAVESTONES.size()]
-			_prop(yard, G + stone + ".glb", pos, _rng.randf_range(-0.25, 0.25), _rng.randf_range(280.0, 340.0), 0.35, {"style": PROP_SCRIPT.Style.STONE, "tint": Color(0.9, 0.9, 0.92)})
+			# Colision fina: con el margen de la navegacion, mas gruesa cerraba las filas.
+			_prop(yard, G + stone + ".glb", pos, _rng.randf_range(-0.25, 0.25), _rng.randf_range(280.0, 340.0), 0.2, {"style": PROP_SCRIPT.Style.STONE, "tint": Color(0.9, 0.9, 0.92)})
 			if _rng.randf() < 0.35:
 				_prop(yard, G + "grave.glb", pos + Vector3(0, 0, 170), 0.0, 280.0, 0.0, {"style": PROP_SCRIPT.Style.STONE, "tint": Color(0.7, 0.66, 0.6)})
 	# Criptas, obeliscos, columnas, braseros y arboles secos.
@@ -665,7 +666,8 @@ func _bake_navigation() -> void:
 	NavigationServer3D.parse_source_geometry_data(nav_mesh, source, _root)
 	var start: int = Time.get_ticks_msec()
 	NavigationServer3D.bake_from_source_geometry_data(nav_mesh, source)
-	print("navegacion: %d poligonos en %d ms" % [nav_mesh.get_polygon_count(), Time.get_ticks_msec() - start])
+	var removed: int = _keep_connected(nav_mesh, Vector3(VILLAGE.x, 0, VILLAGE.y))
+	print("navegacion: %d poligonos en %d ms (%d sueltos sacados)" % [nav_mesh.get_polygon_count(), Time.get_ticks_msec() - start, removed])
 	ResourceSaver.save(nav_mesh, OUT_NAV)
 	var region := NavigationRegion3D.new()
 	region.name = "Navegacion"
@@ -673,6 +675,56 @@ func _bake_navigation() -> void:
 	_root.add_child(region)
 	_root.move_child(region, 1)
 	region.owner = _root
+
+
+## Deja solo los poligonos conectados al piso de la aldea: saca las islas
+## (techos de portales, cajas, rincones cerrados) a las que no se puede
+## llegar. Si no, un clic cerca de una mandaba al jugador a cualquier lado y
+## los enemigos podian aparecer arriba de un portal. Devuelve cuantos saco.
+func _keep_connected(nav_mesh: NavigationMesh, seed_point: Vector3) -> int:
+	var vertices: PackedVector3Array = nav_mesh.get_vertices()
+	var polygons: Array[PackedInt32Array] = []
+	for i in nav_mesh.get_polygon_count():
+		polygons.append(nav_mesh.get_polygon(i))
+	# Poligonos vecinos: los que comparten un borde (dos vertices).
+	var by_edge: Dictionary = {}
+	for i in polygons.size():
+		var poly: PackedInt32Array = polygons[i]
+		for k in poly.size():
+			var a: int = poly[k]
+			var b: int = poly[(k + 1) % poly.size()]
+			var key := Vector2i(mini(a, b), maxi(a, b))
+			if not by_edge.has(key):
+				by_edge[key] = []
+			by_edge[key].append(i)
+	var start: int = 0
+	var best: float = INF
+	for i in polygons.size():
+		var center := Vector3.ZERO
+		for index in polygons[i]:
+			center += vertices[index]
+		center /= polygons[i].size()
+		var distance: float = Vector2(center.x - seed_point.x, center.z - seed_point.z).length() + absf(center.y - seed_point.y) * 10.0
+		if distance < best:
+			best = distance
+			start = i
+	var keep: Dictionary = {start: true}
+	var pending: Array[int] = [start]
+	while not pending.is_empty():
+		var current: int = pending.pop_back()
+		var poly: PackedInt32Array = polygons[current]
+		for k in poly.size():
+			var a: int = poly[k]
+			var b: int = poly[(k + 1) % poly.size()]
+			for other in by_edge[Vector2i(mini(a, b), maxi(a, b))]:
+				if not keep.has(other):
+					keep[other] = true
+					pending.append(other)
+	nav_mesh.clear_polygons()
+	for i in polygons.size():
+		if keep.has(i):
+			nav_mesh.add_polygon(polygons[i])
+	return polygons.size() - keep.size()
 
 
 # --- Guardar ---------------------------------------------------------------

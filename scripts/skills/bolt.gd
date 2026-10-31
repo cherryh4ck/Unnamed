@@ -87,7 +87,7 @@ func _touching() -> Node3D:
 	if hits_player and player_stats.dead:
 		return null
 	for target in get_tree().get_nodes_in_group("player" if hits_player else "enemies"):
-		var radius: float = PLAYER_RADIUS if hits_player else target.data.collision_radius
+		var radius: float = PLAYER_RADIUS if hits_player else target.body_radius()
 		var offset: Vector3 = target.global_position - global_position
 		offset.y = 0.0
 		if offset.length() <= HIT_RADIUS + radius:

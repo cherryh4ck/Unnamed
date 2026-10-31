@@ -4,6 +4,7 @@ extends CanvasLayer
 ## enemigo apuntado arriba y mensajes grandes en el centro de la pantalla.
 
 const SkillSlot := preload("res://ui/skill_slot.gd")
+const Nameplates := preload("res://ui/nameplates.gd")
 const ComboSlot := preload("res://ui/combo_slot.gd")
 const POTION := preload("res://item/items/potion_of_health.tres")
 
@@ -55,6 +56,11 @@ func _ready() -> void:
 	level_label.text = str(player_stats.level)
 	message_label.visible = false
 	target_frame.visible = false
+	# Carteles de nombre y vida sobre los enemigos (debajo del resto del HUD).
+	var plates := Nameplates.new()
+	plates.name = "Carteles"
+	target_frame.get_parent().add_child(plates)
+	target_frame.get_parent().move_child(plates, 0)
 
 	for i in skill_book.skills.size():
 		var slot := SkillSlot.new()
@@ -120,6 +126,7 @@ func _update_target() -> void:
 	target_frame.visible = enemy != null
 	if enemy:
 		target_name.text = enemy.get_display_name()
+		target_name.add_theme_color_override("font_color", enemy.CHAMPION_COLOR if enemy.champion else Color(0.95, 0.55, 0.45))
 		target_bar.max_value = enemy.max_health
 		target_bar.value = enemy.current_health
 

@@ -10,6 +10,7 @@ extends CharacterBody3D
 ## Se mueve por la navegacion y esquiva a los otros enemigos (avoidance);
 ## cerca del jugador va derecho hacia su lado, asi entre varios lo rodean.
 ## Los que crea una zona (zona_spawn.gd) desaparecen cuando el jugador se aleja.
+## Campeon: version mas grande y fuerte, con apodo, aura dorada y mejor botin.
 
 signal died
 
@@ -36,6 +37,18 @@ const STUCK_CHECK: float = 0.6
 ## Capa de fisica de los enemigos: chocan con el mundo y el jugador, pero no
 ## entre ellos (se esquivan con la navegacion en vez de empujarse).
 const ENEMY_LAYER: int = 1 << 4
+## Capa de la caja para apuntarle con el mouse (del tamaño del modelo).
+const PICK_LAYER: int = 1 << 5
+
+const CHAMPION_HEALTH: float = 3.0
+const CHAMPION_DAMAGE: float = 1.5
+const CHAMPION_DEFENSE: float = 1.5
+const CHAMPION_SCALE: float = 1.25
+const CHAMPION_XP: float = 4.0
+const CHAMPION_GOLD: float = 3.0
+const CHAMPION_COLOR := Color(1.0, 0.78, 0.3)
+const EPITHETS := ["Rompehuesos", "Sangre Negra", "Ojo Rojo", "Garra de Hierro", "Colmillo Viejo",
+	"Mil Cicatrices", "Cuervo Gris", "Sombra del Valle", "Diente Roto", "Hambre Eterna"]
 ## Radio en el que un enemigo golpeado alerta a sus compañeros.
 const PACK_ALERT_RANGE: float = 700.0
 const REPATH_DISTANCE: float = 40.0
@@ -49,6 +62,11 @@ const DESPAWN_CHECK: float = 1.0
 @export var level: int = 1
 ## Lo pone la zona que lo crea: se va solo cuando el jugador se aleja.
 var despawns: bool = false
+## Lo pone la zona antes de agregarlo (ver zona_spawn.gd).
+var champion: bool = false
+var epithet: String = ""
+## Ultima vez que recibio un golpe (los carteles de vida lo muestran un rato).
+var last_hit_at: float = -100.0
 
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var model_root: Node3D = $Model
@@ -90,6 +108,11 @@ var _stuck_from: Vector3
 var _sidestep_timer: float = 0.0
 var _sidestep_dir := Vector3.ZERO
 var _path_only_timer: float = 0.0
+## Escala final del modelo (mas grande si es campeon) y alto de la cabeza.
+var _size: float = 1.0
+var _top: float = 400.0
+var _hitbox: Area3D
+var _aura: Array[Node3D] = []
 ## Lugar alrededor del jugador al que va antes de ponerse a pegar, y cuanto
 ## lleva buscandolo ya en rango (no da vueltas para siempre).
 var _slot := Vector3.INF
@@ -102,10 +125,13 @@ func _ready() -> void:
 	add_to_group("enemies")
 	player = get_tree().get_first_node_in_group("player")
 	home_position = global_position
+	_size = data.model_scale * (CHAMPION_SCALE if champion else 1.0)
+	if champion and epithet.is_empty():
+		epithet = EPITHETS.pick_random()
 
 	# La dificultad suma niveles y multiplica la vida (ver scripts/system/difficulty.gd).
 	level += int(difficulty.get_value("enemy_levels"))
-	max_health = data.max_health * _level_scale(0.3) * difficulty.get_value("enemy_health")
+	max_health = data.max_health * _level_scale(0.3) * difficulty.get_value("enemy_health") * (CHAMPION_HEALTH if champion else 1.0)
 	current_health = max_health
 	_setup_collision()
 	_setup_navigation()
@@ -120,17 +146,32 @@ func _level_scale(per_level: float) -> float:
 
 
 func get_display_name() -> String:
-	return "%s (nivel %d)" % [data.name, level]
+	return "%s (nivel %d)" % [get_title(), level]
+
+
+## Nombre sin el nivel: el del tipo, con el apodo si es campeon.
+func get_title() -> String:
+	return "%s «%s»" % [data.name, epithet] if champion else data.name
+
+
+## Radio del cuerpo (para el alcance de los golpes y los proyectiles).
+func body_radius() -> float:
+	return data.collision_radius * (CHAMPION_SCALE if champion else 1.0)
+
+
+## Altura de la cabeza sobre los pies (para los carteles de nombre y vida).
+func head_height() -> float:
+	return _top
 
 
 func get_xp_reward() -> int:
-	return roundi(data.xp_reward * _level_scale(0.25) * difficulty.get_value("xp"))
+	return roundi(data.xp_reward * _level_scale(0.25) * difficulty.get_value("xp") * (CHAMPION_XP if champion else 1.0))
 
 
 func _setup_collision() -> void:
 	var capsule := CapsuleShape3D.new()
-	capsule.radius = data.collision_radius
-	capsule.height = 360.0 * data.model_scale
+	capsule.radius = body_radius()
+	capsule.height = 360.0 * _size
 	collision_shape.shape = capsule
 	collision_shape.position.y = capsule.height / 2.0
 
@@ -139,7 +180,7 @@ func _setup_collision() -> void:
 func _setup_navigation() -> void:
 	collision_layer = ENEMY_LAYER
 	collision_mask = 1
-	nav_agent.radius = data.collision_radius * data.model_scale
+	nav_agent.radius = body_radius() * data.model_scale
 	nav_agent.max_speed = data.speed * 1.3
 	nav_agent.neighbor_distance = 1000.0
 	nav_agent.max_neighbors = 10
@@ -154,8 +195,8 @@ func _setup_model() -> void:
 		return
 	var model: Node3D = data.model.instantiate()
 	model_root.add_child(model)
-	model_root.scale = Vector3.ONE * data.model_scale
-	model_root.position.y = data.model_offset_y * data.model_scale
+	model_root.scale = Vector3.ONE * _size
+	model_root.position.y = data.model_offset_y * _size
 
 	# Overlay aditivo por instancia: negro = sin efecto; se usa para el
 	# brillo al pasar el mouse y el destello rojo al recibir un golpe.
@@ -163,11 +204,16 @@ func _setup_model() -> void:
 	_overlay.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	_overlay.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_overlay.albedo_color = Color.BLACK
+	_overlay.albedo_color = Color(0.1, 0.065, 0.0) if champion else Color.BLACK
 	for mesh in model.find_children("*", "MeshInstance3D", true, false):
 		_meshes.append(mesh)
 		mesh.material_overlay = _overlay
 		if data.tint != Color.WHITE:
 			_apply_tint(mesh)
+
+	_setup_hitbox(model)
+	if champion:
+		_add_champion_aura()
 
 	_anim_player = model.find_child("AnimationPlayer", true, false)
 	if _anim_player:
@@ -175,6 +221,69 @@ func _setup_model() -> void:
 		for anim_name in data.walk_animations + data.attack_animations + [data.death_animation]:
 			_set_loop(anim_name, Animation.LOOP_NONE)
 		_anim_player.animation_finished.connect(_on_animation_finished)
+
+
+# Caja para apuntarle con el mouse del tamaño del modelo (la capsula de la
+# fisica no coincide con un lobo o una araña). Tambien da el alto de la cabeza.
+func _setup_hitbox(model: Node3D) -> void:
+	var bounds := AABB()
+	var first: bool = true
+	var to_local: Transform3D = global_transform.affine_inverse()
+	for mesh in model.find_children("*", "MeshInstance3D", true, false):
+		if not mesh.is_visible_in_tree():
+			continue
+		var box: AABB = to_local * mesh.global_transform * (mesh as MeshInstance3D).get_aabb()
+		bounds = box if first else bounds.merge(box)
+		first = false
+	if first:
+		bounds = AABB(Vector3(-60, 0, -60), Vector3(120, 360, 120))
+	_top = bounds.end.y
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(maxf(bounds.size.x, 140.0), maxf(bounds.size.y, 120.0), maxf(bounds.size.z, 140.0)) * 1.1
+	var collision := CollisionShape3D.new()
+	collision.shape = shape
+	collision.position = bounds.get_center()
+	_hitbox = Area3D.new()
+	_hitbox.name = "Seleccion"
+	_hitbox.collision_layer = PICK_LAYER
+	_hitbox.collision_mask = 0
+	_hitbox.monitoring = false
+	_hitbox.add_child(collision)
+	add_child(_hitbox)
+
+
+# Aura del campeon: un anillo dorado que gira en el piso y chispas que suben.
+func _add_champion_aura() -> void:
+	var radius: float = body_radius() * 1.7
+	var ring := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(radius * 2.0, radius * 2.0)
+	var material := StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	material.albedo_texture = Effects.RING
+	material.albedo_color = Color(CHAMPION_COLOR, 0.8)
+	plane.material = material
+	ring.mesh = plane
+	ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ring.position.y = 8.0
+	add_child(ring)
+	ring.create_tween().set_loops().tween_property(ring, "rotation:y", TAU, 5.0).as_relative()
+	var motes: CPUParticles3D = Effects.particles(Effects.SOFT, true, 1, 16, 1.4, 34.0)
+	motes.emission_shape = CPUParticles3D.EMISSION_SHAPE_RING
+	motes.emission_ring_axis = Vector3.UP
+	motes.emission_ring_radius = radius * 0.8
+	motes.emission_ring_inner_radius = radius * 0.5
+	motes.emission_ring_height = 1.0
+	motes.direction = Vector3.UP
+	motes.spread = 15.0
+	motes.gravity = Vector3.ZERO
+	motes.initial_velocity_min = 80.0
+	motes.initial_velocity_max = 160.0
+	motes.color_ramp = Effects.ramp([Color(CHAMPION_COLOR, 0.0), Color(CHAMPION_COLOR, 0.9), Color(1.0, 0.5, 0.1, 0.0)])
+	add_child(motes)
+	_aura = [ring, motes]
 
 
 func _start_spawn_animation() -> bool:
@@ -476,7 +585,7 @@ func _attack() -> void:
 		return
 	var to_player: Vector3 = player.global_position - global_position
 	to_player.y = 0.0
-	var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2) * difficulty.get_value("enemy_damage")
+	var damage: float = randi_range(data.min_damage, data.max_damage) * _level_scale(0.2) * difficulty.get_value("enemy_damage") * (CHAMPION_DAMAGE if champion else 1.0)
 	var parts: Dictionary = Damage.split(damage, data.attack_damage_type, data.attack_conversion)
 	if data.shoots:
 		_shoot(to_player.normalized(), parts)
@@ -492,7 +601,7 @@ func _shoot(direction: Vector3, parts: Dictionary) -> void:
 	bolt.max_range = data.attack_range + 600.0
 	bolt.hit = {"parts": parts}
 	bolt.hits_player = true
-	Effects.add_at(get_parent(), bolt, global_position + Vector3.UP * 230.0 * data.model_scale + direction * 60.0)
+	Effects.add_at(get_parent(), bolt, global_position + Vector3.UP * 230.0 * _size + direction * 60.0)
 	sfx.play_at("bow_shoot", global_position, -4.0)
 
 
@@ -532,12 +641,14 @@ func _on_animation_finished(anim_name: StringName) -> void:
 func take_hit(hit: Dictionary) -> void:
 	if dead:
 		return
-	var result: Dictionary = Damage.mitigate(hit.parts, data.defense, data.get_resistances())
+	last_hit_at = Time.get_ticks_msec() / 1000.0
+	var defense: int = roundi(data.defense * (CHAMPION_DEFENSE if champion else 1.0))
+	var result: Dictionary = Damage.mitigate(hit.parts, defense, data.get_resistances())
 	var was_poisoned: bool = status.is_poisoned()
 	status.add_poison(result.poison)
 	status.add_burn(result.burn)
 
-	var head := global_position + Vector3.UP * 420.0 * data.model_scale
+	var head := global_position + Vector3.UP * 420.0 * _size
 	if result.direct > 0.0:
 		var amount: float = maxf(1.0, result.direct)
 		var color: Color = Damage.COLORS[result.type]
@@ -572,7 +683,7 @@ func _update_status(delta: float) -> void:
 		current_health = maxf(current_health - ticks[type], 0.0)
 		_dot_shown[type] = _dot_shown.get(type, 0.0) + ticks[type]
 		if _dot_shown[type] >= 1.0:
-			var head := global_position + Vector3.UP * 380.0 * data.model_scale
+			var head := global_position + Vector3.UP * 380.0 * _size
 			floating_text.spawn(head, str(floori(_dot_shown[type])), Damage.COLORS[type], 16)
 			_dot_shown[type] -= floorf(_dot_shown[type])
 	if current_health <= 0.0 and not ticks.is_empty():
@@ -580,11 +691,11 @@ func _update_status(delta: float) -> void:
 		return
 
 	if status.is_burning() and _burn_fx == null:
-		_burn_fx = Effects.burning(self, 160.0 * data.model_scale, data.collision_radius)
+		_burn_fx = Effects.burning(self, 160.0 * _size, body_radius())
 	if _burn_fx:
 		_burn_fx.emitting = status.is_burning()
 	if status.is_poisoned() and _poison_fx == null:
-		_poison_fx = Effects.poisoned(self, 200.0 * data.model_scale, data.collision_radius)
+		_poison_fx = Effects.poisoned(self, 200.0 * _size, body_radius())
 	if _poison_fx:
 		_poison_fx.emitting = status.is_poisoned()
 	if status.is_poisoned():
@@ -608,7 +719,13 @@ func _alert_pack() -> void:
 
 
 func _drop_loot() -> void:
-	for drop in Loot.roll_enemy_drops(data, level, difficulty.get_value("gold"), difficulty.get_value("magic_find")):
+	var gold_mult: float = difficulty.get_value("gold") * (CHAMPION_GOLD if champion else 1.0)
+	var magic_find: float = difficulty.get_value("magic_find") + (1.0 if champion else 0.0)
+	var drops: Array[Dictionary] = Loot.roll_enemy_drops(data, level, gold_mult, magic_find)
+	# El campeon siempre suelta equipo, de un nivel mas.
+	if champion:
+		drops.append({"item": Loot.generate_item(level + 1, -1, magic_find), "quantity": 1})
+	for drop in drops:
 		Loot.spawn_pickup(get_parent(), global_position, drop.item, drop.quantity)
 
 
@@ -627,15 +744,17 @@ func _update_flash(delta: float) -> void:
 func _refresh_overlay() -> void:
 	if _overlay == null:
 		return
+	# Los campeones tienen un brillo dorado de base.
+	var base: Color = Color(0.1, 0.065, 0.0) if champion and not dead else Color.BLACK
 	if _flash_time > 0.0:
 		_overlay.albedo_color = Color(0.45, 0.06, 0.03)
 	elif status.is_poisoned():
 		var glow: float = 0.5 + 0.5 * sin(_status_pulse)
-		_overlay.albedo_color = Color(0.02, 0.1 + 0.12 * glow, 0.0) + (Color(0.14, 0.12, 0.1) if _highlighted else Color.BLACK)
+		_overlay.albedo_color = base + Color(0.02, 0.1 + 0.12 * glow, 0.0) + (Color(0.14, 0.12, 0.1) if _highlighted else Color.BLACK)
 	elif _highlighted:
-		_overlay.albedo_color = Color(0.14, 0.12, 0.1)
+		_overlay.albedo_color = base + Color(0.14, 0.12, 0.1)
 	else:
-		_overlay.albedo_color = Color.BLACK
+		_overlay.albedo_color = base
 
 
 func _die() -> void:
@@ -647,6 +766,14 @@ func _die() -> void:
 	nav_agent.avoidance_enabled = false
 	collision_layer = 0
 	collision_mask = 0
+	if _hitbox:
+		_hitbox.collision_layer = 0
+	for node in _aura:
+		node.queue_free()
+	_aura.clear()
+	if champion:
+		floating_text.spawn(global_position + Vector3.UP * (_top + 120.0), "¡Campeón derrotado!", CHAMPION_COLOR, 24, 1.8)
+		Effects.burst(get_parent(), global_position + Vector3.UP * 150.0, CHAMPION_COLOR, 50, body_radius())
 	remove_from_group("enemies")
 	_highlighted = false
 	_flash_time = 0.0

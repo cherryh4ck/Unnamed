@@ -29,6 +29,10 @@ const PICKUP_REACH: float = 170.0
 const NPC_REACH: float = 300.0
 ## Capa de fisica de los items en el piso (ver item/pickup.gd).
 const PICKUP_MASK: int = 4
+## Cajas del tamaño de cada enemigo para apuntarle con el mouse (ver enemi.gd).
+const ENEMY_PICK_MASK: int = 1 << 5
+## Radio de un enemigo normal: a los mas grandes se les pega desde mas lejos.
+const BASE_ENEMY_RADIUS: float = 60.0
 ## Arranque y frenada (unidades por segundo al cuadrado): llega a correr del
 ## todo en un decimo de segundo, sin saltos bruscos.
 const ACCELERATION: float = 7000.0
@@ -186,6 +190,8 @@ func _update_attack_target(delta: float) -> bool:
 	to_target.y = 0.0
 	# El Golpe Brutal siempre necesita estar cuerpo a cuerpo.
 	var reach: float = attack_range if pending_skill >= 0 or pending_combo else get_attack_range()
+	if reach <= attack_range:
+		reach += extra_reach(target_enemy)
 	if to_target.length() <= reach:
 		stop_moving()
 		_face(to_target, delta)
@@ -221,6 +227,13 @@ func _update_target_pickup() -> void:
 
 func get_attack_range() -> float:
 	return ranged_attack_range if player_stats.is_ranged() else attack_range
+
+
+## Alcance extra cuerpo a cuerpo contra enemigos grandes (arañas, campeones).
+func extra_reach(enemy: Node3D) -> float:
+	if not is_instance_valid(enemy) or not enemy.has_method("body_radius"):
+		return 0.0
+	return maxf(0.0, enemy.body_radius() - BASE_ENEMY_RADIUS)
 
 
 func _update_target_npc() -> void:
@@ -276,6 +289,19 @@ func _handle_click() -> void:
 		_move_to(target_pickup.global_position)
 		return
 
+	var pointed: Node3D = _enemy_under_mouse()
+	if pointed:
+		target_pickup = null
+		target_npc = null
+		target_enemy = pointed
+		pending_skill = -1
+		pending_combo = false
+		_last_chase_target = Vector3.INF
+		_holding_move = false
+		if click_reference:
+			click_reference.hide()
+		return
+
 	var result: Dictionary = _raycast_mouse()
 	if result.is_empty():
 		return
@@ -320,7 +346,7 @@ func _update_hold(delta: float) -> void:
 		return
 	_hold_timer = 0.0
 	var result: Dictionary = _raycast_mouse()
-	if not result.is_empty() and _enemy_from_collider(result.collider) == null:
+	if not result.is_empty() and _enemy_under_mouse() == null:
 		_move_to_ground(result.position)
 
 
@@ -412,11 +438,14 @@ func _move_to(point: Vector3) -> void:
 	nav_agent.target_position = point
 
 
-# Clic en el piso (o en una roca, un arbol, el agua): va al punto caminable
-# mas cercano. Si ni asi se puede llegar (otra isla), la marca se corre a
-# donde de verdad termina el camino (ver _on_path_changed).
+# Clic en el piso (o en una roca, una casa, el agua): va al punto caminable
+# mas cercano al lugar del piso que se clickeo. Se busca a la altura del piso
+# (el mundo es plano): si se buscara desde el techo de una casa, lo "mas
+# cercano" podia quedar a un costado. La marca va a donde de verdad termina
+# el camino (ver _on_path_changed).
 func _move_to_ground(point: Vector3) -> void:
-	_move_to(NavigationServer3D.map_get_closest_point(get_world_3d().navigation_map, point))
+	var on_ground := Vector3(point.x, 0.0, point.z)
+	_move_to(NavigationServer3D.map_get_closest_point(get_world_3d().navigation_map, on_ground))
 
 
 func _on_path_changed() -> void:
@@ -425,10 +454,7 @@ func _on_path_changed() -> void:
 
 
 func _update_hover() -> void:
-	var enemy: Node3D = null
-	var result: Dictionary = _raycast_mouse()
-	if not result.is_empty():
-		enemy = _enemy_from_collider(result.collider)
+	var enemy: Node3D = _enemy_under_mouse()
 	if enemy == hovered_enemy:
 		return
 	if is_instance_valid(hovered_enemy) and hovered_enemy.has_method("set_highlighted"):
@@ -437,6 +463,18 @@ func _update_hover() -> void:
 	if hovered_enemy and hovered_enemy.has_method("set_highlighted"):
 		hovered_enemy.set_highlighted(true)
 	hovered_enemy_changed.emit(hovered_enemy)
+
+
+# El enemigo bajo el mouse: primero por su caja del tamaño del modelo y, si
+# no, por su cuerpo.
+func _enemy_under_mouse() -> Node3D:
+	var hit: Dictionary = _raycast_mouse(ENEMY_PICK_MASK, true)
+	if not hit.is_empty():
+		var enemy: Node3D = _enemy_from_collider(hit.collider.get_parent())
+		if enemy:
+			return enemy
+	var result: Dictionary = _raycast_mouse()
+	return _enemy_from_collider(result.collider) if not result.is_empty() else null
 
 
 func _enemy_from_collider(collider: Object) -> Node3D:
