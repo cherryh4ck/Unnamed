@@ -6,6 +6,10 @@ extends Node
 
 const SOUNDS := {
 	"hit": ["res://sounds/hit/punch_hit.wav", "res://sounds/hit/punch_hit2.wav"],
+	"hit_flesh": ["res://sounds/combat/flesh1.ogg", "res://sounds/combat/flesh2.ogg", "res://sounds/combat/flesh3.ogg"],
+	"hit_bone": ["res://sounds/combat/bone1.ogg", "res://sounds/combat/bone2.ogg", "res://sounds/combat/bone3.ogg"],
+	"hit_insect": ["res://sounds/combat/insect1.ogg", "res://sounds/combat/insect2.ogg", "res://sounds/combat/insect3.ogg"],
+	"block": ["res://sounds/combat/block1.ogg", "res://sounds/combat/block2.ogg", "res://sounds/combat/block3.ogg"],
 	"lifeleech": ["res://sounds/hit/lifeleech.wav"],
 	"click": ["res://sounds/ui/click.wav"],
 	"page": ["res://sounds/ui/pasar_pag1.wav", "res://sounds/ui/pasar_pag2.wav"],

@@ -2,6 +2,10 @@ extends Resource
 
 class_name EnemyData
 
+## De que esta hecho el cuerpo: cambia las marcas en el piso, las particulas
+## y el sonido de los golpes.
+enum Body { FLESH, BONE, INSECT, UNDEAD }
+
 ## Tipo de enemigo: modelo, animaciones y stats base (a nivel 1).
 ## Cada tipo es un .tres en enemies/types/.
 
@@ -28,9 +32,18 @@ class_name EnemyData
 ## Si es true, la animacion de muerte se reproduce al reves (sirve cuando el
 ## modelo solo tiene una animacion de "levantarse del suelo").
 @export var death_reversed: bool = false
+## Animaciones al recibir un golpe (se elige una). Vacio = solo se sacude.
+@export var hit_animations: Array[String] = []
+## Otras muertes posibles ademas de death_animation (se elige una al azar).
+@export var extra_death_animations: Array[String] = []
 ## Animacion al aparecer (ej: salir del suelo). Mientras dura, el enemigo no se mueve.
 @export var spawn_animation: String = ""
 @export var spawn_animation_speed: float = 1.0
+
+@export_group("Cuerpo")
+@export var body: Body = Body.FLESH
+## Al morir se desarma en huesos sueltos (esqueletos).
+@export var crumbles: bool = false
 
 @export_group("Stats")
 @export var max_health: float = 60.0

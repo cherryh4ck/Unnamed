@@ -23,6 +23,12 @@ const SCORCHES := [preload("res://fx/textures/scorch_01.png"), preload("res://fx
 const STRIP_FRAMES: int = 4
 
 static var _materials: Dictionary = {}
+## Marcas de golpes en el piso que siguen a la vista (las mas viejas se borran).
+static var _marks: Array[Node] = []
+const MAX_MARKS: int = 40
+## Color de la sangre segun EnemyData.Body (los huesos no sangran: polvo).
+const BODY_COLORS := [Color(0.42, 0.02, 0.02), Color(0.86, 0.82, 0.7), Color(0.32, 0.55, 0.1), Color(0.16, 0.06, 0.04)]
+static var _hit_stop_until: float = 0.0
 
 
 ## Agrega un nodo 3D al padre ya ubicado en la posicion global indicada.
@@ -332,6 +338,67 @@ static func scorch(parent: Node, position: Vector3, radius: float, color: Color 
 	tween.tween_interval(duration * 0.6)
 	tween.tween_property(decal, "modulate:a", 0.0, duration * 0.4)
 	tween.tween_callback(decal.queue_free)
+
+
+## Pausa de impacto: el tiempo casi se frena un instante (golpes criticos).
+static func hit_stop(node: Node, duration: float = 0.06) -> void:
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if now < _hit_stop_until:
+		return
+	_hit_stop_until = now + duration
+	var timer: SceneTreeTimer = node.get_tree().create_timer(duration, true, false, true)
+	Engine.time_scale = 0.08
+	await timer.timeout
+	Engine.time_scale = 1.0
+
+
+## Golpe en un cuerpo: gotas (o astillas de hueso) que saltan y, si no es un
+## esqueleto, una mancha en el piso que se borra despues de un rato.
+## big = al morir (mas gotas y un charco).
+static func body_hit(parent: Node, position: Vector3, body: int, size: float, big: bool = false) -> void:
+	var color: Color = BODY_COLORS[body]
+	var bone: bool = body == EnemyData.Body.BONE
+	var drops: CPUParticles3D = particles(SOFT, false, 1, 28 if big else 12, 0.55, 30.0 if bone else 24.0)
+	drops.emission_shape = CPUParticles3D.EMISSION_SHAPE_SPHERE
+	drops.emission_sphere_radius = size * 0.3
+	drops.direction = Vector3.UP
+	drops.spread = 70.0
+	drops.initial_velocity_min = 250.0
+	drops.initial_velocity_max = 650.0
+	drops.gravity = Vector3(0, -2400.0, 0)
+	drops.scale_amount_curve = curve([Vector2(0, 1.0), Vector2(1, 0.4)])
+	drops.color_ramp = ramp([Color(color, 1.0), Color(color, 0.9), Color(color, 0.0)])
+	emit_once(parent, drops, position, 1.0)
+	var ground := Vector3(position.x, 0.0, position.z)
+	if bone:
+		# Polvo de hueso en vez de sangre.
+		var dust: CPUParticles3D = particles(SMOKE, false, STRIP_FRAMES, 8 if big else 4, 0.8, 120.0)
+		dust.spread = 180.0
+		dust.initial_velocity_min = 20.0
+		dust.initial_velocity_max = 80.0
+		dust.gravity = Vector3(0, 30.0, 0)
+		dust.color_ramp = ramp([Color(0.8, 0.76, 0.66, 0.0), Color(0.78, 0.74, 0.64, 0.4), Color(0.7, 0.66, 0.58, 0.0)])
+		emit_once(parent, dust, position, 0.9)
+		return
+	var radius: float = size * (1.6 if big else 0.8) * randf_range(0.8, 1.2)
+	var mark := Decal.new()
+	mark.texture_albedo = SCORCHES.pick_random()
+	mark.size = Vector3(radius * 2.0, 160.0, radius * 2.0)
+	mark.modulate = Color(color, 0.85)
+	mark.upper_fade = 0.0
+	mark.lower_fade = 0.0
+	add_at(parent, mark, ground + Vector3.UP * 40.0 + Vector3(randf_range(-0.5, 0.5), 0.0, randf_range(-0.5, 0.5)) * size)
+	mark.rotation.y = randf() * TAU
+	var tween := mark.create_tween()
+	tween.tween_interval(10.0)
+	tween.tween_property(mark, "modulate:a", 0.0, 4.0)
+	tween.tween_callback(mark.queue_free)
+	_marks.append(mark)
+	while _marks.size() > MAX_MARKS:
+		var old: Node = _marks.pop_front()
+		if is_instance_valid(old):
+			old.queue_free()
+	_marks = _marks.filter(func(node: Node) -> bool: return is_instance_valid(node))
 
 
 ## Particulas de un solo disparo que se borran solas al terminar.

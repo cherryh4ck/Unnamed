@@ -183,6 +183,7 @@ CC0 o dominio público. Los de antes (golpes, interfaz, pasos y hechizos de
 | Truenos (`thunder1-4.ogg`), recortes de "Storm, Thunderbolts" | stephan (pdsounds.org) | https://commons.wikimedia.org/wiki/File:Storm_thunderbolts.ogg (dominio público) |
 | Viento (`wind_loop.ogg`, "wind1") | Luke.RUSTLTD | https://opengameart.org/content/wind1 (CC0) |
 | Cofre que se abre (`sounds/interact/chest/open.ogg`, mezcla de metalLatch y creak2) | Kenney | https://kenney.nl/assets/rpg-audio (CC0) |
+| Golpes en carne, hueso e insecto y escudo que bloquea (`sounds/combat/`, de impactPunch, impactWood, impactSoft e impactMetal) | Kenney | https://kenney.nl/assets/impact-sounds (CC0) |
 | Monedas del herrero (`coins.ogg`, handleCoins) | Kenney | https://kenney.nl/assets/rpg-audio (CC0) |
 | Yunque (`anvil1.ogg`, "Blacksmith's Hammer") | VishwaJai | https://opengameart.org/content/blacksmiths-hammer (CC0) |
 | Yunque (`anvil2.ogg`, "Hammer on Anvil") | themightyglider | https://opengameart.org/content/hammer-on-anvil (CC0) |

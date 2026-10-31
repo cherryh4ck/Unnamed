@@ -251,7 +251,7 @@ func _deliver_hit(target: Node3D, delay: float) -> void:
 	if to_target.length() > character.attack_range * REACH_TOLERANCE + character.extra_reach(target):
 		return
 	target.take_hit(hit)
-	sfx.play_at("hit", target.global_position)
+	sfx.play_at(target.hit_sound() if target.has_method("hit_sound") else "hit", target.global_position)
 
 
 func _shoot_bolt(direction: Vector3, hit: Dictionary) -> void:

@@ -11,6 +11,9 @@ extends CharacterBody3D
 ## cerca del jugador va derecho hacia su lado, asi entre varios lo rodean.
 ## Los que crea una zona (zona_spawn.gd) desaparecen cuando el jugador se aleja.
 ## Campeon: version mas grande y fuerte, con apodo, aura dorada y mejor botin.
+## Al recibir un golpe se sacude (a veces con su animacion) y deja marcas segun
+## de que esta hecho (sangre, polvo de hueso); los criticos lo frenan. Al morir
+## cae hacia atras desde donde le pegaron y los esqueletos se desarman.
 
 signal died
 
@@ -47,6 +50,18 @@ const CHAMPION_SCALE: float = 1.25
 const CHAMPION_XP: float = 4.0
 const CHAMPION_GOLD: float = 3.0
 const CHAMPION_COLOR := Color(1.0, 0.78, 0.3)
+## Capa de los huesos sueltos de un esqueleto desarmado: chocan con el
+## mundo pero no con el jugador ni los enemigos.
+const DEBRIS_LAYER: int = 1 << 6
+## Los huesos usan la gravedad del proyecto (9,8): en este mundo (225
+## unidades por metro) hay que multiplicarla para que caigan como el resto.
+const DEBRIS_GRAVITY: float = 200.0
+const BONE_COLOR := Color(0.78, 0.72, 0.58)
+## Piezas en que se desarma un esqueleto: [hueso, hueso hasta donde llega
+## ("" = una bola), radio] en unidades del esqueleto de 0 A.D.
+const BONE_PIECES := [["head", "", 0.085], ["chest", "neck", 0.11], ["spine", "chest", 0.03], ["hip", "", 0.08],
+	["arm_L", "forearm_L", 0.022], ["forearm_L", "hand_L", 0.018], ["arm_R", "forearm_R", 0.022], ["forearm_R", "hand_R", 0.018],
+	["thigh_L", "leg_L", 0.026], ["leg_L", "foot_L", 0.022], ["thigh_R", "leg_R", 0.026], ["leg_R", "foot_R", 0.022]]
 const EPITHETS := ["Rompehuesos", "Sangre Negra", "Ojo Rojo", "Garra de Hierro", "Colmillo Viejo",
 	"Mil Cicatrices", "Cuervo Gris", "Sombra del Valle", "Diente Roto", "Hambre Eterna"]
 ## Radio en el que un enemigo golpeado alerta a sus compañeros.
@@ -113,6 +128,12 @@ var _size: float = 1.0
 var _top: float = 400.0
 var _hitbox: Area3D
 var _aura: Array[Node3D] = []
+## Reaccion a los golpes: hasta cuando dura la animacion de golpe, desde donde
+## vino el ultimo y un contador para cancelar un ataque si lo frenan.
+var _reacting_until: float = 0.0
+var _last_hit_dir := Vector3.ZERO
+var _attack_serial: int = 0
+var _flinch_tween: Tween
 ## Lugar alrededor del jugador al que va antes de ponerse a pegar, y cuanto
 ## lleva buscandolo ya en rango (no da vueltas para siempre).
 var _slot := Vector3.INF
@@ -164,8 +185,37 @@ func head_height() -> float:
 	return _top
 
 
+# Experiencia segun la diferencia de nivel con el jugador: +10% por cada nivel
+# que le lleva (hasta +50%) y -15% por cada nivel menos (minimo 10%).
 func get_xp_reward() -> int:
-	return roundi(data.xp_reward * _level_scale(0.25) * difficulty.get_value("xp") * (CHAMPION_XP if champion else 1.0))
+	var diff: int = level - player_stats.level
+	var by_level: float = clampf(1.0 + (0.1 if diff > 0 else 0.15) * diff, 0.1, 1.5)
+	return roundi(data.xp_reward * _level_scale(0.25) * difficulty.get_value("xp") * (CHAMPION_XP if champion else 1.0) * by_level)
+
+
+## Color del nivel segun el peligro: gris (muy facil), verde, claro (parejo),
+## naranja y rojo (bastante mas fuerte que el jugador).
+func level_color() -> Color:
+	var diff: int = level - player_stats.level
+	if diff <= -4:
+		return Color(0.6, 0.6, 0.6)
+	if diff <= -2:
+		return Color(0.5, 0.9, 0.45)
+	if diff <= 1:
+		return Color(0.95, 0.92, 0.85)
+	if diff <= 3:
+		return Color(1.0, 0.62, 0.25)
+	return Color(1.0, 0.3, 0.25)
+
+
+## Sonido de un golpe segun de que esta hecho.
+func hit_sound() -> String:
+	match data.body:
+		EnemyData.Body.BONE:
+			return "hit_bone"
+		EnemyData.Body.INSECT:
+			return "hit_insect"
+	return "hit_flesh"
 
 
 func _setup_collision() -> void:
@@ -218,7 +268,7 @@ func _setup_model() -> void:
 	_anim_player = model.find_child("AnimationPlayer", true, false)
 	if _anim_player:
 		_set_loop(data.idle_animation, Animation.LOOP_LINEAR)
-		for anim_name in data.walk_animations + data.attack_animations + [data.death_animation]:
+		for anim_name in data.walk_animations + data.attack_animations + [data.death_animation] + data.hit_animations + data.extra_death_animations:
 			_set_loop(anim_name, Animation.LOOP_NONE)
 		_anim_player.animation_finished.connect(_on_animation_finished)
 
@@ -580,8 +630,10 @@ func _attack() -> void:
 	if not data.attack_sound.is_empty():
 		sfx.play_at(data.attack_sound, global_position, -3.0)
 
+	var serial: int = _attack_serial
 	await get_tree().create_timer(hit_delay, false).timeout
-	if dead or not is_instance_valid(player) or player_stats.dead:
+	# Si lo frenaron con un critico mientras levantaba el arma, no pega.
+	if dead or serial != _attack_serial or not is_instance_valid(player) or player_stats.dead:
 		return
 	var to_player: Vector3 = player.global_position - global_position
 	to_player.y = 0.0
@@ -609,6 +661,8 @@ func _shoot(direction: Vector3, parts: Dictionary) -> void:
 
 func _update_walk_animation(moving: bool) -> void:
 	if _anim_player == null or _attacking or state == State.SPAWNING:
+		return
+	if Time.get_ticks_msec() / 1000.0 < _reacting_until:
 		return
 	var current: String = _anim_player.current_animation
 	if moving and not current in data.walk_animations:
@@ -659,6 +713,7 @@ func take_hit(hit: Dictionary) -> void:
 			floating_text.spawn(head, str(roundi(amount)), color, 22)
 		current_health = maxf(current_health - amount, 0.0)
 		_flash_time = 0.12
+		_react(hit, amount)
 	elif result.poison > 0.0 and not was_poisoned:
 		floating_text.spawn(head, "Envenenado", Damage.COLORS[Damage.Type.POISON], 18)
 
@@ -673,6 +728,49 @@ func take_hit(hit: Dictionary) -> void:
 ## Golpe fisico simple (compatibilidad con codigo que todavia pasa un numero).
 func take_damage(amount: float, crit: bool = false) -> void:
 	take_hit({"parts": {Damage.Type.PHYSICAL: amount}, "crit": crit})
+
+
+# Reaccion al golpe: se sacude (y si tiene, hace su animacion de golpe) y deja
+# marcas segun de que esta hecho. Un golpe fuerte o critico ademas corta su
+# ataque; el critico frena el tiempo un instante y sacude la camara.
+func _react(hit: Dictionary, amount: float) -> void:
+	var crit: bool = hit.get("crit", false)
+	var heavy: bool = crit or amount >= max_health * 0.15
+	if is_instance_valid(player):
+		_last_hit_dir = global_position - player.global_position
+		_last_hit_dir.y = 0.0
+	_flinch(heavy)
+	if not data.hit_animations.is_empty() and state != State.SPAWNING and (heavy or not _attacking):
+		if _attacking:
+			_attacking = false
+			_attack_serial += 1
+			_attack_timer = maxf(_attack_timer, 0.5)
+		var anim_name: String = data.hit_animations.pick_random()
+		if _anim_player and _anim_player.has_animation(anim_name):
+			_anim_player.play(anim_name, 0.05, 1.3)
+			_anim_player.seek(0.0, true)
+			_reacting_until = Time.get_ticks_msec() / 1000.0 + _anim_player.get_animation(anim_name).length / 1.3
+	if heavy or randf() < 0.4:
+		Effects.body_hit(get_parent(), global_position + Vector3.UP * _top * 0.55, data.body, body_radius())
+	if crit:
+		Effects.hit_stop(self, 0.06)
+		_shake_camera(14.0, 0.18)
+
+
+# Se echa para atras un instante (sirve para cualquier modelo).
+func _flinch(heavy: bool) -> void:
+	if _flinch_tween:
+		_flinch_tween.kill()
+	model_root.rotation.x = 0.0
+	_flinch_tween = create_tween()
+	_flinch_tween.tween_property(model_root, "rotation:x", -(0.22 if heavy else 0.12), 0.06)
+	_flinch_tween.tween_property(model_root, "rotation:x", 0.0, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+func _shake_camera(strength: float, duration: float) -> void:
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	if camera and camera.get_parent().has_method("shake"):
+		camera.get_parent().shake(strength, duration)
 
 
 # Veneno y quemadura: restan vida de a poco y se ven en el modelo
@@ -716,6 +814,100 @@ func _alert_pack() -> void:
 		if other != self and not other.dead and other.state in [State.IDLE, State.WANDER]:
 			if other.global_position.distance_to(global_position) <= PACK_ALERT_RANGE:
 				other._enter_chase()
+
+
+# Esqueletos: a poco de empezar a caer, el cuerpo se desarma en huesos
+# sueltos (y el casco, el escudo y el arma) que rebotan en el piso y se van
+# con el cadaver.
+func _crumble() -> void:
+	await get_tree().create_timer(0.3, false).timeout
+	var skeleton: Skeleton3D = model_root.find_child("Skeleton3D", true, false)
+	if skeleton == null or not is_inside_tree():
+		return
+	var pieces: Array[RigidBody3D] = []
+	var to_world: Transform3D = skeleton.global_transform
+	var unit: float = to_world.basis.get_scale().x
+	var material := StandardMaterial3D.new()
+	material.albedo_color = BONE_COLOR
+	material.roughness = 0.85
+	for piece in BONE_PIECES:
+		var from_bone: int = skeleton.find_bone(piece[0])
+		if from_bone < 0:
+			continue
+		var a: Vector3 = to_world * skeleton.get_bone_global_pose(from_bone).origin
+		var b: Vector3 = a
+		if piece[1] != "":
+			b = to_world * skeleton.get_bone_global_pose(skeleton.find_bone(piece[1])).origin
+		var radius: float = piece[2] * unit
+		var length: float = a.distance_to(b)
+		var mesh := MeshInstance3D.new()
+		var shape := CollisionShape3D.new()
+		if length < radius:
+			var sphere := SphereMesh.new()
+			sphere.radius = radius
+			sphere.height = radius * 2.0
+			mesh.mesh = sphere
+			var ball := SphereShape3D.new()
+			ball.radius = radius
+			shape.shape = ball
+		else:
+			var capsule := CapsuleMesh.new()
+			capsule.radius = radius
+			capsule.height = length + radius * 2.0
+			mesh.mesh = capsule
+			var capsule_shape := CapsuleShape3D.new()
+			capsule_shape.radius = radius
+			capsule_shape.height = capsule.height
+			shape.shape = capsule_shape
+		mesh.material_override = material
+		var axis: Vector3 = (b - a).normalized() if length >= radius else Vector3.UP
+		var basis := Basis(axis.cross(Vector3.FORWARD if absf(axis.z) < 0.9 else Vector3.RIGHT).normalized(), axis, Vector3.ZERO)
+		basis.z = basis.x.cross(basis.y)
+		pieces.append(_debris(Transform3D(basis.orthonormalized(), (a + b) / 2.0), [mesh], shape))
+	# Lo que tenia puesto (casco, escudo, arma) tambien cae.
+	for attachment in skeleton.find_children("*", "BoneAttachment3D", false, false):
+		for node in attachment.find_children("*", "MeshInstance3D", true, false):
+			var prop := node as MeshInstance3D
+			if not prop.is_visible_in_tree():
+				continue
+			var copy: MeshInstance3D = prop.duplicate()
+			var box := BoxShape3D.new()
+			var scaled: Vector3 = prop.global_transform.basis.get_scale()
+			box.size = (prop.get_aabb().size * scaled).max(Vector3.ONE * 10.0)
+			var shape := CollisionShape3D.new()
+			shape.shape = box
+			shape.position = prop.get_aabb().get_center() * scaled
+			copy.transform = Transform3D(Basis.from_scale(scaled), Vector3.ZERO)
+			pieces.append(_debris(Transform3D(prop.global_transform.basis.orthonormalized(), prop.global_transform.origin), [copy], shape))
+	model_root.visible = false
+	var push: Vector3 = _last_hit_dir.normalized() if _last_hit_dir.length() > 1.0 else Vector3.ZERO
+	for body in pieces:
+		body.apply_central_impulse((push * randf_range(150.0, 450.0) + Vector3.UP * randf_range(250.0, 600.0)
+			+ Vector3(randf_range(-1, 1), 0, randf_range(-1, 1)) * 200.0) * body.mass)
+		body.apply_torque_impulse(Vector3(randf_range(-1, 1), randf_range(-1, 1), randf_range(-1, 1)) * 40000.0 * body.mass)
+	# Se van con el cadaver (que se hunde a los CORPSE_TIME segundos).
+	await get_tree().create_timer(CORPSE_TIME, false).timeout
+	for body in pieces:
+		if is_instance_valid(body):
+			var tween := body.create_tween()
+			tween.tween_property(body, "scale", Vector3.ONE * 0.01, 1.2)
+			tween.tween_callback(body.queue_free)
+
+
+func _debris(where: Transform3D, meshes: Array, shape: CollisionShape3D) -> RigidBody3D:
+	var body := RigidBody3D.new()
+	body.collision_layer = DEBRIS_LAYER
+	body.collision_mask = 1
+	body.gravity_scale = DEBRIS_GRAVITY
+	body.mass = 1.0
+	body.linear_damp = 0.4
+	body.angular_damp = 1.5
+	for mesh in meshes:
+		body.add_child(mesh)
+	body.add_child(shape)
+	get_parent().add_child(body)
+	body.global_transform = where
+	return body
 
 
 func _drop_loot() -> void:
@@ -788,11 +980,25 @@ func _die() -> void:
 	player_stats.add_xp(xp)
 	floating_text.spawn(global_position + Vector3.UP * 300.0, "+%d exp" % xp, Color(0.75, 0.65, 1.0), 18)
 	_drop_loot.call_deferred()
-	if _anim_player and _anim_player.has_animation(data.death_animation):
-		if data.death_reversed:
-			_anim_player.play_backwards(data.death_animation, 0.1)
-		else:
-			_anim_player.play(data.death_animation, 0.1)
+	if _flinch_tween:
+		_flinch_tween.kill()
+	model_root.rotation.x = 0.0
+	# Mira hacia donde vino el golpe: las muertes caen hacia atras, lejos de el.
+	if _last_hit_dir.length() > 1.0:
+		rotation.y = atan2(-_last_hit_dir.x, -_last_hit_dir.z)
+	if _anim_player:
+		var anim_name: String = data.death_animation
+		var extra: Array[String] = data.extra_death_animations.filter(func(clip: String) -> bool: return _anim_player.has_animation(clip))
+		if not extra.is_empty() and randf() < 0.5:
+			anim_name = extra.pick_random()
+		if _anim_player.has_animation(anim_name):
+			if data.death_reversed and anim_name == data.death_animation:
+				_anim_player.play_backwards(anim_name, 0.1)
+			else:
+				_anim_player.play(anim_name, 0.1)
+	Effects.body_hit(get_parent(), global_position + Vector3.UP * _top * 0.4, data.body, body_radius(), true)
+	if data.crumbles:
+		_crumble()
 	died.emit()
 
 	# El cuerpo queda unos segundos y despues se hunde en el piso.

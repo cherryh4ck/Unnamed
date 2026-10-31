@@ -17,7 +17,9 @@ const FONT_SIZE: int = 14
 
 class Plate:
 	var box := VBoxContainer.new()
+	var row := HBoxContainer.new()
 	var label := Label.new()
+	var level := Label.new()
 	var bar := ProgressBar.new()
 
 
@@ -69,26 +71,34 @@ func _make_plate() -> Plate:
 	var plate := Plate.new()
 	plate.box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.box.add_theme_constant_override("separation", 1)
-	plate.label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	plate.label.add_theme_font_size_override("font_size", FONT_SIZE)
-	plate.label.add_theme_constant_override("outline_size", 4)
-	plate.label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.row.alignment = BoxContainer.ALIGNMENT_CENTER
+	plate.row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.row.add_theme_constant_override("separation", 6)
+	for label in [plate.label, plate.level]:
+		label.add_theme_font_size_override("font_size", FONT_SIZE)
+		label.add_theme_constant_override("outline_size", 4)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.bar.theme_type_variation = &"EnemyBar"
 	plate.bar.custom_minimum_size = BAR_SIZE
 	plate.bar.show_percentage = false
 	plate.bar.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	plate.bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	plate.box.add_child(plate.label)
+	plate.row.add_child(plate.label)
+	plate.row.add_child(plate.level)
+	plate.box.add_child(plate.row)
 	plate.box.add_child(plate.bar)
 	add_child(plate.box)
 	return plate
 
 
 func _fill(plate: Plate, enemy: Node3D, pointed: bool) -> void:
-	var text: String = "%s · Nv %d" % [enemy.get_title(), enemy.level]
-	if plate.label.text != text:
-		plate.label.text = text
+	var level_text: String = "Nv %d" % enemy.level
+	if plate.label.text != enemy.get_title() or plate.level.text != level_text:
+		plate.label.text = enemy.get_title()
+		plate.level.text = level_text
 		plate.box.reset_size()
+	# El nivel con el color del peligro (gris facil ... rojo muy fuerte).
+	plate.level.add_theme_color_override("font_color", enemy.level_color())
 	var color: Color = POINTED_COLOR if pointed else NAME_COLOR
 	if enemy.champion:
 		color = enemy.CHAMPION_COLOR.lightened(0.2) if pointed else enemy.CHAMPION_COLOR

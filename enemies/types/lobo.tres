@@ -14,6 +14,7 @@ idle_animation = "Idle"
 walk_animations = Array[String](["Gallop"])
 attack_animations = Array[String](["Attack"])
 death_animation = "Death"
+hit_animations = Array[String](["Idle_HitReact_Left", "Idle_HitReact_Right"])
 max_health = 42.0
 min_damage = 5
 max_damage = 9

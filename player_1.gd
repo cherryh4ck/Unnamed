@@ -13,6 +13,9 @@ const MODEL_SCALE: float = 225.0
 ## Lo que traen en las manos se reemplaza por lo que tiene equipado.
 const HELD_PROPS := ["WeaponR", "WeaponL", "WeaponBow", "Shield", "ShieldRim", "ShieldBoss"]
 const BLEND: float = 0.15
+const WeaponTrail := preload("res://scripts/player/weapon_trail.gd")
+## Chispas del escudo al bloquear un golpe.
+const BLOCK_COLOR := Color(1.0, 0.88, 0.55)
 
 @onready var character: CharacterBody3D = get_parent()
 @onready var combat: Node = character.get_node("Combat")
@@ -36,6 +39,9 @@ func _ready() -> void:
 	combat.skill_animation.connect(_on_skill_animation)
 	player_stats.died.connect(_on_died)
 	player_stats.respawned.connect(_on_respawned)
+	var trail := WeaponTrail.new()
+	trail.name = "Estela"
+	add_child(trail)
 	_play_base()
 
 
@@ -136,6 +142,23 @@ func _play_action(anim_name: String, from: float, duration: float) -> void:
 	anim_player.play(anim_name, 0.05)
 	anim_player.speed_scale = maxf(anim.length * (1.0 - from) / maxf(duration, 0.05), 0.2)
 	anim_player.seek(anim.length * from, true)
+
+
+## Bloqueo con el escudo: chispas, ruido metalico y el escudo da un salto.
+func play_block() -> void:
+	var at: Vector3 = bone_position("prop-shield")
+	Effects.burst(character.get_parent(), at, BLOCK_COLOR, 16, 30.0)
+	sfx.play_at("block", at, -2.0)
+	var holder: Node = skeleton.get_node_or_null("Equipo_prop-shield") if skeleton else null
+	if holder == null or holder.get_child_count() == 0:
+		return
+	var shield: Node3D = holder.get_child(0)
+	if not shield.has_meta("base_scale"):
+		shield.set_meta("base_scale", shield.scale)
+	var base: Vector3 = shield.get_meta("base_scale")
+	var tween := shield.create_tween()
+	tween.tween_property(shield, "scale", base * 1.18, 0.05)
+	tween.tween_property(shield, "scale", base, 0.14)
 
 
 func _on_died() -> void:

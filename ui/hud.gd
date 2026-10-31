@@ -126,7 +126,7 @@ func _update_target() -> void:
 	target_frame.visible = enemy != null
 	if enemy:
 		target_name.text = enemy.get_display_name()
-		target_name.add_theme_color_override("font_color", enemy.CHAMPION_COLOR if enemy.champion else Color(0.95, 0.55, 0.45))
+		target_name.add_theme_color_override("font_color", enemy.CHAMPION_COLOR if enemy.champion else enemy.level_color())
 		target_bar.max_value = enemy.max_health
 		target_bar.value = enemy.current_health
 

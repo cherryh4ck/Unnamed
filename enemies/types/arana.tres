@@ -15,6 +15,7 @@ walk_animations = Array[String](["SpiderArmature|Spider_Walk"])
 attack_animations = Array[String](["SpiderArmature|Spider_Attack"])
 walk_animation_speed = 1.6
 death_animation = "SpiderArmature|Spider_Death"
+body = 2
 max_health = 70.0
 min_damage = 6
 max_damage = 11

@@ -505,7 +505,13 @@ func take_hit(parts: Dictionary) -> void:
 	var head: Vector3 = global_position + Vector3.UP * 420.0
 	if result.blocked:
 		floating_text.spawn(head, "Bloqueo", Color(0.65, 0.8, 1.0), 20)
+		$Player.play_block()
 		return
+	# Un golpe que saca mucha vida sacude la camara.
+	if result.amount > player_stats.get_max_health() * 0.12:
+		var camera: Camera3D = get_viewport().get_camera_3d()
+		if camera and camera.get_parent().has_method("shake"):
+			camera.get_parent().shake(18.0, 0.25)
 	if result.amount > 0.0:
 		# Rojo el fisico; los demas tipos con su color.
 		var color: Color = Color(1.0, 0.3, 0.25) if result.type == Damage.Type.PHYSICAL else Damage.COLORS[result.type]
